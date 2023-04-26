@@ -75,6 +75,9 @@ public class Commands
      */
     public class GenerationInfo
     {
+        /** Generation time. */
+        private Time time;
+        
         /** Initial speed. */
         private Speed initialSpeed;
 
@@ -87,6 +90,15 @@ public class Commands
         /** Parameters to initialize the GTU with. */
         private Map<String, String> parameters;
 
+        /**
+         * Returns the generation time.
+         * @return Time; generation time.
+         */
+        public Time getTime()
+        {
+            return this.time;
+        }
+        
         /**
          * Returns the initial speed.
          * @return Speed; initial speed.
@@ -249,10 +261,10 @@ public class Commands
         SET_PARAMETER("setParameter"),
         
         /** Sets desired speed (speed). */
-        SET_SPEED("setSpeed"),
+        SET_DESIRED_SPEED("setDesiredSpeed"),
         
         /** Resets the desired speed to regular operation. */
-        RESET_SPEED("resetSpeed"),
+        RESET_DESIRED_SPEED("resetDesiredSpeed"),
         
         /** Sets the acceleration. (acceleration). */
         SET_ACCELERATION("setAcceleration"),
@@ -267,7 +279,10 @@ public class Commands
         ENABLE_LANE_CHANGES("enableLaneChanges"),
         
         /** Initiates a lane change. */
-        CHANGE_LANE("changeLane");
+        CHANGE_LANE("changeLane"),
+        
+        /** Set indicator. */
+        SET_INDICATOR("setIndicator");
 
         /** Print value for in JSON file. */
         private String printValue;

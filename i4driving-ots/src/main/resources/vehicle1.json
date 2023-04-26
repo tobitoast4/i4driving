@@ -1,6 +1,7 @@
 {
     "gtuId": "1",
     "generate": {
+        "time": "0 s",
         "initialSpeed": "49.3 km/h",
         "initialPosition": {
             "x": "0.0 m",
@@ -24,14 +25,14 @@
         },
         {
             "time": "0.0 s",
-            "type": "setSpeed",
+            "type": "setDesiredSpeed",
             "data": {
                 "speed": "50 km/h"
             }
         },
         {
             "time": "1.0 s",
-            "type": "resetSpeed"
+            "type": "resetDesiredSpeed"
         },
         {
             "time": "2.0 s",
@@ -57,6 +58,14 @@
             "type": "changeLane",
             "data": {
                 "direction": "LEFT"
+            }
+        },
+        {
+            "time": "7.0 s",
+            "type": "setIndicator",
+            "data": {
+                "direction": "RIGHT",
+                "duration": "3 s"
             }
         }
     ]

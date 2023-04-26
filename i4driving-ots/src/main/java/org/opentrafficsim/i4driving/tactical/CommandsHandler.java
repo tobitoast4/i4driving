@@ -73,7 +73,7 @@ public class CommandsHandler
                 String parameter =
                         Try.assign(() -> command.getData("parameter"), "Field 'parameter' not found for setParameter command.");
                 String value =
-                        Try.assign(() -> command.getData("parameter"), "Field 'value' not found for setParameter command.");
+                        Try.assign(() -> command.getData("value"), "Field 'value' not found for setParameter command.");
                 Try.execute(() -> ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).setParameter(parameter, value),
                         "Parameter value %s for parameter %s is not valid.", value, parameter);
                 break;
@@ -108,7 +108,7 @@ public class CommandsHandler
                 LateralDirectionality indicator = LateralDirectionality.valueOf(Try.assign(() -> command.getData("direction"),
                         "Field 'direction' not found for setIndicator command."));
                 Duration duration =
-                        Duration.valueOf(Try.assign(() -> command.getData("duration"), "Field 'direction' not found."));
+                        Duration.valueOf(Try.assign(() -> command.getData("duration"), "Field 'duration' not found."));
                 ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).setIndicator(indicator, duration);
                 break;
         }

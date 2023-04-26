@@ -1,0 +1,63 @@
+{
+    "gtuId": "1",
+    "generate": {
+        "initialSpeed": "49.3 km/h",
+        "initialPosition": {
+            "x": "0.0 m",
+            "y": "0.0 m",
+            "z": "0.0 m"
+        },
+        "destination": "D",
+        "parameters": {
+            "org.opentrafficsim.base.parameters.ParameterTypes.A": "1.6 m/s2",
+            "org.opentrafficsim.base.parameters.ParameterTypes.TMAX": "1.05 s"
+        }
+    },
+    "commands": [
+        {
+            "time": "0.0 s",
+            "type": "setParameter",
+            "data": {
+                "parameter": "org.opentrafficsim.base.parameters.ParameterTypes.B",
+                "value": "2.5 m/s2"
+            }
+        },
+        {
+            "time": "0.0 s",
+            "type": "setSpeed",
+            "data": {
+                "speed": "50 km/h"
+            }
+        },
+        {
+            "time": "1.0 s",
+            "type": "resetSpeed"
+        },
+        {
+            "time": "2.0 s",
+            "type": "setAcceleration",
+            "data": {
+                "acceleration": "-3.2 m/s"
+            }
+        },
+        {
+            "time": "3.0 s",
+            "type": "resetAcceleration"
+        },
+        {
+            "time": "4.0 s",
+            "type": "disableLaneChanges"
+        },
+        {
+            "time": "5.0 s",
+            "type": "enableLaneChanges"
+        },
+        {
+            "time": "6.0 s",
+            "type": "changeLane",
+            "data": {
+                "direction": "LEFT"
+            }
+        }
+    ]
+}

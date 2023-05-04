@@ -9,14 +9,20 @@
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <ots.version>1.7.1</ots.version>
   </properties>
   
   <dependencies>
   	<dependency>
   		<groupId>org.opentrafficsim</groupId>
   		<artifactId>ots-road</artifactId>
-  		<version>1.7.1</version>
+  		<version>${ots.version}</version>
   	</dependency>
+  	<dependency>
+        <groupId>org.opentrafficsim</groupId>
+        <artifactId>ots-swing</artifactId>
+        <version>${ots.version}</version>
+    </dependency>
   	<dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

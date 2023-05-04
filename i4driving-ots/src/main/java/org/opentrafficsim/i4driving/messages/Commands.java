@@ -24,13 +24,15 @@ public class Commands
 {
 
     /** Type for GSON. */
-    public static Type COMMANDS = new TypeToken<Commands>() {}.getType();
-    
+    public static Type COMMANDS = new TypeToken<Commands>()
+    {
+    }.getType();
+
     /** GTU id. */
     private String gtuId;
 
     /** Generation information. */
-    private GenerationInfo generate;
+    private GenerationInfo generationInfo;
 
     /** List of commands. */
     private List<Command> commands;
@@ -48,9 +50,9 @@ public class Commands
      * Returns the generation info.
      * @return GenerationInfo; generation info, {@code null} if GTU should be found from another source.
      */
-    public GenerationInfo getGenerate()
+    public GenerationInfo getGenerationInfo()
     {
-        return this.generate;
+        return this.generationInfo;
     }
 
     /**
@@ -77,12 +79,15 @@ public class Commands
     {
         /** Generation time. */
         private Time time;
-        
+
         /** Initial speed. */
         private Speed initialSpeed;
 
         /** Initial position. */
-        private Position initialPosition;
+        private LanePosition initialPosition;
+
+        /** GTU type. */
+        private String gtuType;
 
         /** Destination node id. */
         private String destination;
@@ -98,7 +103,7 @@ public class Commands
         {
             return this.time;
         }
-        
+
         /**
          * Returns the initial speed.
          * @return Speed; initial speed.
@@ -109,10 +114,19 @@ public class Commands
         }
 
         /**
-         * Returns the initial position.
-         * @return Position; initial position.
+         * Returns the GTU type id.
+         * @return String; GTU type id.
          */
-        public Position getInitialPosition()
+        public String getGtuType()
+        {
+            return gtuType;
+        }
+
+        /**
+         * Returns the initial position.
+         * @return LanePosition; initial position.
+         */
+        public LanePosition getInitialPosition()
         {
             return this.initialPosition;
         }
@@ -141,8 +155,8 @@ public class Commands
         @Override
         public String toString()
         {
-            return "Generate [initialSpeed=" + initialSpeed + ", initialPosition=" + initialPosition + ", destination="
-                    + destination + ", parameters=" + parameters + "]";
+            return "Generate [initialSpeed=" + this.initialSpeed + ", initialPosition=" + this.initialPosition
+                    + ", destination=" + this.destination + ", parameters=" + this.parameters + "]";
         }
 
     }
@@ -151,16 +165,34 @@ public class Commands
      * Class for a position.
      * @author wjschakel
      */
-    public class Position
+    public class LanePosition
     {
-        /** X-position. */
+        /** Lin id. */
+        private String link;
+
+        /** Lane id. */
+        private String lane;
+
+        /** X-position on the lane. */
         private Length x;
 
-        /** Y-position. */
-        private Length y;
+        /**
+         * Returns link id.
+         * @return String; link id.
+         */
+        public String getLink()
+        {
+            return this.link;
+        }
 
-        /** Z-position. */
-        private Length z;
+        /**
+         * Returns the lane id.
+         * @return String; lane id.
+         */
+        public String getLane()
+        {
+            return this.lane;
+        }
 
         /**
          * Returns the x-position.
@@ -171,31 +203,12 @@ public class Commands
             return this.x;
         }
 
-        /**
-         * Returns the y-position.
-         * @return Length; y-position.
-         */
-        public Length getY()
-        {
-            return this.y;
-        }
-
-        /**
-         * Returns the z-position.
-         * @return Length; z-position.
-         */
-        public Length getZ()
-        {
-            return this.z;
-        }
-
         /** {@inheritDoc} */
         @Override
         public String toString()
         {
-            return "Position [x=" + x + ", y=" + y + ", z=" + z + "]";
+            return "LanePosition [link=" + this.link + ", lane=" + this.lane + ", x=" + this.x + "]";
         }
-
     }
 
     /**
@@ -213,13 +226,6 @@ public class Commands
         /** Data for the command. */
         private Map<String, String> data;
 
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "Command [time=" + time + ", type=" + type + ", data=" + data + "]";
-        }
-
         /**
          * Returns the time for the command.
          * @return Time; time for the command.
@@ -228,7 +234,7 @@ public class Commands
         {
             return this.time;
         }
-        
+
         /**
          * Returns the command type.
          * @return CommandType; command type.
@@ -249,38 +255,45 @@ public class Commands
             Throw.when(this.data == null || !this.data.containsKey(field), NoSuchFieldException.class, "No field %s.", field);
             return this.data.get(field);
         }
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString()
+        {
+            return "Command [time=" + this.time + ", type=" + this.type + ", data=" + this.data + "]";
+        }
     }
 
     /**
-     * Types of commands that can be given. 
+     * Types of commands that can be given.
      * @author wjschakel
      */
     public enum CommandType
     {
         /** Sets a parameter value (parameter/value). */
         SET_PARAMETER("setParameter"),
-        
+
         /** Sets desired speed (speed). */
         SET_DESIRED_SPEED("setDesiredSpeed"),
-        
+
         /** Resets the desired speed to regular operation. */
         RESET_DESIRED_SPEED("resetDesiredSpeed"),
-        
+
         /** Sets the acceleration. (acceleration). */
         SET_ACCELERATION("setAcceleration"),
-        
+
         /** Resets the acceleration to regular operation. */
         RESET_ACCELERATION("resetAcceleration"),
-        
+
         /** Disables lane changes. */
         DISABLE_LANE_CHANGES("disableLaneChanges"),
-        
+
         /** Resets the lane change behavior to regular operations. */
         ENABLE_LANE_CHANGES("enableLaneChanges"),
-        
+
         /** Initiates a lane change. */
         CHANGE_LANE("changeLane"),
-        
+
         /** Set indicator. */
         SET_INDICATOR("setIndicator");
 

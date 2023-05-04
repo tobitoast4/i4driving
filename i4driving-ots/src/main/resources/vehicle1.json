@@ -1,13 +1,14 @@
 {
     "gtuId": "1",
-    "generate": {
+    "generationInfo": {
         "time": "0 s",
         "initialSpeed": "49.3 km/h",
         "initialPosition": {
-            "x": "0.0 m",
-            "y": "0.0 m",
-            "z": "0.0 m"
+            "link": "AB",
+            "lane": "Lane 1",
+            "x": "0.0 m"
         },
+        "gtuType": "CAR",
         "destination": "D",
         "parameters": {
             "org.opentrafficsim.base.parameters.ParameterTypes.A": "1.6 m/s2",

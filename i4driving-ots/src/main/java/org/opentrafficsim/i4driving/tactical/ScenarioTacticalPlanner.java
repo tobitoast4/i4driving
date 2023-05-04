@@ -18,6 +18,7 @@ import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.core.geometry.DirectedPoint;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
+import org.opentrafficsim.core.gtu.TurnIndicatorIntent;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlan;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
@@ -50,6 +51,8 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
 import org.opentrafficsim.road.network.speed.SpeedLimitInfo;
 import org.opentrafficsim.road.network.speed.SpeedLimitProspect;
+
+import nl.tudelft.simulation.dsol.formalisms.eventscheduling.SimEvent;
 
 public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner implements DesireBased, Synchronizable, Blockable
 {
@@ -154,13 +157,23 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             // adjust lane based data in perception
         }
 
-        // set turn indicator
-        simplePlan.setTurnIndicator(getGtu());
-
         // check overrules
         if (this.acceleration != null)
         {
             simplePlan.setAcceleration(acceleration);
+        }
+        if (!this.laneChangesEnabled)
+        {
+            try
+            {
+                Field field = SimpleOperationalPlan.class.getDeclaredField("indicatorIntent");
+                field.setAccessible(true);
+                field.set(simplePlan, TurnIndicatorIntent.NONE);
+            }
+            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
         if (this.indicator != null && !this.indicator.isNone())
         {
@@ -178,6 +191,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             try
             {
                 Field field = SimpleOperationalPlan.class.getDeclaredField("laneChangeDirection");
+                field.setAccessible(true);
                 field.set(simplePlan, LateralDirectionality.NONE);
             }
             catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
@@ -190,6 +204,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             try
             {
                 Field field = SimpleOperationalPlan.class.getDeclaredField("laneChangeDirection");
+                field.setAccessible(true);
                 field.set(simplePlan, this.laneChangeDirection);
             }
             catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
@@ -198,6 +213,9 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             }
             this.laneChangeDirection = null; // trigger, not a state
         }
+        
+        // set turn indicator
+        simplePlan.setTurnIndicator(getGtu());
 
         // create plan
         return LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
@@ -300,6 +318,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         try
         {
             Field field = AbstractCarFollowingModel.class.getDeclaredField("desiredSpeedModel");
+            field.setAccessible(true);
             this.desiredSpeedModel = (DesiredSpeedModel) field.get(getCarFollowingModel());
         }
         catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
@@ -338,6 +357,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         try
         {
             Field field = AbstractCarFollowingModel.class.getDeclaredField("desiredSpeedModel");
+            field.setAccessible(true);
             field.set(getCarFollowingModel(), desiredSpeedModel);
         }
         catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
@@ -359,7 +379,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         try
         {
             int dot = parameter.lastIndexOf(".");
-            Class<?> clazz = Class.forName(value.substring(0, dot));
+            Class<?> clazz = Class.forName(parameter.substring(0, dot));
             Field field = clazz.getDeclaredField(parameter.substring(dot + 1, parameter.length()));
             parameterType = (ParameterType<?>) field.get(null);
         }
@@ -411,12 +431,19 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     {
         try
         {
-            Method method = Gtu.class.getDeclaredMethod("interruptMove");
-            method.setAccessible(true);
-            method.invoke(this.getGtu());
+            // there's a bug in interruptMove(), so need to perform its contents indirectly
+            Field field = Gtu.class.getDeclaredField("nextMoveEvent");
+            field.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            SimEvent<Duration> event = (SimEvent<Duration>) field.get(getGtu());
+            getGtu().getSimulator().cancelEvent(event);
+            
+            Method move = Gtu.class.getDeclaredMethod("move", DirectedPoint.class);
+            move.setAccessible(true);
+            move.invoke(getGtu(), getGtu().getLocation());
         }
         catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e)
+                | InvocationTargetException | NoSuchFieldException e)
         {
             throw new RuntimeException(e);
         }

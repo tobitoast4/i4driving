@@ -2,7 +2,6 @@ package org.opentrafficsim.i4driving;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Locale;
 
 import org.djunits.unit.SpeedUnit;
@@ -40,11 +39,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory
 import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
 import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModel;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationConflicts;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationSpeedLimitTransition;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationTrafficLights;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveQueue;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
@@ -57,7 +52,6 @@ import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerF
 import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.factory.LaneFactory;
-import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.swing.script.AbstractSimulationScript;
@@ -72,6 +66,9 @@ import nl.tudelft.simulation.jstats.streams.StreamInterface;
  */
 public class ScenarioCutIn extends AbstractSimulationScript
 {
+
+    /** */
+    private static final long serialVersionUID = 20230505L;
 
     /**
      * Constructor.
@@ -106,20 +103,20 @@ public class ScenarioCutIn extends AbstractSimulationScript
     {
         GtuType.registerTemplateSupplier(DefaultsNl.CAR, Defaults.NL);
         GtuType.registerTemplateSupplier(DefaultsNl.TRUCK, Defaults.NL);
-        
-        RoadNetwork network = new RoadNetwork("", sim);
 
+        // Network
+        RoadNetwork network = new RoadNetwork("Cut-in scenario network", sim);
         OtsPoint3d pointA = new OtsPoint3d(0.0, 0.0, 0.0);
         OtsPoint3d pointB = new OtsPoint3d(1000.0, 0.0, 0.0);
         Node nodeA = new Node(network, "A", pointA);
         Node nodeB = new Node(network, "B", pointB);
-
-        List<Lane> lanes = new LaneFactory(network, nodeA, nodeB, DefaultsNl.FREEWAY, sim, LaneKeepingPolicy.KEEPRIGHT,
+        new LaneFactory(network, nodeA, nodeB, DefaultsNl.FREEWAY, sim, LaneKeepingPolicy.KEEPRIGHT,
                 DefaultsNl.VEHICLE, new OtsLine3d(pointA, pointB))
                         .leftToRight(0.0, Length.instantiateSI(3.5), DefaultsRoadNl.FREEWAY,
                                 new Speed(130, SpeedUnit.KM_PER_HOUR))
                         .addLanes(Type.DASHED).getLanes();
 
+        // Model
         LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner> tacticalFactory =
                 new LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner>()
                 {
@@ -163,10 +160,15 @@ public class ScenarioCutIn extends AbstractSimulationScript
         LaneBasedStrategicalRoutePlannerFactory strategicalFactory =
                 new LaneBasedStrategicalRoutePlannerFactory(tacticalFactory, new ParameterFactoryDefault(), routeGenerator);
 
+        // Vehicle commands
         Gson gson = DefaultGsonBuilder.get();
-        Commands commands = gson.fromJson(Files.readString(Path.of("./src/main/resources/cutinVehicle1.json")), Commands.COMMANDS);
-        new CommandsHandler(network, commands, strategicalFactory);
-
+        for (int i = 1; i < 4; i++)
+        {
+            Commands commands = gson.fromJson(Files.readString(Path.of("./src/main/resources/cutinVehicle" + i + ".json")),
+                    Commands.COMMANDS);
+            new CommandsHandler(network, commands, strategicalFactory);
+        }
+        
         return network;
     }
 

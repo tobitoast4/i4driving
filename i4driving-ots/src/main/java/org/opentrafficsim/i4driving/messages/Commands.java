@@ -1,6 +1,7 @@
 package org.opentrafficsim.i4driving.messages;
 
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -148,7 +149,8 @@ public class Commands
          */
         public ImmutableMap<String, String> getParameters()
         {
-            return new ImmutableLinkedHashMap<>(this.parameters, Immutable.WRAP);
+            return new ImmutableLinkedHashMap<>(this.parameters == null ? Collections.emptyMap() : this.parameters,
+                    Immutable.WRAP);
         }
 
         /** {@inheritDoc} */

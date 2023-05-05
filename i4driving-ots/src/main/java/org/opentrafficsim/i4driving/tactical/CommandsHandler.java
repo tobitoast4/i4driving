@@ -19,30 +19,14 @@ import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
-import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
 import org.opentrafficsim.core.network.LateralDirectionality;
-import org.opentrafficsim.core.network.LinkWeight;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.i4driving.messages.Commands;
 import org.opentrafficsim.i4driving.messages.Commands.Command;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
-import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
-import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
-import org.opentrafficsim.road.gtu.lane.perception.categories.DirectInfrastructurePerception;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.DirectNeighborsPerception;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType;
-import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlanner;
-import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory;
-import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModel;
-import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.GapAcceptance;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlanner;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
-import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
@@ -52,7 +36,7 @@ import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 
 /**
- * This class is responsible for handling the commands that should be given to a GTU.
+ * This class is responsible for handling the commands that should be given to a GTU. One handler should be generated per GTU that should receive commands.
  * @author wjschakel
  */
 public class CommandsHandler
@@ -75,7 +59,7 @@ public class CommandsHandler
      * @param network RoadNetwork; network.
      * @param commands Commands; commands for a specific GTU.
      * @param strategicalFactory LaneBasedStrategicalRoutePlannerFactory; strategical planner, may be {@code null} if no
-     *            generation info is provided.
+     *            generation info is provided in the {@code Commands}.
      */
     public CommandsHandler(final RoadNetwork network, final Commands commands,
             final LaneBasedStrategicalRoutePlannerFactory strategicalFactory)
@@ -122,8 +106,9 @@ public class CommandsHandler
         GtuType gtuType = Defaults.getByName(GtuType.class, "NL." + this.commands.getGenerationInfo().getGtuType());
         StreamInterface randomStream = this.network.getSimulator().getModel().getStream("generation");
         GtuCharacteristics gtuCharacteristics = GtuType.defaultCharacteristics(gtuType, this.network, randomStream);
-        LaneBasedGtu gtu = new LaneBasedGtu(this.commands.getGtuId(), gtuType, gtuCharacteristics.getLength(), gtuCharacteristics.getWidth(),
-                gtuCharacteristics.getMaximumSpeed(), gtuCharacteristics.getFront(), this.network);
+        LaneBasedGtu gtu = new LaneBasedGtu(this.commands.getGtuId(), gtuType, gtuCharacteristics.getLength(),
+                gtuCharacteristics.getWidth(), gtuCharacteristics.getMaximumSpeed(), gtuCharacteristics.getFront(),
+                this.network);
         gtu.setMaximumAcceleration(gtuCharacteristics.getMaximumAcceleration());
         gtu.setMaximumDeceleration(gtuCharacteristics.getMaximumDeceleration());
         gtu.setNoLaneChangeDistance(Length.instantiateSI(1.0));
@@ -145,6 +130,10 @@ public class CommandsHandler
         Throw.when(lane == null, NoSuchElementException.class, "Lane %s is not present in link %s.", laneId, linkId);
         Set<LanePosition> position = Set.of(new LanePosition(lane, x));
 
+        // strategical planner (also sets default parameters)
+        Node destination = this.network.getNode(this.commands.getGenerationInfo().getDestination());
+        LaneBasedStrategicalRoutePlanner strategicalPlanner = this.strategicalFactory.create(gtu, null, null, destination);
+        
         // parameters
         for (ImmutableEntry<String, String> paramEntry : this.commands.getGenerationInfo().getParameters().entrySet())
         {
@@ -154,33 +143,30 @@ public class CommandsHandler
             Class<?> clazz = Class.forName(paramClass);
             Field field = clazz.getDeclaredField(paramField);
             ParameterType<?> parameterType = (ParameterType<?>) field.get(null);
-            if (parameterType.getClass().equals(Acceleration.class))
+            if (parameterType.getValueClass().equals(Acceleration.class))
             {
                 gtu.getParameters().setParameter((ParameterType<Acceleration>) parameterType,
                         Acceleration.valueOf(paramEntry.getValue()));
             }
-            else if (parameterType.getClass().equals(Duration.class))
+            else if (parameterType.getValueClass().equals(Duration.class))
             {
                 gtu.getParameters().setParameter((ParameterType<Duration>) parameterType,
                         Duration.valueOf(paramEntry.getValue()));
             }
-            else if (parameterType.getClass().equals(Length.class))
+            else if (parameterType.getValueClass().equals(Length.class))
             {
                 gtu.getParameters().setParameter((ParameterType<Length>) parameterType, Length.valueOf(paramEntry.getValue()));
             }
-            else if (parameterType.getClass().equals(Speed.class))
+            else if (parameterType.getValueClass().equals(Speed.class))
             {
                 gtu.getParameters().setParameter((ParameterType<Speed>) parameterType, Speed.valueOf(paramEntry.getValue()));
             }
-            else if (parameterType.getClass().equals(Time.class))
+            else if (parameterType.getValueClass().equals(Time.class))
             {
                 gtu.getParameters().setParameter((ParameterType<Time>) parameterType, Time.valueOf(paramEntry.getValue()));
             }
         }
-
-        // model and initialization
-        Node destination = this.network.getNode(this.commands.getGenerationInfo().getDestination());
-        LaneBasedStrategicalRoutePlanner strategicalPlanner = this.strategicalFactory.create(gtu, null, null, destination);
+        
         gtu.init(strategicalPlanner, position, this.commands.getGenerationInfo().getInitialSpeed());
 
     }

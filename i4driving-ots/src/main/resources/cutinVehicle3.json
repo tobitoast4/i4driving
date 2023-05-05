@@ -1,0 +1,23 @@
+{
+    "gtuId": "3",
+    "generationInfo": {
+        "time": "0 s",
+        "initialSpeed": "100 km/h",
+        "initialPosition": {
+            "link": "AB",
+            "lane": "Lane 1",
+            "x": "70.0 m"
+        },
+        "gtuType": "CAR",
+        "destination": "B",
+        "parameters": {
+            "org.opentrafficsim.base.parameters.ParameterTypes.TMAX": "0.8 s"
+        }
+    },
+    "commands": [
+        {
+            "time": "0.0 s",
+            "type": "disableLaneChanges"
+        }
+    ]
+}

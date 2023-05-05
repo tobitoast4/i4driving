@@ -1,12 +1,12 @@
 {
-    "gtuId": "1",
+    "gtuId": "2",
     "generationInfo": {
         "time": "0 s",
         "initialSpeed": "100 km/h",
         "initialPosition": {
             "link": "AB",
-            "lane": "Lane 1",
-            "x": "100.0 m"
+            "lane": "Lane 2",
+            "x": "80.0 m"
         },
         "gtuType": "CAR",
         "destination": "B"
@@ -24,10 +24,10 @@
             "type": "disableLaneChanges"
         },
         {
-            "time": "12.0 s",
-            "type": "setAcceleration",
+            "time": "6.0 s",
+            "type": "changeLane",
             "data": {
-                "acceleration": "-2.0 m/s2"
+                "direction": "LEFT"
             }
         }
     ]

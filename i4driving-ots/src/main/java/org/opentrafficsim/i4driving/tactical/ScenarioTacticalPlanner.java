@@ -54,6 +54,11 @@ import org.opentrafficsim.road.network.speed.SpeedLimitProspect;
 
 import nl.tudelft.simulation.dsol.formalisms.eventscheduling.SimEvent;
 
+/**
+ * Tactical planner that uses the LMRS, but overrides actions based on {@code Commands} typically invoked by a
+ * {@code CommandsHandler}. This class is similar to the {@code Lmrs} tactical planner.
+ * @author wjschakel
+ */
 public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner implements DesireBased, Synchronizable, Blockable
 {
 
@@ -212,8 +217,9 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
                 throw new RuntimeException(e);
             }
             this.laneChangeDirection = null; // trigger, not a state
+            this.laneChange.setDesiredLaneChangeDuration(getGtu().getParameters().getParameter(ParameterTypes.LCDUR));
         }
-        
+
         // set turn indicator
         simplePlan.setTurnIndicator(getGtu());
 
@@ -437,7 +443,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             @SuppressWarnings("unchecked")
             SimEvent<Duration> event = (SimEvent<Duration>) field.get(getGtu());
             getGtu().getSimulator().cancelEvent(event);
-            
+
             Method move = Gtu.class.getDeclaredMethod("move", DirectedPoint.class);
             move.setAccessible(true);
             move.invoke(getGtu(), getGtu().getLocation());

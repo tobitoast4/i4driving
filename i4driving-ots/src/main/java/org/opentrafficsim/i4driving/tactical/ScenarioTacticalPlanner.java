@@ -225,7 +225,6 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
         // create plan
         return LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
-
     }
 
     /** {@inheritDoc} */
@@ -321,11 +320,12 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void setDesiredSpeed(final Speed speed)
     {
+        clearCache();
         try
         {
-            Field field = AbstractCarFollowingModel.class.getDeclaredField("desiredSpeedModel");
-            field.setAccessible(true);
-            this.desiredSpeedModel = (DesiredSpeedModel) field.get(getCarFollowingModel());
+            Field modelField = AbstractCarFollowingModel.class.getDeclaredField("desiredSpeedModel");
+            modelField.setAccessible(true);
+            this.desiredSpeedModel = (DesiredSpeedModel) modelField.get(getCarFollowingModel());
         }
         catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
         {
@@ -350,8 +350,32 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     {
         Throw.when(this.desiredSpeedModel == null, IllegalStateException.class,
                 "Attempting to reset desired speed, but no desired speed was ever set.");
+        clearCache();
         setDesiredSpeedModel(this.desiredSpeedModel);
         interruptMove();
+    }
+
+    /**
+     * Clears the cache for desired speed and acceleration, so the set desired speed has effect even if a plan has been
+     * calculated at the same time.
+     */
+    private void clearCache()
+    {
+        try
+        {
+            // clear time of cached desired speed, so a new value will be calculated
+            Field speedCacheField = LaneBasedGtu.class.getDeclaredField("desiredSpeedTime");
+            speedCacheField.setAccessible(true);
+            speedCacheField.set(getGtu(), null);
+            // clear time of cached acceleration, so a new value will be calculated
+            Field accelerationCacheField = LaneBasedGtu.class.getDeclaredField("carFollowingAccelerationTime");
+            accelerationCacheField.setAccessible(true);
+            accelerationCacheField.set(getGtu(), null);
+        }
+        catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

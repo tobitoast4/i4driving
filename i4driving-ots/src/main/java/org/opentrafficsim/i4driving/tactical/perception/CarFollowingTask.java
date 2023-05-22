@@ -20,13 +20,13 @@ public class CarFollowingTask extends AbstractTask
 {
 
     /** Car-following task parameter. */
-    static final ParameterTypeDuration HEXP = new ParameterTypeDuration("Hexp",
+    public static final ParameterTypeDuration HEXP = new ParameterTypeDuration("Hexp",
             "Exponential decay of car-following task by headway.", Duration.instantiateSI(4.0), NumericConstraint.POSITIVE);
 
     /**
      * Constructor.
      */
-    CarFollowingTask()
+    public CarFollowingTask()
     {
         super("car-following");
     }

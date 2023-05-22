@@ -17,11 +17,12 @@ public class JsonTest
     public void testGson() throws JsonSyntaxException, IOException
     {
         Locale.setDefault(Locale.US);
-        
+
         Gson gson = DefaultGsonBuilder.get();
-        Commands commands = gson.fromJson(Files.readString(Path.of("./src/main/resources/vehicle1.json")), Commands.COMMANDS);
+        Commands commands =
+                gson.fromJson(Files.readString(Path.of("./src/main/resources/vehicle1.json")), DefaultGsonBuilder.COMMANDS);
         System.out.println(gson.toJson(commands));
-        
+
     }
-    
+
 }

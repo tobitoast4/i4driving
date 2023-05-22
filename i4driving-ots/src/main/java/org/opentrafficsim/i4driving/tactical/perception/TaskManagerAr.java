@@ -22,11 +22,11 @@ public class TaskManagerAr implements TaskManager
 {
 
     /** Fraction of primary task that can be reduced by anticipation reliance. */
-    static final ParameterTypeDouble ALPHA = new ParameterTypeDouble("alpha",
+    public static final ParameterTypeDouble ALPHA = new ParameterTypeDouble("alpha",
             "Fraction of primary task that can be reduced by anticipation reliance.", 0.8, DualBound.UNITINTERVAL);
 
     /** Fraction of auxiliary tasks that can be reduced by anticipation reliance. */
-    static final ParameterTypeDouble BETA = new ParameterTypeDouble("beta",
+    public static final ParameterTypeDouble BETA = new ParameterTypeDouble("beta",
             "Fraction of auxiliary tasks that can be reduced by anticipation reliance.", 0.6, DualBound.UNITINTERVAL);
     
     /** Primary task id. */

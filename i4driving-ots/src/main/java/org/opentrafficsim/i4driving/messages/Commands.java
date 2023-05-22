@@ -24,11 +24,6 @@ import com.google.gson.reflect.TypeToken;
 public class Commands
 {
 
-    /** Type for GSON. */
-    public static Type COMMANDS = new TypeToken<Commands>()
-    {
-    }.getType();
-
     /** GTU id. */
     private String gtuId;
 

@@ -1,12 +1,17 @@
 package org.opentrafficsim.i4driving;
 
+import java.awt.Color;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 import org.djunits.unit.SpeedUnit;
+import org.djunits.value.vdouble.scalar.Acceleration;
+import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Frequency;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
@@ -22,6 +27,9 @@ import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterSet;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.Parameters;
+import org.opentrafficsim.core.animation.gtu.colorer.AccelerationGtuColorer;
+import org.opentrafficsim.core.animation.gtu.colorer.SpeedGtuColorer;
+import org.opentrafficsim.core.animation.gtu.colorer.SwitchableGtuColorer;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
@@ -33,12 +41,18 @@ import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
 import org.opentrafficsim.core.network.LinkWeight;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactoryDefault;
-import org.opentrafficsim.i4driving.messages.Commands;
 import org.opentrafficsim.i4driving.messages.DefaultGsonBuilder;
 import org.opentrafficsim.i4driving.tactical.CommandsHandler;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
+import org.opentrafficsim.i4driving.tactical.perception.CarFollowingTask;
+import org.opentrafficsim.i4driving.tactical.perception.LaneChangeTask;
+import org.opentrafficsim.i4driving.tactical.perception.TaskManagerAr;
 import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
+import org.opentrafficsim.road.gtu.colorer.FixedColor;
+import org.opentrafficsim.road.gtu.colorer.ReactionTimeColorer;
+import org.opentrafficsim.road.gtu.colorer.TaskColorer;
+import org.opentrafficsim.road.gtu.colorer.TaskSaturationColorer;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
@@ -46,13 +60,23 @@ import org.opentrafficsim.road.gtu.lane.perception.categories.AnticipationTraffi
 import org.opentrafficsim.road.gtu.lane.perception.categories.DirectInfrastructurePerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.DirectNeighborsPerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
+import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
+import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller.BehavioralAdaptation;
+import org.opentrafficsim.road.gtu.lane.perception.mental.Task;
+import org.opentrafficsim.road.gtu.lane.perception.mental.TaskManager;
+import org.opentrafficsim.road.gtu.lane.perception.mental.TaskManager.SummativeTaskManager;
 import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
 import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModel;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSocioSpeed;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.SocioDesiredSpeed;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.GapAcceptance;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
@@ -96,17 +120,22 @@ public class ScenarioCutIn extends AbstractSimulationScript
     /** */
     private static final long serialVersionUID = 20230505L;
 
+    /** Settings file; an alternative to setting command line arguments. */
+    @Option(names = {"--settings"}, description = "JSON input file for settings",
+            defaultValue = "./src/main/resources/cutinSettings.json")
+    private String settings;
+
     /** JSON input file for vehicle 1. */
     @Option(names = {"--inputVehicle1"}, description = "JSON input file for vehicle 1",
             defaultValue = "./src/main/resources/cutinVehicle1.json")
     private String inputVehicle1;
 
-    /** JSON input file for vehicle 1. */
+    /** JSON input file for vehicle 2. */
     @Option(names = {"--inputVehicle2"}, description = "JSON input file for vehicle 2",
             defaultValue = "./src/main/resources/cutinVehicle2.json")
     private String inputVehicle2;
 
-    /** JSON input file for vehicle 1. */
+    /** JSON input file for vehicle 3. */
     @Option(names = {"--inputVehicle3"}, description = "JSON input file for vehicle 3",
             defaultValue = "./src/main/resources/cutinVehicle3.json")
     private String inputVehicle3;
@@ -120,6 +149,63 @@ public class ScenarioCutIn extends AbstractSimulationScript
     @Option(names = {"--outputValuesFile"}, description = "Trajectory output file", defaultValue = "outputValues.csv")
     private String outputValuesFile;
 
+    /** Apply full Fuller and overwrite all other mental settings. */
+    @Option(names = {"--fullFuller"}, description = "Apply full Fuller", negatable = true, defaultValue = "true")
+    private boolean fullFuller = true;
+
+    /** Apply Fuller. */
+    @Option(names = {"--fuller"}, description = "Apply Fuller", negatable = true, defaultValue = "true")
+    private boolean fuller = true;
+
+    /** Include car-following task demand in Fuller. */
+    @Option(names = {"--carFollowingTask"}, description = "Include car-following task.", negatable = true,
+            defaultValue = "true")
+    private boolean carFollowingTask = true;
+
+    /** Include lane change task demand in Fuller. */
+    @Option(names = {"--laneChangeTask"}, description = "Include lane change task.", negatable = true, defaultValue = "true")
+    private boolean laneChangeTask = true;
+
+    /** Set lane change task as primary in Fuller. */
+    @Option(names = {"--laneChangeIsPrimary"}, description = "Set lane change task as primary.", negatable = true,
+            defaultValue = "true")
+    private boolean laneChangeIsPrimary = true;
+
+    /** Apply anticipation reliance in Fuller. */
+    @Option(names = {"--anticipationReliance"}, description = "Apply anticipation reliance in Fuller.", negatable = true,
+            defaultValue = "true")
+    private boolean anticipationReliance = true;
+
+    /** Adapt headway in Fuller. */
+    @Option(names = {"--adaptHeadway"}, description = "Adapt headway in Fuller.", negatable = true, defaultValue = "true")
+    private boolean adaptHeadway = true;
+
+    /** Adapt speed in Fuller. */
+    @Option(names = {"--adaptSpeed"}, description = "Adapt speed in Fuller.", negatable = true, defaultValue = "true")
+    private boolean adaptSpeed = true;
+
+    /** Apply full social interactions and overwrite all other social settings. */
+    @Option(names = {"--fullSocio"}, description = "Apply full social model.", negatable = true, defaultValue = "true")
+    private boolean fullSocio = true;
+
+    /** Apply social interactions. */
+    @Option(names = {"--socio"}, description = "Apply social model.", negatable = true, defaultValue = "true")
+    private boolean socio = true;
+
+    /** Apply tailgating in social interactions. */
+    @Option(names = {"--tailgating"}, description = "Apply tailgating.", negatable = true, defaultValue = "true")
+    private boolean tailgating = true;
+
+    /** Apply lane change incentive in social interactions. */
+    @Option(names = {"--socioLaneChangeIncentive"}, description = "Apply social lane change incentive.", negatable = true,
+            defaultValue = "true")
+    private boolean socioLaneChangeIncentive = true;
+
+    /** Apply desired speed in social interactions. */
+    @Option(names = {"--socioDesiredSpeed"}, description = "Apply social desired speed.", negatable = true,
+            defaultValue = "true")
+    private boolean socioDesiredSpeed = true;
+
     /** Sampler. */
     private RoadSampler sampler;
 
@@ -129,6 +215,12 @@ public class ScenarioCutIn extends AbstractSimulationScript
     protected ScenarioCutIn()
     {
         super("Cut-in scenario", "Cut-in scenario with three vehicles on a freeway");
+        setGtuColorer(SwitchableGtuColorer.builder().addActiveColorer(new FixedColor(Color.BLUE, "Blue"))
+                .addColorer(new TaskColorer("car-following")).addColorer(new TaskColorer("lane-changing"))
+                .addColorer(new TaskSaturationColorer()).addColorer(new ReactionTimeColorer(Duration.instantiateSI(1.0)))
+                .addColorer(new SpeedGtuColorer(new Speed(150, SpeedUnit.KM_PER_HOUR)))
+                .addColorer(new AccelerationGtuColorer(Acceleration.instantiateSI(-6.0), Acceleration.instantiateSI(2)))
+                .build());
     }
 
     /**
@@ -143,6 +235,27 @@ public class ScenarioCutIn extends AbstractSimulationScript
         {
             CliUtil.changeOptionDefault(demo, "simulationTime", "60s");
             CliUtil.execute(demo, args);
+
+            Gson gson = DefaultGsonBuilder.get();
+            Settings settings;
+            try
+            {
+                settings = gson.fromJson(Files.readString(Path.of(demo.settings)), DefaultGsonBuilder.SETTINGS);
+            }
+            catch (IOException exception)
+            {
+                try
+                {
+                    settings = gson.fromJson(Files.readString(Path.of(demo.settings)), DefaultGsonBuilder.SETTINGS);
+                }
+                catch (IOException exceptionInner)
+                {
+                    throw new IOException("Please provide at the least a 'settings.json' file next to the executable jar file.",
+                            exceptionInner);
+                }
+            }
+            CliUtil.execute(demo, settings.getArguments());
+
             demo.start();
         }
         catch (Exception ex)
@@ -187,6 +300,39 @@ public class ScenarioCutIn extends AbstractSimulationScript
                         parameters.setDefaultParameter(ParameterTypes.LOOKAHEAD);
                         parameters.setDefaultParameter(ParameterTypes.VCONG);
                         parameters.setDefaultParameter(ParameterTypes.LCDUR);
+                        if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.fuller)
+                        {
+                            parameters.setDefaultParameter(Fuller.TC);
+                            parameters.setDefaultParameter(Fuller.TS);
+                            parameters.setDefaultParameter(Fuller.TS_CRIT);
+                            parameters.setDefaultParameter(Fuller.TS_MAX);
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.carFollowingTask)
+                            {
+                                parameters.setDefaultParameter(CarFollowingTask.HEXP);
+                            }
+                            parameters.setDefaultParameter(AdaptationSituationalAwareness.SA);
+                            parameters.setDefaultParameter(AdaptationSituationalAwareness.SA_MIN);
+                            parameters.setDefaultParameter(AdaptationSituationalAwareness.SA_MAX);
+                            parameters.setDefaultParameter(AdaptationSituationalAwareness.TR_MAX);
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.adaptHeadway)
+                            {
+                                parameters.setDefaultParameter(AdaptationHeadway.BETA_T);
+                            }
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.adaptSpeed)
+                            {
+                                parameters.setDefaultParameter(AdaptationSpeed.BETA_V0);
+                            }
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.anticipationReliance)
+                            {
+                                parameters.setDefaultParameter(TaskManagerAr.ALPHA);
+                                parameters.setDefaultParameter(TaskManagerAr.BETA);
+                            }
+                        }
+                        if (ScenarioCutIn.this.fullSocio || ScenarioCutIn.this.socio)
+                        {
+                            parameters.setDefaultParameter(Tailgating.RHO);
+                            parameters.setDefaultParameter(LmrsParameters.SOCIO);
+                        }
                         return parameters;
                     }
 
@@ -194,18 +340,58 @@ public class ScenarioCutIn extends AbstractSimulationScript
                     @Override
                     public ScenarioTacticalPlanner create(final LaneBasedGtu gtu) throws GtuException
                     {
-                        CarFollowingModel idm = new IdmPlus();
-                        LanePerception lanePerception = new CategoricalLanePerception(gtu);
+                        CarFollowingModel idm = (ScenarioCutIn.this.fullSocio
+                                || (ScenarioCutIn.this.socio && ScenarioCutIn.this.socioDesiredSpeed))
+                                        ? new IdmPlus(AbstractIdm.HEADWAY, new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED))
+                                        : new IdmPlus();
+
+                        Fuller mental = null;
+                        if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.fuller)
+                        {
+                            Set<Task> tasks = new LinkedHashSet<>();
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.carFollowingTask)
+                            {
+                                tasks.add(new CarFollowingTask());
+                            }
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.laneChangeTask)
+                            {
+                                tasks.add(new LaneChangeTask());
+                            }
+                            Set<BehavioralAdaptation> behavioralAdapatations = new LinkedHashSet<>();
+                            behavioralAdapatations.add(new AdaptationSituationalAwareness());
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.adaptHeadway)
+                            {
+                                behavioralAdapatations.add(new AdaptationHeadway());
+                            }
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.adaptSpeed)
+                            {
+                                behavioralAdapatations.add(new AdaptationSpeed());
+                            }
+                            String primaryTask = ScenarioCutIn.this.laneChangeIsPrimary ? "lane-changing" : "car-following";
+                            TaskManager taskManager = (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.anticipationReliance)
+                                    ? new TaskManagerAr(primaryTask) : new SummativeTaskManager();
+                            mental = new Fuller(tasks, behavioralAdapatations, taskManager);
+                        }
+
+                        LanePerception lanePerception = new CategoricalLanePerception(gtu, mental);
                         lanePerception.addPerceptionCategory(new DirectEgoPerception<>(lanePerception));
                         lanePerception.addPerceptionCategory(new AnticipationTrafficPerception(lanePerception));
                         lanePerception.addPerceptionCategory(new DirectInfrastructurePerception(lanePerception));
                         lanePerception
                                 .addPerceptionCategory(new DirectNeighborsPerception(lanePerception, HeadwayGtuType.WRAP));
+                        Tailgating tail =
+                                (ScenarioCutIn.this.fullSocio || (ScenarioCutIn.this.socio && ScenarioCutIn.this.tailgating))
+                                        ? Tailgating.PRESSURE : Tailgating.NONE;
                         ScenarioTacticalPlanner tacticalPlanner = new ScenarioTacticalPlanner(idm, gtu, lanePerception,
-                                Synchronization.PASSIVE, Cooperation.PASSIVE, GapAcceptance.INFORMED, Tailgating.NONE);
+                                Synchronization.PASSIVE, Cooperation.PASSIVE, GapAcceptance.INFORMED, tail);
                         tacticalPlanner.addMandatoryIncentive(new IncentiveRoute());
                         tacticalPlanner.addVoluntaryIncentive(new IncentiveSpeedWithCourtesy());
                         tacticalPlanner.addVoluntaryIncentive(new IncentiveKeep());
+                        if (ScenarioCutIn.this.fullSocio
+                                || (ScenarioCutIn.this.socio && ScenarioCutIn.this.socioLaneChangeIncentive))
+                        {
+                            tacticalPlanner.addVoluntaryIncentive(new IncentiveSocioSpeed());
+                        }
                         return tacticalPlanner;
                     }
                 };
@@ -216,11 +402,11 @@ public class ScenarioCutIn extends AbstractSimulationScript
 
         // Vehicle commands
         Gson gson = DefaultGsonBuilder.get();
-        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle1)), Commands.COMMANDS),
+        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle1)), DefaultGsonBuilder.COMMANDS),
                 strategicalFactory);
-        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle2)), Commands.COMMANDS),
+        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle2)), DefaultGsonBuilder.COMMANDS),
                 strategicalFactory);
-        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle3)), Commands.COMMANDS),
+        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle3)), DefaultGsonBuilder.COMMANDS),
                 strategicalFactory);
 
         // Sampler

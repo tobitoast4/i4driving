@@ -1,8 +1,8 @@
 # Cut in scenario manual
 
 ## Compiling and executing
-Compile a runnable .jar file that will run the main class org.opentrafficsim.i4driving.ScenarioCutIn. In Eclipse this can be 
-done by following File > Export... and following the further instructions. To run the simulation invoke the command: 
+Compile a runnable .jar file that will run the main class `org.opentrafficsim.i4driving.ScenarioCutIn`. In Eclipse 
+this can be done by following File > Export... and following further instructions. To run the simulation invoke the command: 
 `java -jar NameOfFile.jar`. Java 11 is required for this. If this is not available on the computer, a JRE can be placed 
 next to the runnable .jar file, and the `java` command can point to the java executable in that JRE as follows: 
 `jre-11\bin\java -jar NameOfFile.jar`.
@@ -45,7 +45,7 @@ the names need to be preceded with "`--`".
   <tr><td>seed</td><td>1</td><td>Random seed value.</td></tr>
   <tr><td>simulationTime</td><td>60s</td><td>Total simulation time.</td></tr>
   <tr><td colspan="3"><i>Input and output files</i></td></tr>
-  <tr><td>settings</td><td>settings.json</td><td>File containing any other settings.</td></tr>
+  <tr><td>settings</td><td>cutinSettings.json</td><td>File containing any other settings.</td></tr>
   <tr><td>inputVehicle1</td><td>cutinVehicle1.json</td><td>File containing instructions for vehicle 1.</td></tr>
   <tr><td>inputVehicle2</td><td>cutinVehicle2.json</td><td>File containing instructions for vehicle 2.</td></tr>
   <tr><td>inputVehicle3</td><td>cutinVehicle3.json</td><td>File containing instructions for vehicle 3.</td></tr>
@@ -56,9 +56,9 @@ the names need to be preceded with "`--`".
   <tr><td>fuller</td><td>true</td><td>Implements imperfect perception.</td></tr>
   <tr><td>carFollowingTask</td><td>true</td><td>Implements task demand from car-following.</td></tr>
   <tr><td>laneChangeTask</td><td>true</td><td>Implements task demand from lane changing.</td></tr>
-  <tr><td>laneChangeIsPrimary</td><td>true</td><td>Sets lane change as primary for anticipation reliance, meaning anticipation 
-    is relied upon for car-following. When false, car-following is primary.</td></tr>
-  <tr><td>anticipationReliance</td><td>true</td><td>Enables anticipation reliance, which lowers peak demands that would result 
+  <tr><td>laneChangeIsPrimary</td><td>true</td><td>Sets the lane change task as primary for anticipation reliance, meaning 
+    anticipation is relied upon for car-following. When false, car-following is primary.</td></tr>
+  <tr><td>anticipationReliance</td><td>true</td><td>Enables anticipation reliance, which lowers peak demand that would result 
     from simple task demand summation.</td></tr>
   <tr><td>adaptHeadway</td><td>true</td><td>Headway is increased when task saturation is high.</td></tr>
   <tr><td>adaptSpeed</td><td>true</td><td>Speed is lowered when task saturation is high.</td></tr>
@@ -73,7 +73,7 @@ the names need to be preceded with "`--`".
 </table>
 
 ### Vehicle control
-There are 3 input file for vehicles. Please refer to the java resources folder for examples of these files. In particular the
+There are 3 input files for vehicles. Please refer to the java resources folder for examples of these files. In particular the
 file `vehicle1.json` shows all commands that can be given, such as setting the desired speed, or initiating a lane change.
 All these commands overwrite the normal model, for as long as the command remains active. For example, you can set, but also 
 reset, the desired speed. Or you can temporarily disable lane changes. Note that a command to change lane from an input file is 
@@ -83,4 +83,4 @@ perform.
 ### Parameters
 In the vehicle input files, parameters can be set at vehicle generation, or at some time during the scenario. The full path to a
 parameter needs to be provided, e.g. `org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters.SOCIO`.
-For a complete list, please refer to the excel file of OTS parameter as provided within the project.
+For a complete list, please refer to the excel file of OTS parameters as provided within the project.

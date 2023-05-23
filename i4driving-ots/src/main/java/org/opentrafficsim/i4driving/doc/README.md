@@ -1,4 +1,4 @@
-# Cut in scenario manual
+# Cut-in scenario manual
 
 ## Compiling and executing
 Compile a runnable .jar file that will run the main class `org.opentrafficsim.i4driving.ScenarioCutIn`. In Eclipse 

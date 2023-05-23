@@ -39,19 +39,19 @@ These settings are available as command line arguments and as settings in a sett
 the names need to be preceded with "`--`".
 <table>
   <tr><td><b>Argument</b></td><td><b>Default</b></td><td><b>Description</b></td></tr>
-  <tr><td colspan="3" bgcolor="#DDDDDD"><i>Simulation</i></td></tr>
+  <tr><td colspan="3"><i>Simulation</i></td></tr>
   <tr><td>autorun</td><td>false</td><td>When false, a GUI is shown in to which the play button must be pressed to run the 
     simulation. When true, the simulation runs automatically without GUI.</td></tr>
   <tr><td>seed</td><td>1</td><td>Random seed value.</td></tr>
   <tr><td>simulationTime</td><td>60s</td><td>Total simulation time.</td></tr>
-  <tr><td colspan="3" bgcolor="#DDDDDD"><i>Input and output files</i></td></tr>
+  <tr><td colspan="3"><i>Input and output files</i></td></tr>
   <tr><td>settings</td><td>settings.json</td><td>File containing any other settings.</td></tr>
   <tr><td>inputVehicle1</td><td>cutinVehicle1.json</td><td>File containing instructions for vehicle 1.</td></tr>
   <tr><td>inputVehicle2</td><td>cutinVehicle2.json</td><td>File containing instructions for vehicle 2.</td></tr>
   <tr><td>inputVehicle3</td><td>cutinVehicle3.json</td><td>File containing instructions for vehicle 3.</td></tr>
   <tr><td>outputTrajectoriesFile</td><td>outputTrajectories.csv</td><td>File for output trajectories.</td></tr>
   <tr><td>outputValuesFile</td><td>outputValues.csv</td><td>File containing output values such as max deceleration.</td></tr>
-  <tr><td colspan="3" bgcolor="#DDDDDD"><i>Imperfect perception</i></td></tr>
+  <tr><td colspan="3"><i>Imperfect perception</i></td></tr>
   <tr><td>fullFuller</td><td>true</td><td>Implements imperfect perception. Overwrites all perception settings to true.</td></tr>
   <tr><td>fuller</td><td>true</td><td>Implements imperfect perception.</td></tr>
   <tr><td>carFollowingTask</td><td>true</td><td>Implements task demand from car-following.</td></tr>
@@ -63,7 +63,7 @@ the names need to be preceded with "`--`".
   <tr><td>adaptHeadway</td><td>true</td><td>Headway is increased when task saturation is high.</td></tr>
   <tr><td>adaptSpeed</td><td>true</td><td>Speed is lowered when task saturation is high.</td></tr>
   <tr><td>multiAnticipation</td><td>true</td><td>Anticipate multiple leaders in car-following.</td></tr>
-  <tr><td colspan="3" bgcolor="#DDDDDD"><i>Social interactions</i></td></tr>
+  <tr><td colspan="3"><i>Social interactions</i></td></tr>
   <tr><td>fullSocio</td><td>true</td><td>Applies social interactions. Overwrites all socio settings to true.</td></tr>
   <tr><td>socio</td><td>true</td><td>Applies social interactions.</td></tr>
   <tr><td>tailgating</td><td>true</td><td>Implements tailgating to express social pressure.</td></tr>

@@ -40,6 +40,8 @@ import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsLine3d;
 import org.opentrafficsim.core.geometry.OtsPoint3d;
+import org.opentrafficsim.core.gtu.Gtu;
+import org.opentrafficsim.core.gtu.GtuErrorHandler;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
@@ -58,6 +60,8 @@ import org.opentrafficsim.road.gtu.colorer.FixedColor;
 import org.opentrafficsim.road.gtu.colorer.ReactionTimeColorer;
 import org.opentrafficsim.road.gtu.colorer.TaskColorer;
 import org.opentrafficsim.road.gtu.colorer.TaskSaturationColorer;
+import org.opentrafficsim.road.gtu.lane.CollisionDetector;
+import org.opentrafficsim.road.gtu.lane.CollisionException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
@@ -217,6 +221,9 @@ public class ScenarioCutIn extends AbstractSimulationScript
     /** Sampler. */
     private RoadSampler sampler;
 
+    /** Collision message saved in output. */
+    private String collision = "none";
+
     /**
      * Constructor.
      */
@@ -350,10 +357,34 @@ public class ScenarioCutIn extends AbstractSimulationScript
                         return parameters;
                     }
 
+                    GtuErrorHandler errorHandler = new GtuErrorHandler()
+                    {
+                        /** {@inheritDoc} */
+                        @Override
+                        public void handle(final Gtu gtu, final Exception ex) throws Exception
+                        {
+                            if (ex.getCause() instanceof CollisionException)
+                            {
+                                ScenarioCutIn.this.collision = ex.getCause().getMessage();
+                                System.out.println(ex.getCause().getMessage());
+                                gtu.getSimulator().endReplication();
+                                onSimulationEnd();
+                                System.exit(0);
+                            }
+                            else
+                            {
+                                throw ex;
+                            }
+                            
+                        }
+                    };
+                    
                     /** {@inheritDoc} */
                     @Override
                     public ScenarioTacticalPlanner create(final LaneBasedGtu gtu) throws GtuException
                     {
+                        gtu.setErrorHandler(errorHandler);
+                        
                         DesiredSpeedModel desiredSpeedModel = (ScenarioCutIn.this.fullSocio
                                 || (ScenarioCutIn.this.socio && ScenarioCutIn.this.socioDesiredSpeed))
                                         ? new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED) : AbstractIdm.DESIRED_SPEED;
@@ -434,6 +465,10 @@ public class ScenarioCutIn extends AbstractSimulationScript
             sampler.registerSpaceTimeRegion(new SpaceTimeRegion<LaneDataRoad>(new LaneDataRoad(lane), Length.ZERO,
                     lane.getLength(), getStartTime(), getStartTime().plus(getSimulationTime())));
         }
+        
+        // Collision detection
+        new CollisionDetector(network);
+        
         return network;
     }
 
@@ -476,6 +511,7 @@ public class ScenarioCutIn extends AbstractSimulationScript
                 }
             }
         }
+        table.addRow(new String[] {"collision", this.collision});
         table.addRow(new String[] {"maximum deceleration", maxDeceleration.neg().toString()});
         table.addRow(new String[] {"minimum time-to-collision", minTtc.toString()});
         Try.execute(() -> CsvData.writeData(this.outputValuesFile, this.outputValuesFile + ".header", table),

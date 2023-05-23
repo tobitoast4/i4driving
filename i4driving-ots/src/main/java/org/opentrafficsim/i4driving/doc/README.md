@@ -50,7 +50,8 @@ the names need to be preceded with "`--`".
   <tr><td>inputVehicle2</td><td>cutinVehicle2.json</td><td>File containing instructions for vehicle 2.</td></tr>
   <tr><td>inputVehicle3</td><td>cutinVehicle3.json</td><td>File containing instructions for vehicle 3.</td></tr>
   <tr><td>outputTrajectoriesFile</td><td>outputTrajectories.csv</td><td>File for output trajectories.</td></tr>
-  <tr><td>outputValuesFile</td><td>outputValues.csv</td><td>File containing output values such as max deceleration.</td></tr>
+  <tr><td>outputValuesFile</td><td>outputValues.csv</td><td>File containing output values such as max deceleration and collision 
+    detection.</td></tr>
   <tr><td colspan="3"><i>Imperfect perception</i></td></tr>
   <tr><td>fullFuller</td><td>true</td><td>Implements imperfect perception. Overwrites all perception settings to true.</td></tr>
   <tr><td>fuller</td><td>true</td><td>Implements imperfect perception.</td></tr>

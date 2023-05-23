@@ -1,9 +1,13 @@
 package org.opentrafficsim.i4driving;
 
 import java.awt.Color;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URISyntaxException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -23,6 +27,7 @@ import org.djutils.data.ListTable;
 import org.djutils.data.Row;
 import org.djutils.data.csv.CsvData;
 import org.djutils.exceptions.Try;
+import org.opentrafficsim.base.Resource;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterSet;
 import org.opentrafficsim.base.parameters.ParameterTypes;
@@ -71,7 +76,9 @@ import org.opentrafficsim.road.gtu.lane.perception.mental.TaskManager.SummativeT
 import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
 import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModel;
+import org.opentrafficsim.road.gtu.lane.tactical.following.DesiredSpeedModel;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
+import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusMulti;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSocioSpeed;
@@ -121,23 +128,19 @@ public class ScenarioCutIn extends AbstractSimulationScript
     private static final long serialVersionUID = 20230505L;
 
     /** Settings file; an alternative to setting command line arguments. */
-    @Option(names = {"--settings"}, description = "JSON input file for settings",
-            defaultValue = "./src/main/resources/cutinSettings.json")
+    @Option(names = {"--settings"}, description = "JSON input file for settings", defaultValue = "cutinSettings.json")
     private String settings;
 
     /** JSON input file for vehicle 1. */
-    @Option(names = {"--inputVehicle1"}, description = "JSON input file for vehicle 1",
-            defaultValue = "./src/main/resources/cutinVehicle1.json")
+    @Option(names = {"--inputVehicle1"}, description = "JSON input file for vehicle 1", defaultValue = "cutinVehicle1.json")
     private String inputVehicle1;
 
     /** JSON input file for vehicle 2. */
-    @Option(names = {"--inputVehicle2"}, description = "JSON input file for vehicle 2",
-            defaultValue = "./src/main/resources/cutinVehicle2.json")
+    @Option(names = {"--inputVehicle2"}, description = "JSON input file for vehicle 2", defaultValue = "cutinVehicle2.json")
     private String inputVehicle2;
 
     /** JSON input file for vehicle 3. */
-    @Option(names = {"--inputVehicle3"}, description = "JSON input file for vehicle 3",
-            defaultValue = "./src/main/resources/cutinVehicle3.json")
+    @Option(names = {"--inputVehicle3"}, description = "JSON input file for vehicle 3", defaultValue = "cutinVehicle3.json")
     private String inputVehicle3;
 
     /** Trajectory output file. */
@@ -184,6 +187,11 @@ public class ScenarioCutIn extends AbstractSimulationScript
     @Option(names = {"--adaptSpeed"}, description = "Adapt speed in Fuller.", negatable = true, defaultValue = "true")
     private boolean adaptSpeed = true;
 
+    /** Anticipate multiple leaders in car-following. */
+    @Option(names = {"--multiAnticipation"}, description = "Anticipate multiple leaders in car-following.", negatable = true,
+            defaultValue = "true")
+    private boolean multiAnticipation = true;
+
     /** Apply full social interactions and overwrite all other social settings. */
     @Option(names = {"--fullSocio"}, description = "Apply full social model.", negatable = true, defaultValue = "true")
     private boolean fullSocio = true;
@@ -226,8 +234,9 @@ public class ScenarioCutIn extends AbstractSimulationScript
     /**
      * Main program execution.
      * @param args String... command line arguments.
+     * @throws URISyntaxException
      */
-    public static void main(final String... args)
+    public static void main(final String... args) throws URISyntaxException
     {
         Locale.setDefault(Locale.US);
         ScenarioCutIn demo = new ScenarioCutIn();
@@ -240,27 +249,28 @@ public class ScenarioCutIn extends AbstractSimulationScript
             Settings settings;
             try
             {
-                settings = gson.fromJson(Files.readString(Path.of(demo.settings)), DefaultGsonBuilder.SETTINGS);
+                settings = gson.fromJson(getReader("settings.json"), DefaultGsonBuilder.SETTINGS);
+                System.out.println("Reading settings from \"settings.json\"");
             }
-            catch (IOException exception)
+            catch (RuntimeException exception)
             {
                 try
                 {
-                    settings = gson.fromJson(Files.readString(Path.of(demo.settings)), DefaultGsonBuilder.SETTINGS);
+                    settings = gson.fromJson(getReader(demo.settings), DefaultGsonBuilder.SETTINGS);
+                    System.out.println("Reading settings from \"" + demo.settings + "\"");
                 }
-                catch (IOException exceptionInner)
+                catch (RuntimeException exceptionInner)
                 {
-                    throw new IOException("Please provide at the least a 'settings.json' file next to the executable jar file.",
-                            exceptionInner);
+                    throw new IOException("Unable to read file " + demo.settings, exceptionInner);
                 }
             }
             CliUtil.execute(demo, settings.getArguments());
-
             demo.start();
         }
         catch (Exception ex)
         {
             ex.printStackTrace();
+            System.exit(0);
         }
     }
 
@@ -322,6 +332,10 @@ public class ScenarioCutIn extends AbstractSimulationScript
                             {
                                 parameters.setDefaultParameter(AdaptationSpeed.BETA_V0);
                             }
+                            if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.multiAnticipation)
+                            {
+                                parameters.setDefaultParameter(IdmPlusMulti.NLEADERS);
+                            }
                             if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.anticipationReliance)
                             {
                                 parameters.setDefaultParameter(TaskManagerAr.ALPHA);
@@ -340,10 +354,13 @@ public class ScenarioCutIn extends AbstractSimulationScript
                     @Override
                     public ScenarioTacticalPlanner create(final LaneBasedGtu gtu) throws GtuException
                     {
-                        CarFollowingModel idm = (ScenarioCutIn.this.fullSocio
+                        DesiredSpeedModel desiredSpeedModel = (ScenarioCutIn.this.fullSocio
                                 || (ScenarioCutIn.this.socio && ScenarioCutIn.this.socioDesiredSpeed))
-                                        ? new IdmPlus(AbstractIdm.HEADWAY, new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED))
-                                        : new IdmPlus();
+                                        ? new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED) : AbstractIdm.DESIRED_SPEED;
+
+                        CarFollowingModel idm =
+                                ScenarioCutIn.this.multiAnticipation ? new IdmPlusMulti(AbstractIdm.HEADWAY, desiredSpeedModel)
+                                        : new IdmPlus(AbstractIdm.HEADWAY, desiredSpeedModel);
 
                         Fuller mental = null;
                         if (ScenarioCutIn.this.fullFuller || ScenarioCutIn.this.fuller)
@@ -402,11 +419,11 @@ public class ScenarioCutIn extends AbstractSimulationScript
 
         // Vehicle commands
         Gson gson = DefaultGsonBuilder.get();
-        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle1)), DefaultGsonBuilder.COMMANDS),
+        new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle1), DefaultGsonBuilder.COMMANDS),
                 strategicalFactory);
-        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle2)), DefaultGsonBuilder.COMMANDS),
+        new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle2), DefaultGsonBuilder.COMMANDS),
                 strategicalFactory);
-        new CommandsHandler(network, gson.fromJson(Files.readString(Path.of(this.inputVehicle3)), DefaultGsonBuilder.COMMANDS),
+        new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle3), DefaultGsonBuilder.COMMANDS),
                 strategicalFactory);
 
         // Sampler
@@ -418,6 +435,21 @@ public class ScenarioCutIn extends AbstractSimulationScript
                     lane.getLength(), getStartTime(), getStartTime().plus(getSimulationTime())));
         }
         return network;
+    }
+
+    /**
+     * Returns a reader for GSON to read a file.
+     * @param file String; file name.
+     * @return Reader for GSON to read a file.
+     */
+    private final static Reader getReader(final String file)
+    {
+        File f = new File(file);
+        if (f.exists())
+        {
+            return Try.assign(() -> new BufferedReader(new InputStreamReader(new FileInputStream(f))), "Cannot happen.");
+        }
+        return new BufferedReader(new InputStreamReader(Resource.getResourceAsStream("/" + file)));
     }
 
     /** {@inheritDoc} */

@@ -1,11 +1,11 @@
 # Cut-in scenario manual
 
 ## Compiling and executing
-Compile a runnable .jar file that will run the main class `org.opentrafficsim.i4driving.ScenarioCutIn`. In Eclipse 
-this can be done by following File > Export... and following further instructions. To run the simulation invoke the command: 
-`java -jar NameOfFile.jar`. Java 11 is required for this. If this is not available on the computer, a JRE can be placed 
-next to the runnable .jar file, and the `java` command can point to the java executable in that JRE as follows: 
-`jre-11\bin\java -jar NameOfFile.jar`.
+Compile a runnable .jar file that will run the main class `org.opentrafficsim.i4driving.ScenarioCutIn`. It is intended 
+this is done with JDK 11. In Eclipse this can be done by following File > Export... and following further instructions. To run 
+the simulation invoke the command: `java -jar NameOfFile.jar`. Java 11 is required for this. If this is not available on 
+the computer, a JRE can be placed next to the runnable .jar file, and the `java` command can point to the java executable in 
+that JRE as follows: `jre-11\bin\java -jar NameOfFile.jar`.
 
 ## Input
 ### Command line arguments and settings file

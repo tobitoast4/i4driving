@@ -39,7 +39,7 @@
             "time": "2.0 s",
             "type": "setAcceleration",
             "data": {
-                "acceleration": "-3.2 m/s"
+                "acceleration": "-3.2 m/s2"
             }
         },
         {

@@ -112,17 +112,7 @@ import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import picocli.CommandLine.Option;
 
 /**
- * Cut-in scenario with three vehicles on a freeway. Command line arguments, with as example the default values, are:
- * <ul>
- * <li>--inputVehicle1="./src/main/resources/cutinVehicle1.json"</li>
- * <li>--inputVehicle2="./src/main/resources/cutinVehicle2.json"</li>
- * <li>--inputVehicle3="./src/main/resources/cutinVehicle3.json"</li>
- * <li>--outputTrajectoriesFile="outputTrajectories.csv"</li>
- * <li>--outputValuesFile="outputValues.csv"</li>
- * <li>--autorun="false" (shows GUI when false)</li>
- * <li>--simulationTime="60s"</li>
- * <li>--seed="1"</li>
- * </ul>
+ * Cut-in scenario with three vehicles on a freeway. For usage and available argument, please refer to the doc folder.
  * @author wjschakel
  */
 public class ScenarioCutIn extends AbstractSimulationScript
@@ -304,6 +294,28 @@ public class ScenarioCutIn extends AbstractSimulationScript
         LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner> tacticalFactory =
                 new LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner>()
                 {
+                    /** GTU error handler for collisions. */
+                    private GtuErrorHandler errorHandler = new GtuErrorHandler()
+                    {
+                        /** {@inheritDoc} */
+                        @Override
+                        public void handle(final Gtu gtu, final Exception ex) throws Exception
+                        {
+                            if (ex.getCause() instanceof CollisionException)
+                            {
+                                ScenarioCutIn.this.collision = ex.getCause().getMessage();
+                                System.out.println(ex.getCause().getMessage());
+                                gtu.getSimulator().endReplication();
+                                onSimulationEnd();
+                                System.exit(0);
+                            }
+                            else
+                            {
+                                throw ex;
+                            }
+                        }
+                    };
+
                     /** {@inheritDoc} */
                     @Override
                     public Parameters getParameters() throws ParameterException
@@ -357,34 +369,12 @@ public class ScenarioCutIn extends AbstractSimulationScript
                         return parameters;
                     }
 
-                    GtuErrorHandler errorHandler = new GtuErrorHandler()
-                    {
-                        /** {@inheritDoc} */
-                        @Override
-                        public void handle(final Gtu gtu, final Exception ex) throws Exception
-                        {
-                            if (ex.getCause() instanceof CollisionException)
-                            {
-                                ScenarioCutIn.this.collision = ex.getCause().getMessage();
-                                System.out.println(ex.getCause().getMessage());
-                                gtu.getSimulator().endReplication();
-                                onSimulationEnd();
-                                System.exit(0);
-                            }
-                            else
-                            {
-                                throw ex;
-                            }
-                            
-                        }
-                    };
-                    
                     /** {@inheritDoc} */
                     @Override
                     public ScenarioTacticalPlanner create(final LaneBasedGtu gtu) throws GtuException
                     {
-                        gtu.setErrorHandler(errorHandler);
-                        
+                        gtu.setErrorHandler(this.errorHandler);
+
                         DesiredSpeedModel desiredSpeedModel = (ScenarioCutIn.this.fullSocio
                                 || (ScenarioCutIn.this.socio && ScenarioCutIn.this.socioDesiredSpeed))
                                         ? new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED) : AbstractIdm.DESIRED_SPEED;
@@ -465,10 +455,10 @@ public class ScenarioCutIn extends AbstractSimulationScript
             sampler.registerSpaceTimeRegion(new SpaceTimeRegion<LaneDataRoad>(new LaneDataRoad(lane), Length.ZERO,
                     lane.getLength(), getStartTime(), getStartTime().plus(getSimulationTime())));
         }
-        
+
         // Collision detection
         new CollisionDetector(network);
-        
+
         return network;
     }
 

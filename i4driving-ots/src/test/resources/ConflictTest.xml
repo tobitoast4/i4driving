@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ots:Ots xmlns:ots="http://www.opentrafficsim.org/ots" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ots:Definitions>
+    <ots:GtuTypes>
+      <ots:GtuType Id="NL.CAR" Default="true" />
+    </ots:GtuTypes>
+    <!-- ots:GtuTemplates>
+      <ots:GtuTemplate GtuType="CAR" Id="CAR">
+        <ots:LengthDist LengthUnit="m">
+          <ots:Constant C="4"/>
+        </ots:LengthDist>
+        <ots:WidthDist LengthUnit="m">
+          <ots:Constant C="1.7"/>
+        </ots:WidthDist>
+        <ots:MaxSpeedDist SpeedUnit="km/h">
+          <ots:Constant C="180"/>
+        </ots:MaxSpeedDist>
+      </ots:GtuTemplate>
+    </ots:GtuTemplates -->
+    <ots:LinkTypes>
+      <ots:LinkType Id="NL.ROAD">
+        <ots:Compatibility GtuType="NL.CAR" />
+        <ots:SpeedLimit GtuType="NL.CAR" LegalSpeedLimit="50km/h" />
+      </ots:LinkType>
+    </ots:LinkTypes>
+    <ots:LaneTypes>
+      <ots:LaneType Id="NL.RURAL_ROAD" />
+    </ots:LaneTypes>
+    <!-- ots:DetectorTypes>
+      <ots:DetectorType Id="Sink">
+        <ots:Compatibility GtuType="CAR"/>
+      </ots:DetectorType>
+    </ots:DetectorTypes-->
+    <ots:RoadLayouts>
+      <ots:RoadLayout Id="Road" LinkType="NL.ROAD">
+        <ots:Lane Id="Lane" LaneType="NL.RURAL_ROAD">
+          <ots:Width>3.5m</ots:Width>
+        </ots:Lane>
+      </ots:RoadLayout>
+    </ots:RoadLayouts>
+  </ots:Definitions>
+  <ots:Network>
+    <ots:Node Coordinate="(200,0)" Direction="180deg(E)" Id="A"/>
+    <ots:Node Coordinate="(0,0)" Direction="180deg(E)" Id="B"/>
+    <ots:Link Id="A-B" NodeEnd="B" NodeStart="A" Type="NL.ROAD">
+      <ots:Straight/>
+      <ots:DefinedLayout>Road</ots:DefinedLayout>
+    </ots:Link>
+    <ots:Node Coordinate="(100,5)" Direction="270deg(E)" Id="C"/>
+    <ots:Node Coordinate="(100,-100)" Direction="270deg(E)" Id="D"/>
+    <ots:Link Id="C-D" NodeEnd="D" NodeStart="C" OffsetEnd="-1.75m" OffsetStart="-1.75m" Type="NL.ROAD">
+      <ots:Straight/>
+      <ots:DefinedLayout>Road</ots:DefinedLayout>
+    </ots:Link>
+    <ots:Node Coordinate="(100,-100)" Direction="90deg(E)" Id="E"/>
+    <ots:Node Coordinate="(100,5)" Direction="90deg(E)" Id="F"/>
+    <ots:Link Id="E-F" NodeEnd="F" NodeStart="E" OffsetEnd="-1.75m" OffsetStart="-1.75m" Type="NL.ROAD">
+      <ots:Straight/>
+      <ots:DefinedLayout>Road</ots:DefinedLayout>
+    </ots:Link>
+    <ots:Conflicts>
+      <ots:DefaultWidth/>
+    </ots:Conflicts>
+  </ots:Network>
+  <ots:Demand>
+    <!-- ots:Od Id="OD" SinkType="Sink">
+      <ots:Category GtuType="CAR" Id="CAR"/>
+      <ots:Cell Category="CAR" Destination="B" Origin="A">
+        <ots:Level Time="0s">1000veh/h</ots:Level>
+        <ots:Level Time="3600s">1000veh/h</ots:Level>
+      </ots:Cell>
+    </ots:Od -->
+  </ots:Demand>
+  <ots:Run>
+    <ots:RunLength>1h</ots:RunLength>
+  </ots:Run>
+</ots:Ots>

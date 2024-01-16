@@ -36,7 +36,8 @@ import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 
 /**
- * This class is responsible for handling the commands that should be given to a GTU. One handler should be generated per GTU that should receive commands.
+ * This class is responsible for handling the commands that should be given to a GTU. One handler should be generated per GTU
+ * that should receive commands.
  * @author wjschakel
  */
 public class CommandsHandler
@@ -133,7 +134,7 @@ public class CommandsHandler
         // strategical planner (also sets default parameters)
         Node destination = this.network.getNode(this.commands.getGenerationInfo().getDestination());
         LaneBasedStrategicalRoutePlanner strategicalPlanner = this.strategicalFactory.create(gtu, null, null, destination);
-        
+
         // parameters
         for (ImmutableEntry<String, String> paramEntry : this.commands.getGenerationInfo().getParameters().entrySet())
         {
@@ -166,7 +167,7 @@ public class CommandsHandler
                 gtu.getParameters().setParameter((ParameterType<Time>) parameterType, Time.valueOf(paramEntry.getValue()));
             }
         }
-        
+
         gtu.init(strategicalPlanner, position, this.commands.getGenerationInfo().getInitialSpeed());
 
     }

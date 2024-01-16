@@ -1,11 +1,14 @@
 # Cut-in scenario manual
+This manual applies for two scenarios: cut-in, and deceleration. Both have three vehicles and have the same inputs (a few inputs
+do have different default values).
 
 ## Compiling and executing
-Compile a runnable .jar file that will run the main class `org.opentrafficsim.i4driving.ScenarioCutIn`. It is intended 
-this is done with JDK 11. In Eclipse this can be done by following File > Export... and following further instructions. To run 
-the simulation invoke the command: `java -jar NameOfFile.jar`. Java 11 is required for this. If this is not available on 
-the computer, a JRE can be placed next to the runnable .jar file, and the `java` command can point to the java executable in 
-that JRE as follows: `jre-11\bin\java -jar NameOfFile.jar`.
+Compile a runnable .jar file that will run the main class 
+`org.opentrafficsim.i4driving.ScenarioCutIn/ScenarioDeceleration`. It is intended this is done with JDK 11. 
+In Eclipse this can be done by following File > Export... and following further instructions. To run the simulation invoke the 
+command: `java -jar NameOfFile.jar`. Java 11 is required for this. If this is not available on the computer, a JRE can be
+placed next to the runnable .jar file, and the `java` command can point to the java executable in that JRE as follows: 
+`jre-11\bin\java -jar NameOfFile.jar`.
 
 ## Input
 ### Command line arguments and settings file
@@ -24,8 +27,7 @@ Alternatively, a settings file can be specified in json format:
 
 Note that the program needs to be able to access this file. The program will first attempt to read the file `settings.json` 
 which should be placed next to the runnable .jar file. If this is not found, it will read the command line argument 
-`--settings` which has value `cutinSettings.json` by default. If this too cannot be found as a file, the program will use
-a file under this name in its own resources.
+`--settings` which has value `cutinSettings.json` or `decelerationSettings.json` by default.
 
 Depending on preferences, the program can thus be used in 3 manners:
 <ol>
@@ -46,12 +48,15 @@ the names need to be preceded with "`--`".
   <tr><td>simulationTime</td><td>60s</td><td>Total simulation time.</td></tr>
   <tr><td colspan="3"><i>Input and output files</i></td></tr>
   <tr><td>settings</td><td>cutinSettings.json</td><td>File containing any other settings.</td></tr>
-  <tr><td>inputVehicle1</td><td>cutinVehicle1.json</td><td>File containing instructions for vehicle 1.</td></tr>
-  <tr><td>inputVehicle2</td><td>cutinVehicle2.json</td><td>File containing instructions for vehicle 2.</td></tr>
-  <tr><td>inputVehicle3</td><td>cutinVehicle3.json</td><td>File containing instructions for vehicle 3.</td></tr>
+  <tr><td>inputVehicle1</td><td>cutinVehicle1.json/decelerationVehicle1.json</td><td>File containing instructions for vehicle 1 
+    (most downstream).</td></tr>
+  <tr><td>inputVehicle2</td><td>cutinVehicle2.json/decelerationVehicle2.json</td><td>File containing instructions for vehicle 2.
+    </td></tr>
+  <tr><td>inputVehicle3</td><td>cutinVehicle3.json/decelerationVehicle3.json</td><td>File containing instructions for vehicle 3 
+    (most upstream).</td></tr>
   <tr><td>outputTrajectoriesFile</td><td>outputTrajectories.csv</td><td>File for output trajectories.</td></tr>
-  <tr><td>outputValuesFile</td><td>outputValues.csv</td><td>File containing output values such as max deceleration and collision 
-    detection.</td></tr>
+  <tr><td>outputValuesFile</td><td>outputValues.csv</td><td>File containing output values: collision detection, maximum 
+    deceleration, minimum tim-to-collision, and final gap (deceleration scenario only).</td></tr>
   <tr><td colspan="3"><i>Imperfect perception</i></td></tr>
   <tr><td>fullFuller</td><td>true</td><td>Implements imperfect perception. Overwrites all perception settings to true.</td></tr>
   <tr><td>fuller</td><td>true</td><td>Implements imperfect perception.</td></tr>

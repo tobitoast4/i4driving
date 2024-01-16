@@ -1,0 +1,30 @@
+{
+    "gtuId": "1",
+    "generationInfo": {
+        "time": "0 s",
+        "initialSpeed": "100 km/h",
+        "initialPosition": {
+            "link": "AB",
+            "lane": "Lane 1",
+            "x": "100.0 m"
+        },
+        "gtuType": "CAR",
+        "destination": "B"
+    },
+    "commands": [
+        {
+            "time": "0.0 s",
+            "type": "setDesiredSpeed",
+            "data": {
+                "speed": "100 km/h"
+            }
+        },
+        {
+            "time": "12.0 s",
+            "type": "setAcceleration",
+            "data": {
+                "acceleration": "-2.0 m/s2"
+            }
+        }
+    ]
+}

@@ -1,0 +1,26 @@
+{
+    "settings": {
+        "fullFuller": "true",
+        "fuller": "true",
+        "carFollowingTask": "true",
+        "laneChangeTask": "true",
+        "laneChangeIsPrimary": "true",
+        "anticipationReliance": "true",
+        "adaptHeadway": "true",
+        "adaptSpeed": "true",
+        "multiAnticipation": "true",
+        "fullSocio": "true",
+        "socio": "true",
+        "tailgating": "true",
+        "socioLaneChangeIncentive": "true",
+        "socioDesiredSpeed": "true",
+        "autorun": "false",
+        "seed": "1",
+        "simulationTime": "60s",
+        "inputVehicle1": "decelerationVehicle1.json",
+        "inputVehicle2": "decelerationVehicle2.json",
+        "inputVehicle3": "decelerationVehicle3.json",
+        "outputTrajectoriesFile": "outputTrajectories.csv",
+        "outputValuesFile": "outputValues.csv"
+    }
+}

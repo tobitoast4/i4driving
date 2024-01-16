@@ -1,6 +1,6 @@
 package org.opentrafficsim.i4driving.messages;
 
-import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +14,6 @@ import org.djutils.immutablecollections.ImmutableArrayList;
 import org.djutils.immutablecollections.ImmutableLinkedHashMap;
 import org.djutils.immutablecollections.ImmutableList;
 import org.djutils.immutablecollections.ImmutableMap;
-
-import com.google.gson.reflect.TypeToken;
 
 /**
  * Class containing information for scenario control over GTUs.
@@ -57,7 +55,7 @@ public class Commands
      */
     public ImmutableList<Command> getCommands()
     {
-        return new ImmutableArrayList<>(this.commands, Immutable.WRAP);
+        return new ImmutableArrayList<>(this.commands == null ? new ArrayList<>() : this.commands, Immutable.WRAP);
     }
 
     /** {@inheritDoc} */

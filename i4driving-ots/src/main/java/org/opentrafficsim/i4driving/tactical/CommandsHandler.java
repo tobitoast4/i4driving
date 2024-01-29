@@ -166,6 +166,14 @@ public class CommandsHandler
             {
                 gtu.getParameters().setParameter((ParameterType<Time>) parameterType, Time.valueOf(paramEntry.getValue()));
             }
+            else if (parameterType.getValueClass().equals(Double.class))
+            {
+                gtu.getParameters().setParameter((ParameterType<Double>) parameterType, Double.valueOf(paramEntry.getValue()));
+            }
+            else
+            {
+                throw new RuntimeException("Unable to process parameter with type " + parameterType.getValueClass());
+            }
         }
 
         gtu.init(strategicalPlanner, position, this.commands.getGenerationInfo().getInitialSpeed());
@@ -238,6 +246,15 @@ public class CommandsHandler
         Throw.when(this.gtu == null, IllegalStateException.class, "GTU %s could not be found to give command.",
                 this.commands.getGtuId());
         return this.gtu;
+    }
+    
+    /**
+     * Returns the GTU id.
+     * @return String; GTU id.
+     */
+    public String getGtuId()
+    {
+        return this.commands.getGtuId();
     }
 
 }

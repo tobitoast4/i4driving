@@ -1,52 +1,49 @@
 package org.opentrafficsim.i4driving.sampling;
 
-import org.djunits.value.vdouble.scalar.Length;
-import org.djunits.value.vfloat.scalar.FloatLength;
+import org.djunits.value.vfloat.scalar.FloatSpeed;
 import org.djutils.immutablecollections.ImmutableList;
 import org.opentrafficsim.core.gtu.GtuException;
-import org.opentrafficsim.kpi.sampling.data.ExtendedDataLength;
+import org.opentrafficsim.kpi.sampling.data.ExtendedDataSpeed;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.sampling.GtuDataRoad;
 
 /**
- * Gap data in trajectories.
+ * Speed difference in trajectories.
  * @author wjschakel
  */
-public class GapData extends ExtendedDataLength<GtuDataRoad>
+public class SpeedDifferenceData extends ExtendedDataSpeed<GtuDataRoad>
 {
 
     /**
      * Constructor.
      */
-    public GapData()
+    public SpeedDifferenceData()
     {
-        super("gap", "Distance gap to leader.");
+        super("dv", "Speed difference with leader.");
     }
 
     /** {@inheritDoc} */
     @Override
-    public FloatLength getValue(final GtuDataRoad gtu)
+    public FloatSpeed getValue(final GtuDataRoad gtu)
     {
         LaneBasedGtu g = gtu.getGtu();
         try
         {
             Lane lane = g.getReferencePosition().getLane();
-            Length front = g.position(lane, g.getFront());
             ImmutableList<LaneBasedGtu> gtus = lane.getGtuList();
             int index = gtus.indexOf(g) + 1;
             if (index < gtus.size())
             {
                 LaneBasedGtu leader = gtus.get(index);
-                Length rear = leader.position(lane, leader.getRear());
-                return FloatLength.instantiateSI((float) (rear.si - front.si));
+                return FloatSpeed.instantiateSI((float) (g.getSpeed().si - leader.getSpeed().si));
             }
         }
         catch (GtuException ge)
         {
-            throw new RuntimeException("Exception while obtaining gap.", ge);
+            throw new RuntimeException("Exception while obtaining speed difference.", ge);
         }
-        return FloatLength.POSITIVE_INFINITY;
+        return FloatSpeed.POSITIVE_INFINITY;
     }
 
 }

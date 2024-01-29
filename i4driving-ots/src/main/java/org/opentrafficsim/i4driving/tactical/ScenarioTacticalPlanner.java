@@ -437,6 +437,10 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         {
             getGtu().getParameters().setParameter((ParameterType<Time>) parameterType, Time.valueOf(value));
         }
+        else if (parameterType.getValueClass().equals(Double.class))
+        {
+            getGtu().getParameters().setParameter((ParameterType<Double>) parameterType, Double.valueOf(value));
+        }
         else
         {
             throw new RuntimeException("Setting parameter of type " + parameterType.getValueClass() + " is not supported.");

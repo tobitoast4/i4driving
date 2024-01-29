@@ -1,0 +1,4 @@
+id,description,className,unit
+output,Table with scenario output values,org.djutils.data.ListTable,
+description,Description column,java.lang.String,
+value,Value column,java.lang.String,

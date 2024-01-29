@@ -22,6 +22,7 @@ import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vfloat.scalar.FloatAcceleration;
 import org.djunits.value.vfloat.scalar.FloatDuration;
 import org.djunits.value.vfloat.scalar.FloatLength;
+import org.djunits.value.vfloat.scalar.FloatSpeed;
 import org.djutils.cli.CliUtil;
 import org.djutils.data.Column;
 import org.djutils.data.ListTable;
@@ -51,6 +52,7 @@ import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactoryDefault;
 import org.opentrafficsim.i4driving.messages.DefaultGsonBuilder;
 import org.opentrafficsim.i4driving.sampling.GapData;
+import org.opentrafficsim.i4driving.sampling.SpeedDifferenceData;
 import org.opentrafficsim.i4driving.tactical.CommandsHandler;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
 import org.opentrafficsim.i4driving.tactical.perception.CarFollowingTask;
@@ -142,6 +144,34 @@ public class ScenarioDeceleration extends AbstractSimulationScript
     @Option(names = {"--inputVehicle3"}, description = "JSON input file for vehicle 3", defaultValue = "")
     private String inputVehicle3;
 
+    /** JSON input file for vehicle 4. */
+    @Option(names = {"--inputVehicle4"}, description = "JSON input file for vehicle 4", defaultValue = "")
+    private String inputVehicle4;
+
+    /** JSON input file for vehicle 5. */
+    @Option(names = {"--inputVehicle5"}, description = "JSON input file for vehicle 5", defaultValue = "")
+    private String inputVehicle5;
+
+    /** JSON input file for vehicle 6. */
+    @Option(names = {"--inputVehicle6"}, description = "JSON input file for vehicle 6", defaultValue = "")
+    private String inputVehicle6;
+
+    /** JSON input file for vehicle 7. */
+    @Option(names = {"--inputVehicle7"}, description = "JSON input file for vehicle 7", defaultValue = "")
+    private String inputVehicle7;
+
+    /** JSON input file for vehicle 8. */
+    @Option(names = {"--inputVehicle8"}, description = "JSON input file for vehicle 8", defaultValue = "")
+    private String inputVehicle8;
+
+    /** JSON input file for vehicle 9. */
+    @Option(names = {"--inputVehicle9"}, description = "JSON input file for vehicle 9", defaultValue = "")
+    private String inputVehicle9;
+
+    /** JSON input file for vehicle 10. */
+    @Option(names = {"--inputVehicle10"}, description = "JSON input file for vehicle 10", defaultValue = "")
+    private String inputVehicle10;
+
     /** Trajectory output file. */
     @Option(names = {"--outputTrajectoriesFile"}, description = "Trajectory output file",
             defaultValue = "outputTrajectories.csv")
@@ -223,6 +253,9 @@ public class ScenarioDeceleration extends AbstractSimulationScript
 
     /** Collision message saved in output. */
     private String collision = "none";
+
+    /** Ego vehicle, i.e. the most upstream vehicle. */
+    private String egoVehicle = "";
 
     /**
      * Constructor.
@@ -457,23 +490,69 @@ public class ScenarioDeceleration extends AbstractSimulationScript
         Gson gson = DefaultGsonBuilder.get();
         if (this.inputVehicle1 != null && !this.inputVehicle1.isBlank())
         {
-            new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle1), DefaultGsonBuilder.COMMANDS),
-                    strategicalFactory);
+            CommandsHandler handler1 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle1), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler1.getGtuId();
         }
         if (this.inputVehicle2 != null && !this.inputVehicle2.isBlank())
         {
-            new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle2), DefaultGsonBuilder.COMMANDS),
-                    strategicalFactory);
+            CommandsHandler handler2 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle2), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler2.getGtuId();
         }
         if (this.inputVehicle3 != null && !this.inputVehicle3.isBlank())
         {
-            new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle3), DefaultGsonBuilder.COMMANDS),
-                    strategicalFactory);
+            CommandsHandler handler3 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle3), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler3.getGtuId();
+        }
+        if (this.inputVehicle4 != null && !this.inputVehicle4.isBlank())
+        {
+            CommandsHandler handler4 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle4), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler4.getGtuId();
+        }
+        if (this.inputVehicle5 != null && !this.inputVehicle5.isBlank())
+        {
+            CommandsHandler handler5 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle5), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler5.getGtuId();
+        }
+        if (this.inputVehicle6 != null && !this.inputVehicle6.isBlank())
+        {
+            CommandsHandler handler6 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle6), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler6.getGtuId();
+        }
+        if (this.inputVehicle7 != null && !this.inputVehicle7.isBlank())
+        {
+            CommandsHandler handler7 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle7), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler7.getGtuId();
+        }
+        if (this.inputVehicle8 != null && !this.inputVehicle8.isBlank())
+        {
+            CommandsHandler handler8 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle8), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler8.getGtuId();
+        }
+        if (this.inputVehicle9 != null && !this.inputVehicle9.isBlank())
+        {
+            CommandsHandler handler9 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle9), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler9.getGtuId();
+        }
+        if (this.inputVehicle10 != null && !this.inputVehicle10.isBlank())
+        {
+            CommandsHandler handler10 = new CommandsHandler(network,
+                    gson.fromJson(getReader(this.inputVehicle10), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+            this.egoVehicle = handler10.getGtuId();
         }
 
         // Sampler
         this.sampler = RoadSampler.build(network).setFrequency(Frequency.instantiateSI(20.0))
-                .registerExtendedDataType(new TimeToCollision()).registerExtendedDataType(new GapData()).create();
+                .registerExtendedDataType(new TimeToCollision()).registerExtendedDataType(new GapData())
+                .registerExtendedDataType(new SpeedDifferenceData()).create();
         for (Lane lane : lanes)
         {
             sampler.registerSpaceTimeRegion(new SpaceTimeRegion<LaneDataRoad>(new LaneDataRoad(lane), Length.ZERO,
@@ -514,9 +593,12 @@ public class ScenarioDeceleration extends AbstractSimulationScript
         FloatAcceleration maxDeceleration = FloatAcceleration.ZERO;
         FloatDuration minTtc = FloatDuration.POSITIVE_INFINITY;
         FloatLength finalGap = FloatLength.POSITIVE_INFINITY;
+        FloatSpeed finalSpeed = FloatSpeed.POSITIVE_INFINITY;
+        FloatSpeed finalSpeedDifference = FloatSpeed.POSITIVE_INFINITY;
+        FloatAcceleration finalAcceleration = FloatAcceleration.POSITIVE_INFINITY;
         for (Row row : this.sampler.getSamplerData())
         {
-            if (row.getValue("gtuId").equals("3"))
+            if (row.getValue("gtuId").equals(this.egoVehicle))
             {
                 maxDeceleration = FloatAcceleration.min(maxDeceleration, (FloatAcceleration) row.getValue("a"));
                 FloatDuration ttc = (FloatDuration) row.getValue("timeToCollision");
@@ -525,12 +607,18 @@ public class ScenarioDeceleration extends AbstractSimulationScript
                     minTtc = FloatDuration.min(minTtc, ttc);
                 }
                 finalGap = (FloatLength) row.getValue("gap");
+                finalSpeed = (FloatSpeed) row.getValue("v");
+                finalSpeedDifference = (FloatSpeed) row.getValue("dv");
+                finalAcceleration = (FloatAcceleration) row.getValue("a");
             }
         }
         table.addRow(new String[] {"collision", this.collision});
         table.addRow(new String[] {"maximum deceleration", maxDeceleration.neg().toString()});
         table.addRow(new String[] {"minimum time-to-collision", minTtc.toString()});
-        table.addRow(new String[] {"final gap", finalGap.toString()});
+        table.addRow(new String[] {"final net distance", finalGap.toString()});
+        table.addRow(new String[] {"final speed", finalSpeed.toString()});
+        table.addRow(new String[] {"final speed difference", finalSpeedDifference.toString()});
+        table.addRow(new String[] {"final acceleration", finalAcceleration.toString()});
         Try.execute(() -> CsvData.writeData(this.outputValuesFile, this.outputValuesFile + ".header", table),
                 "Could not write values data.");
     }

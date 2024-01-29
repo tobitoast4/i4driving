@@ -1,0 +1,13 @@
+id,description,className,unit
+sampler,Trajectory data,org.opentrafficsim.kpi.sampling.SamplerData,
+traj#,Trajectory number,java.lang.Integer,
+linkId,Link id,java.lang.String,
+laneId,Lane id,java.lang.String,
+gtuId,GTU id,java.lang.String,
+t,Simulation time,org.djunits.value.vfloat.scalar.FloatDuration,s
+x,Position on the lane,org.djunits.value.vfloat.scalar.FloatLength,m
+v,Speed,org.djunits.value.vfloat.scalar.FloatSpeed,m/s
+a,Acceleration,org.djunits.value.vfloat.scalar.FloatAcceleration,m/s2
+timeToCollision,Time to collision,org.djunits.value.vfloat.scalar.FloatDuration,s
+gap,Distance gap to leader.,org.djunits.value.vfloat.scalar.FloatLength,m
+dv,Speed difference with leader.,org.djunits.value.vfloat.scalar.FloatSpeed,m/s

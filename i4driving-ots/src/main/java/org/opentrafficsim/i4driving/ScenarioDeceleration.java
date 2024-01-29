@@ -69,8 +69,11 @@ import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.AnticipationTrafficPerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.DirectInfrastructurePerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Anticipation;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.DirectNeighborsPerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType.PerceivedHeadwayGtuType;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
@@ -212,6 +215,11 @@ public class ScenarioDeceleration extends AbstractSimulationScript
             defaultValue = "true")
     private boolean socioDesiredSpeed = true;
 
+    /** Fraction of drivers with over estimation. */
+    @Option(names = {"--fractionOverEstimation"}, description = "Fraction of drivers with over estimation.",
+            defaultValue = "1.0")
+    private double fractionOverEstimation = 1.0;
+
     /** Sampler. */
     private RoadSampler sampler;
 
@@ -295,6 +303,7 @@ public class ScenarioDeceleration extends AbstractSimulationScript
                         .addLanes().getLanes();
 
         // Model
+        StreamInterface randomStream = sim.getModel().getStream("generation");
         LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner> tacticalFactory =
                 new LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner>()
                 {
@@ -421,8 +430,10 @@ public class ScenarioDeceleration extends AbstractSimulationScript
                         lanePerception.addPerceptionCategory(new DirectEgoPerception<>(lanePerception));
                         lanePerception.addPerceptionCategory(new AnticipationTrafficPerception(lanePerception));
                         lanePerception.addPerceptionCategory(new DirectInfrastructurePerception(lanePerception));
-                        lanePerception
-                                .addPerceptionCategory(new DirectNeighborsPerception(lanePerception, HeadwayGtuType.WRAP));
+                        Estimation estimation = randomStream.nextDouble() <= ScenarioDeceleration.this.fractionOverEstimation
+                                ? Estimation.OVERESTIMATION : Estimation.UNDERESTIMATION;
+                        HeadwayGtuType headwayGtuType = new PerceivedHeadwayGtuType(estimation, Anticipation.CONSTANT_SPEED);
+                        lanePerception.addPerceptionCategory(new DirectNeighborsPerception(lanePerception, headwayGtuType));
                         Tailgating tail = (ScenarioDeceleration.this.fullSocio
                                 || (ScenarioDeceleration.this.socio && ScenarioDeceleration.this.tailgating))
                                         ? Tailgating.PRESSURE : Tailgating.NONE;
@@ -439,7 +450,7 @@ public class ScenarioDeceleration extends AbstractSimulationScript
                         return tacticalPlanner;
                     }
                 };
-        StreamInterface randomStream = sim.getModel().getStream("generation");
+
         RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(randomStream, LinkWeight.LENGTH_NO_CONNECTORS);
         LaneBasedStrategicalRoutePlannerFactory strategicalFactory =
                 new LaneBasedStrategicalRoutePlannerFactory(tacticalFactory, new ParameterFactoryDefault(), routeGenerator);

@@ -1,10 +1,10 @@
 name,Description,internal name,unit,default value,deviation,lower bound,upper bound,distribution,select
 sigma,Sensitivity level for speed of others,org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters.SOCIO,-,1,0.5,0,1,triangular,1
 vGain,"Sensitivity towards own speed, as speed gain for full lane change desire",org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters.VGAIN,m/s,19.33333333,5,0,40,log-normal,1
-fSpeed,Factor on legal speed limit,org.opentrafficsim.base.parameters.FSPEED,-,1,0.1,0,2,normal,1
+fSpeed,Factor on legal speed limit,org.opentrafficsim.base.parameters.ParameterTypes.FSPEED,-,1,0.1,0,2,normal,1
 TC,Task capability,org.opentrafficsim.road.gtu.lane.perception.mental.Fuller.TC,-,1,0.2,0,2,normal,1
-x0,"Look-ahead distance for mandatory lane changes, leaders, etc.",org.opentrafficsim.base.parameters.X0,m,295,,0,,,0
-t0,Look-ahead time for mandatory lane changes,org.opentrafficsim.base.parameters.T0,s,43,,0,,,0
+x0,"Look-ahead distance for mandatory lane changes, leaders, etc.",org.opentrafficsim.base.parameters.ParameterTypes.X0,m,295,,0,,,0
+t0,Look-ahead time for mandatory lane changes,org.opentrafficsim.base.parameters.ParameterTypes.T0,s,43,,0,,,0
 HEXP,Slope of exponential decay of task demand for increasing time headway,org.opentrafficsim.i4driving.tactical.perception.CarFollowingTask.HEXP,s,4,,0,,,0
 SA_MIN,Minimum situational awareness,org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness.SA_MIN,-,0.5,,0,SA_MAX,,0
 SA_MAX,Maximum situational awareness,org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness.SA_MAX,-,1,,0|SA_MIN,,,0
@@ -15,19 +15,19 @@ beta_T,Factor on task over-saturation for headway,org.opentrafficsim.road.gtu.la
 beta_v0,Factor on task over-saturation for speed,org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed.BETA_V0,-,1,,0,,,0
 alpha,Fraction of primary task that can be reduced by anticipation reliance,org.opentrafficsim.i4driving.tactical.perception.TaskManagerAr.ALPHA,-,0.8,,0,1,,0
 beta,Fraction of auxiliary task that can be reduced by anticipation reliance,org.opentrafficsim.i4driving.tactical.perception.TaskManagerAr.BETA,-,0.6,,0,1,,0
-tau,Headway relaxation time,org.opentrafficsim.base.parameters.TAU,s,25,,0,,,0
-vCong,Speed threshold below which traffic is considered congested,org.opentrafficsim.base.parameters.VCONG,m/s,16.66666667,,0,,,0
-LCdur,Regular lane change duration,org.opentrafficsim.base.parameters.LCDUR,s,3,,0,,,0
+tau,Headway relaxation time,org.opentrafficsim.base.parameters.ParameterTypes.TAU,s,25,,0,,,0
+vCong,Speed threshold below which traffic is considered congested,org.opentrafficsim.base.parameters.ParameterTypes.VCONG,m/s,16.66666667,,0,,,0
+LCdur,Regular lane change duration,org.opentrafficsim.base.parameters.ParameterTypes.LCDUR,s,3,,0,,,0
 dFree,Desire threshold for free lane change (without any preparation),org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters.DFREE,-,0.365,,0,1|dSync,,0
 dSync,Desire threshold for synchronized lane change (adjusting speed),org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters.DSYNC,-,0.577,,0|dFree,1|dCoop,,0
 dCoop,Desire threshold for cooperative lane change (indicator|others make gap),org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters.DCOOP,-,0.788,,0|dSync,1,,0
-a,Maximum acceleration,org.opentrafficsim.base.parameters.A,m/s2,1.25,0.25,0,3,normal,1
-b,Maximum desired deceleration,org.opentrafficsim.base.parameters.B,m/s2,2.09,0.5,0|b0,bCrit,normal,1
-b0,"Adjustment deceleration, e.g. when speed limit drops",org.opentrafficsim.base.parameters.B0,m/s2,0.5,,0,b|bCrit,,0
+a,Maximum acceleration,org.opentrafficsim.base.parameters.ParameterTypes.A,m/s2,1.25,0.25,0,3,normal,1
+b,Maximum desired deceleration,org.opentrafficsim.base.parameters.ParameterTypes.B,m/s2,2.09,0.5,0|b0,bCrit,normal,1
+b0,"Adjustment deceleration, e.g. when speed limit drops",org.opentrafficsim.base.parameters.ParameterTypes.B0,m/s2,0.5,,0,b|bCrit,,0
 delta,Acceleration flattening exponent towards desired speed,org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm.DELTA,-,4,,0,,,0
-s0,Stopping distance,org.opentrafficsim.base.parameters.S0,m,3,,0,,,0
-Tmin,Minimum headway for gap-acceptance at high LC desire,org.opentrafficsim.base.parameters.TMIN,s,0.56,,0,Tmax,,0
-Tmax,Normal car-following headway,org.opentrafficsim.base.parameters.TMAX,s,1.2,0.3,0|Tmin,2.5,normal,1
+s0,Stopping distance,org.opentrafficsim.base.parameters.ParameterTypes.S0,m,3,,0,,,0
+Tmin,Minimum headway for gap-acceptance at high LC desire,org.opentrafficsim.base.parameters.ParameterTypes.TMIN,s,0.56,,0,Tmax,,0
+Tmax,Normal car-following headway,org.opentrafficsim.base.parameters.ParameterTypes.TMAX,s,1.2,0.3,0|Tmin,2.5,normal,1
 nLeaders,Number of leaders,org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusMulti.NLEADERS,-,2,,1,,,0
 minGap,Minimum time gap between conflict enter/leave events of self and others,org.opentrafficsim.road.gtu.lane.tactical.util.ConflictUtil.MIN_GAP,s,0,,0,,,0
 bCrit,Critical deceleration,org.opentrafficsim.road.gtu.lane.tactical.util.ConflictUtil.BCRIT,m/s2,3.5,,0|b0|b,,,0

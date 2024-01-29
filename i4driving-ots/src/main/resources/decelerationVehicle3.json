@@ -11,7 +11,10 @@
         "gtuType": "CAR",
         "destination": "B",
         "parameters": {
-            "org.opentrafficsim.base.parameters.ParameterTypes.TMAX": "0.8 s"
+            "org.opentrafficsim.base.parameters.ParameterTypes.TMAX": "0.8 s",
+            "org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters.VGAIN": "0.234375 m/s",
+            "org.opentrafficsim.road.gtu.lane.perception.mental.Fuller.TC": "0.99609375",
+            "org.opentrafficsim.base.parameters.ParameterTypes.A": "2.033203125 m/s2"
         }
     }
 }

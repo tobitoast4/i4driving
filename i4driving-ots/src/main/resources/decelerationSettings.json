@@ -18,7 +18,6 @@
         "seed": "1",
         "simulationTime": "60s",
         "inputVehicle1": "decelerationVehicle1.json",
-        "inputVehicle2": "decelerationVehicle2.json",
         "inputVehicle3": "decelerationVehicle3.json",
         "outputTrajectoriesFile": "outputTrajectories.csv",
         "outputValuesFile": "outputValues.csv"

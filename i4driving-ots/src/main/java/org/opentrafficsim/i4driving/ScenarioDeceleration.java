@@ -135,13 +135,11 @@ public class ScenarioDeceleration extends AbstractSimulationScript
     private String inputVehicle1;
 
     /** JSON input file for vehicle 2. */
-    @Option(names = {"--inputVehicle2"}, description = "JSON input file for vehicle 2",
-            defaultValue = "decelerationVehicle2.json")
+    @Option(names = {"--inputVehicle2"}, description = "JSON input file for vehicle 2", defaultValue = "")
     private String inputVehicle2;
 
     /** JSON input file for vehicle 3. */
-    @Option(names = {"--inputVehicle3"}, description = "JSON input file for vehicle 3",
-            defaultValue = "decelerationVehicle3.json")
+    @Option(names = {"--inputVehicle3"}, description = "JSON input file for vehicle 3", defaultValue = "")
     private String inputVehicle3;
 
     /** Trajectory output file. */
@@ -457,12 +455,21 @@ public class ScenarioDeceleration extends AbstractSimulationScript
 
         // Vehicle commands
         Gson gson = DefaultGsonBuilder.get();
-        new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle1), DefaultGsonBuilder.COMMANDS),
-                strategicalFactory);
-        new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle2), DefaultGsonBuilder.COMMANDS),
-                strategicalFactory);
-        new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle3), DefaultGsonBuilder.COMMANDS),
-                strategicalFactory);
+        if (this.inputVehicle1 != null && !this.inputVehicle1.isBlank())
+        {
+            new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle1), DefaultGsonBuilder.COMMANDS),
+                    strategicalFactory);
+        }
+        if (this.inputVehicle2 != null && !this.inputVehicle2.isBlank())
+        {
+            new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle2), DefaultGsonBuilder.COMMANDS),
+                    strategicalFactory);
+        }
+        if (this.inputVehicle3 != null && !this.inputVehicle3.isBlank())
+        {
+            new CommandsHandler(network, gson.fromJson(getReader(this.inputVehicle3), DefaultGsonBuilder.COMMANDS),
+                    strategicalFactory);
+        }
 
         // Sampler
         this.sampler = RoadSampler.build(network).setFrequency(Frequency.instantiateSI(20.0))

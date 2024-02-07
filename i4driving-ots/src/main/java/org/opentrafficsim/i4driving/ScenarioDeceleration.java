@@ -19,6 +19,7 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Frequency;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.scalar.Time;
 import org.djunits.value.vfloat.scalar.FloatAcceleration;
 import org.djunits.value.vfloat.scalar.FloatDuration;
 import org.djunits.value.vfloat.scalar.FloatLength;
@@ -262,7 +263,7 @@ public class ScenarioDeceleration extends AbstractSimulationScript
      */
     protected ScenarioDeceleration()
     {
-        super("Cut-in scenario", "Cut-in scenario with three vehicles on a freeway");
+        super("Deceleration scenario", "Deceleration scenario with two to ten vehicles on a freeway");
         setGtuColorer(SwitchableGtuColorer.builder().addActiveColorer(new FixedColor(Color.BLUE, "Blue"))
                 .addColorer(new TaskColorer("car-following")).addColorer(new TaskColorer("lane-changing"))
                 .addColorer(new TaskSaturationColorer()).addColorer(new ReactionTimeColorer(Duration.instantiateSI(1.0)))
@@ -324,7 +325,7 @@ public class ScenarioDeceleration extends AbstractSimulationScript
         // Network
         RoadNetwork network = new RoadNetwork("Cut-in scenario network", sim);
         OtsPoint3d pointA = new OtsPoint3d(0.0, 0.0, 0.0);
-        OtsPoint3d pointB = new OtsPoint3d(1000.0, 0.0, 0.0);
+        OtsPoint3d pointB = new OtsPoint3d(5000.0, 0.0, 0.0);
         Node nodeA = new Node(network, "A", pointA);
         Node nodeB = new Node(network, "B", pointB);
         List<Lane> lanes = new LaneFactory(network, nodeA, nodeB, DefaultsNl.FREEWAY, sim, LaneKeepingPolicy.KEEPRIGHT,
@@ -561,6 +562,9 @@ public class ScenarioDeceleration extends AbstractSimulationScript
 
         // Collision detection
         new CollisionDetector(network);
+
+        // Stop criterion
+        new StopCriterion(sim, network, Time.instantiateSI(10.0), Duration.instantiateSI(1.0));
 
         return network;
     }

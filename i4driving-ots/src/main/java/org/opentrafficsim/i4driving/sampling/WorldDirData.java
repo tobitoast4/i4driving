@@ -21,7 +21,7 @@ public class WorldDirData extends ExtendedDataFloat<DirectionUnit, FloatDirectio
      */
     public WorldDirData()
     {
-        super("WorldDirData", "World direction", FloatDirection.class);
+        super("WorldDir", "World direction", FloatDirection.class);
     }
 
     /** {@inheritDoc} */

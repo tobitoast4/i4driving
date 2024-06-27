@@ -2,3 +2,5 @@
 /.settings/
 # This file is easily >100MB so we skip it, including the .csv.meta file
 prototyping/socialpressure/rho.csv*
+*.jar
+*.asv

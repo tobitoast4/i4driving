@@ -1,4 +1,6 @@
 /i4driving-ots/target/
+/i4driving-ots/.classpath
+/i4driving-ots/.project
 /.settings/
 # This file is easily >100MB so we skip it, including the .csv.meta file
 prototyping/socialpressure/rho.csv*

@@ -70,6 +70,7 @@ import org.opentrafficsim.kpi.sampling.TrajectoryGroup;
 import org.opentrafficsim.kpi.sampling.data.ExtendedDataLength;
 import org.opentrafficsim.kpi.sampling.data.ExtendedDataNumber;
 import org.opentrafficsim.kpi.sampling.data.ExtendedDataSpeed;
+import org.opentrafficsim.kpi.sampling.data.ExtendedDataType;
 import org.opentrafficsim.kpi.sampling.meta.FilterDataGtuType;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.colorer.LmrsSwitchableColorer;
@@ -177,10 +178,10 @@ public class SocialPressureProxy
     private boolean speedDrop;
 
     // The following two parameters were calibrated on a single lane without speed drop
-    
+
     /** Desired headway used in proxy car-following. */
     @Option(names = "--proxyHeadway", description = "Desired headway used in proxy car-following.")
-    private Duration proxyHeadway = Duration.instantiateSI(2.146); 
+    private Duration proxyHeadway = Duration.instantiateSI(2.146);
 
     /** Deceleration used to scale proxy car-following. */
     @Option(names = "--proxyDeceleration", description = "Deceleration used to scale proxy car-following.")
@@ -480,10 +481,14 @@ public class SocialPressureProxy
                 OdApplier.applyOd(this.network, od, options, DefaultsRoadNl.VEHICLES);
 
                 // Sampler
-                this.sampler = new RoadSampler(
-                        Set.of(RHO, RHO_PROXY, new ExtendedDataHeadway(), new ExtendedDataDesiredSpeedLeader(),
-                                new ExtendedDataSpeedLeader()),
-                        Set.of(new FilterDataGtuType()), this.network, Frequency.instantiateSI(2.0));
+                Set<ExtendedDataType<?, ?, ?, GtuDataRoad>> extendedData = new LinkedHashSet<>();
+                extendedData.add(RHO);
+                extendedData.add(RHO_PROXY);
+                extendedData.add(new ExtendedDataHeadway());
+                extendedData.add(new ExtendedDataDesiredSpeedLeader());
+                extendedData.add(new ExtendedDataSpeedLeader());
+                this.sampler = new RoadSampler(extendedData, Set.of(new FilterDataGtuType()), this.network,
+                        Frequency.instantiateSI(2.0));
                 registerLanes(this.sampler, lanesAB);
                 registerLanes(this.sampler, lanesBC);
                 registerLanes(this.sampler, lanesCD);

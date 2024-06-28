@@ -108,16 +108,13 @@ public class AttentionMatrix
         }
         // obtain the eigenvector pertaining to the eigenvalue of 1
         double[][] v = ed.getV().getArray();
-        for (int i = 0; i < n; i++)
-        {
-            this.attention[i] = v[i][eigenIndex];
-        }
-        // normalize so it sums to 1
         double sumEigenVector = 0.0;
         for (int i = 0; i < n; i++)
         {
+            this.attention[i] = v[i][eigenIndex];
             sumEigenVector += this.attention[i];
         }
+        // normalize so it sums to 1
         for (int i = 0; i < n; i++)
         {
             this.attention[i] /= sumEigenVector;

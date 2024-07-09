@@ -11,13 +11,20 @@ import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.cli.CliUtil;
 import org.djutils.data.Column;
 import org.djutils.data.ListTable;
+import org.djutils.draw.line.PolyLine2d;
+import org.djutils.draw.line.Polygon2d;
+import org.djutils.draw.point.OrientedPoint2d;
+import org.djutils.draw.point.Point2d;
 import org.djutils.immutablecollections.ImmutableLinkedHashMap;
 import org.djutils.immutablecollections.ImmutableMap;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
-import org.opentrafficsim.core.geometry.OtsLine3d;
-import org.opentrafficsim.core.geometry.OtsPoint3d;
+import org.opentrafficsim.core.geometry.ContinuousStraight;
+import org.opentrafficsim.core.geometry.Flattener;
+import org.opentrafficsim.core.geometry.Flattener.NumSegments;
+import org.opentrafficsim.core.geometry.FractionalLengthData;
+import org.opentrafficsim.core.geometry.OtsLine2d;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
@@ -29,7 +36,9 @@ import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
+import org.opentrafficsim.road.network.lane.CrossSectionSlice;
 import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.LaneGeometryUtil;
 import org.opentrafficsim.road.network.lane.Stripe;
 import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
@@ -73,20 +82,55 @@ public class InjectionsDemo extends AbstractSimulationScript
     {
         // Create a simple straight 2-lane highway
         RoadNetwork network = new RoadNetwork("injections", sim);
-        OtsPoint3d pointA = new OtsPoint3d(0.0, 0.0);
-        OtsPoint3d pointB = new OtsPoint3d(500.0, 0.0);
+        OrientedPoint2d pointA = new OrientedPoint2d(0.0, 0.0, 0.0);
+        Point2d pointB = new Point2d(500.0, 0.0);
         Node nodeA = new Node(network, "A", pointA);
         Node nodeB = new Node(network, "B", pointB);
+
+        ContinuousStraight designLine = new ContinuousStraight(pointA, pointA.distance(pointB));
+
         CrossSectionLink linkAB = new CrossSectionLink(network, "AB", nodeA, nodeB, DefaultsNl.FREEWAY,
-                new OtsLine3d(pointA, pointB), LaneKeepingPolicy.KEEPRIGHT);
+                new OtsLine2d(pointA, pointB), FractionalLengthData.of(0.0, 0.0, 1.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
         Length laneWidth = Length.instantiateSI(3.5);
         Map<GtuType, Speed> speedLimits = Map.of(DefaultsNl.CAR, new Speed(130.0, SpeedUnit.KM_PER_HOUR));
-        Lane lane1 = new Lane(linkAB, "Lane1", laneWidth.times(0.5).neg(), laneWidth, DefaultsRoadNl.FREEWAY, speedLimits);
-        Lane lane2 = new Lane(linkAB, "Lane2", laneWidth.times(0.5), laneWidth, DefaultsRoadNl.FREEWAY, speedLimits);
+        Flattener flattener = new NumSegments(64);
+
+        List<CrossSectionSlice> slices = LaneGeometryUtil.getSlices(designLine, laneWidth.times(0.5).neg(), laneWidth);
+        PolyLine2d center = designLine.flattenOffset(LaneGeometryUtil.getCenterOffsets(designLine, slices), flattener);
+        PolyLine2d left = designLine.flattenOffset(LaneGeometryUtil.getLeftEdgeOffsets(designLine, slices), flattener);
+        PolyLine2d right = designLine.flattenOffset(LaneGeometryUtil.getRightEdgeOffsets(designLine, slices), flattener);
+        Polygon2d contour = LaneGeometryUtil.getContour(left, right);
+        Lane lane1 = new Lane(linkAB, "Lane1", new OtsLine2d(center), contour, slices, DefaultsRoadNl.FREEWAY, speedLimits);
+        
+        slices = LaneGeometryUtil.getSlices(designLine, laneWidth.times(0.5), laneWidth);
+        center = designLine.flattenOffset(LaneGeometryUtil.getCenterOffsets(designLine, slices), flattener);
+        left = designLine.flattenOffset(LaneGeometryUtil.getLeftEdgeOffsets(designLine, slices), flattener);
+        right = designLine.flattenOffset(LaneGeometryUtil.getRightEdgeOffsets(designLine, slices), flattener);
+        contour = LaneGeometryUtil.getContour(left, right);
+        Lane lane2 = new Lane(linkAB, "Lane2", new OtsLine2d(center), contour, slices, DefaultsRoadNl.FREEWAY, speedLimits);
+        
         Length stripeWidth = Length.instantiateSI(0.2);
-        new Stripe(Type.DASHED, linkAB, Length.ZERO, stripeWidth);
-        new Stripe(Type.SOLID, linkAB, laneWidth.times(0.97).neg(), stripeWidth);
-        new Stripe(Type.SOLID, linkAB, laneWidth.times(0.97), stripeWidth);
+        slices = LaneGeometryUtil.getSlices(designLine, Length.ZERO, stripeWidth);
+        center = designLine.flattenOffset(LaneGeometryUtil.getCenterOffsets(designLine, slices), flattener);
+        left = designLine.flattenOffset(LaneGeometryUtil.getLeftEdgeOffsets(designLine, slices), flattener);
+        right = designLine.flattenOffset(LaneGeometryUtil.getRightEdgeOffsets(designLine, slices), flattener);
+        contour = LaneGeometryUtil.getContour(left, right);
+        new Stripe(Type.DASHED, linkAB, new OtsLine2d(center), contour, slices);
+        
+        slices = LaneGeometryUtil.getSlices(designLine, laneWidth.times(0.97).neg(), stripeWidth);
+        center = designLine.flattenOffset(LaneGeometryUtil.getCenterOffsets(designLine, slices), flattener);
+        left = designLine.flattenOffset(LaneGeometryUtil.getLeftEdgeOffsets(designLine, slices), flattener);
+        right = designLine.flattenOffset(LaneGeometryUtil.getRightEdgeOffsets(designLine, slices), flattener);
+        contour = LaneGeometryUtil.getContour(left, right);
+        new Stripe(Type.SOLID, linkAB, new OtsLine2d(center), contour, slices);
+        
+        slices = LaneGeometryUtil.getSlices(designLine, laneWidth.times(0.97), stripeWidth);
+        center = designLine.flattenOffset(LaneGeometryUtil.getCenterOffsets(designLine, slices), flattener);
+        left = designLine.flattenOffset(LaneGeometryUtil.getLeftEdgeOffsets(designLine, slices), flattener);
+        right = designLine.flattenOffset(LaneGeometryUtil.getRightEdgeOffsets(designLine, slices), flattener);
+        contour = LaneGeometryUtil.getContour(left, right);
+        new Stripe(Type.SOLID, linkAB, new OtsLine2d(center), contour, slices);
+        
         new SinkDetector(lane1, lane1.getLength(), sim, DefaultsRoadNl.ROAD_USERS);
         new SinkDetector(lane2, lane2.getLength(), sim, DefaultsRoadNl.ROAD_USERS);
 

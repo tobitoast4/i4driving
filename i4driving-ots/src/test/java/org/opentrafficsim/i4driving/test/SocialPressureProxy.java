@@ -7,6 +7,7 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import javax.naming.NamingException;
@@ -29,9 +30,12 @@ import org.djunits.value.vfloat.scalar.FloatSpeed;
 import org.djutils.cli.CliUtil;
 import org.djutils.data.csv.CsvData;
 import org.djutils.data.serialization.TextSerializationException;
+import org.djutils.draw.point.Point2d;
 import org.djutils.event.Event;
 import org.djutils.event.EventListener;
-import org.opentrafficsim.base.WeightedMeanAndSum;
+import org.djutils.means.ArithmeticMean;
+import org.opentrafficsim.animation.GraphLaneUtil;
+import org.opentrafficsim.animation.colorer.LmrsSwitchableColorer;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterSet;
 import org.opentrafficsim.base.parameters.ParameterTypes;
@@ -42,10 +46,7 @@ import org.opentrafficsim.core.dsol.AbstractOtsModel;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
-import org.opentrafficsim.core.egtf.Converter;
-import org.opentrafficsim.core.egtf.Quantity;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
-import org.opentrafficsim.core.geometry.OtsPoint3d;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
@@ -54,15 +55,16 @@ import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
-import org.opentrafficsim.draw.core.BoundsPaintScale;
-import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.draw.BoundsPaintScale;
+import org.opentrafficsim.draw.OtsDrawingException;
+import org.opentrafficsim.draw.egtf.Converter;
+import org.opentrafficsim.draw.egtf.Quantity;
 import org.opentrafficsim.draw.graphs.AbstractContourPlot;
 import org.opentrafficsim.draw.graphs.ContourDataSource;
 import org.opentrafficsim.draw.graphs.ContourDataSource.ContourDataType;
 import org.opentrafficsim.draw.graphs.GraphPath;
 import org.opentrafficsim.draw.graphs.GraphType;
 import org.opentrafficsim.draw.graphs.GraphUtil;
-import org.opentrafficsim.draw.graphs.road.GraphLaneUtil;
 import org.opentrafficsim.kpi.sampling.SamplingException;
 import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
 import org.opentrafficsim.kpi.sampling.Trajectory;
@@ -73,7 +75,6 @@ import org.opentrafficsim.kpi.sampling.data.ExtendedDataSpeed;
 import org.opentrafficsim.kpi.sampling.data.ExtendedDataType;
 import org.opentrafficsim.kpi.sampling.meta.FilterDataGtuType;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
-import org.opentrafficsim.road.gtu.colorer.LmrsSwitchableColorer;
 import org.opentrafficsim.road.gtu.generator.GeneratorPositions.LaneBias;
 import org.opentrafficsim.road.gtu.generator.GeneratorPositions.LaneBiases;
 import org.opentrafficsim.road.gtu.generator.MarkovCorrelation;
@@ -117,7 +118,6 @@ import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.Stripe;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
-import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
 import org.opentrafficsim.road.network.sampling.GtuDataRoad;
 import org.opentrafficsim.road.network.sampling.LaneDataRoad;
 import org.opentrafficsim.road.network.sampling.RoadSampler;
@@ -128,6 +128,7 @@ import org.opentrafficsim.road.od.Interpolation;
 import org.opentrafficsim.road.od.OdApplier;
 import org.opentrafficsim.road.od.OdMatrix;
 import org.opentrafficsim.road.od.OdOptions;
+import org.opentrafficsim.swing.graphs.OtsPlotScheduler;
 import org.opentrafficsim.swing.graphs.SwingContourPlot;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
@@ -138,7 +139,7 @@ import nl.tudelft.simulation.dsol.swing.gui.TablePanel;
 import nl.tudelft.simulation.jstats.distributions.DistLogNormal;
 import nl.tudelft.simulation.jstats.distributions.DistTriangular;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
-import nl.tudelft.simulation.language.DSOLException;
+import nl.tudelft.simulation.language.DsolException;
 import picocli.CommandLine.Option;
 
 /**
@@ -166,7 +167,7 @@ public class SocialPressureProxy
     private String outputDir;
 
     /** Whether to use the multi-lane lanedrop network, or just a single lane. */
-    @Option(names = "--multiLane", description = "Multi-lane", defaultValue = "false")
+    @Option(names = "--multiLane", description = "Multi-lane", defaultValue = "true")
     private boolean multiLane;
 
     /** Whether to apply a distance discounting on the social pressure proxy. */
@@ -193,6 +194,7 @@ public class SocialPressureProxy
      */
     public static void main(final String[] args)
     {
+        Locale.setDefault(Locale.US);
         try
         {
             SocialPressureProxy spp = new SocialPressureProxy();
@@ -268,7 +270,7 @@ public class SocialPressureProxy
             }
         }
         catch (SimRuntimeException | NamingException | RemoteException | OtsDrawingException | IndexOutOfBoundsException
-                | DSOLException | NetworkException exception)
+                | DsolException | NetworkException exception)
         {
             exception.printStackTrace();
         }
@@ -342,10 +344,10 @@ public class SocialPressureProxy
                 this.network = new RoadNetwork("SocialPressureProxy", getSimulator());
 
                 // Nodes
-                OtsPoint3d pointA = new OtsPoint3d(0.0, 0.0, 0.0);
-                OtsPoint3d pointB = new OtsPoint3d(1500.0, 0.0, 0.0);
-                OtsPoint3d pointC = new OtsPoint3d(3000.0, 0.0, 0.0);
-                OtsPoint3d pointD = new OtsPoint3d(5100.0, 0.0, 0.0); // TODO: remove extra 100m when later OTS version is used
+                Point2d pointA = new Point2d(0.0, 0.0);
+                Point2d pointB = new Point2d(1500.0, 0.0);
+                Point2d pointC = new Point2d(3000.0, 0.0);
+                Point2d pointD = new Point2d(5000.0, 0.0);
                 Node nodeA = new Node(this.network, "A", pointA);
                 Node nodeB = new Node(this.network, "B", pointB);
                 Node nodeC = new Node(this.network, "C", pointC);
@@ -459,13 +461,6 @@ public class SocialPressureProxy
                 GtuType.registerTemplateSupplier(DefaultsNl.CAR, Defaults.NL);
                 GtuType.registerTemplateSupplier(DefaultsNl.TRUCK, Defaults.NL);
 
-                // Sink sensors TODO: remove when later OTS version is used
-                for (Lane lane : lanesCD)
-                {
-                    new SinkDetector(lane, lane.getLength().minus(Length.instantiateSI(100.0)), getSimulator(),
-                            DefaultsRoadNl.VEHICLES);
-                }
-
                 // Vehicle generators
                 OdOptions options = new OdOptions();
                 options.set(OdOptions.GTU_TYPE, factory);
@@ -554,6 +549,10 @@ public class SocialPressureProxy
         {
             try
             {
+                if (gtu.getGtu().getStrategicalPlanner() == null)
+                {
+                    return Float.NaN;
+                }
                 PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders = gtu.getGtu().getTacticalPlanner().getPerception()
                         .getPerceptionCategory(NeighborsPerception.class).getLeaders(RelativeLane.CURRENT);
                 if (leaders.isEmpty())
@@ -610,6 +609,10 @@ public class SocialPressureProxy
         {
             try
             {
+                if (gtu.getGtu().getStrategicalPlanner() == null)
+                {
+                    return Float.NaN;
+                }
                 PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders = gtu.getGtu().getTacticalPlanner().getPerception()
                         .getPerceptionCategory(NeighborsPerception.class).getLeaders(RelativeLane.CURRENT);
                 if (leaders.isEmpty())
@@ -666,21 +669,21 @@ public class SocialPressureProxy
         });
 
         /** Contour data type for rho. */
-        private static final ContourDataType<Double, WeightedMeanAndSum<Double, Double>> CONTOUR_DATA_TYPE_RHO =
-                new ContourDataType<Double, WeightedMeanAndSum<Double, Double>>()
+        private static final ContourDataType<Double, ArithmeticMean<Double, Double>> CONTOUR_DATA_TYPE_RHO =
+                new ContourDataType<Double, ArithmeticMean<Double, Double>>()
                 {
                     /** {@inheritDoc} */
                     @Override
-                    public WeightedMeanAndSum<Double, Double> identity()
+                    public ArithmeticMean<Double, Double> identity()
                     {
-                        return new WeightedMeanAndSum<>();
+                        return new ArithmeticMean<>();
                     }
 
                     /** {@inheritDoc} */
                     @Override
-                    public WeightedMeanAndSum<Double, Double> processSeries(
-                            final WeightedMeanAndSum<Double, Double> intermediate, final List<TrajectoryGroup<?>> trajectories,
-                            final List<Length> xFrom, final List<Length> xTo, final Time tFrom, final Time tTo)
+                    public ArithmeticMean<Double, Double> processSeries(final ArithmeticMean<Double, Double> intermediate,
+                            final List<TrajectoryGroup<?>> trajectories, final List<Length> xFrom, final List<Length> xTo,
+                            final Time tFrom, final Time tTo)
                     {
                         for (int i = 0; i < trajectories.size(); i++)
                         {
@@ -714,7 +717,7 @@ public class SocialPressureProxy
 
                     /** {@inheritDoc} */
                     @Override
-                    public Double finalize(final WeightedMeanAndSum<Double, Double> intermediate)
+                    public Double finalize(final ArithmeticMean<Double, Double> intermediate)
                     {
                         return intermediate.getMean();
                     }
@@ -736,7 +739,7 @@ public class SocialPressureProxy
          */
         public ContourPlotRho(final String caption, final OtsSimulatorInterface simulator, final ContourDataSource dataPool)
         {
-            super(caption, simulator, dataPool, createPaintScale(), 0.2, "%.2f", "rho %.2f");
+            super(caption, new OtsPlotScheduler(simulator), dataPool, createPaintScale(), 0.2, "%.2f", "rho %.2f");
         }
 
         /**
@@ -773,7 +776,7 @@ public class SocialPressureProxy
 
         /** {@inheritDoc} */
         @Override
-        protected ContourDataType<Double, WeightedMeanAndSum<Double, Double>> getContourDataType()
+        protected ContourDataType<Double, ArithmeticMean<Double, Double>> getContourDataType()
         {
             return CONTOUR_DATA_TYPE_RHO;
         }
@@ -797,21 +800,21 @@ public class SocialPressureProxy
         });
 
         /** Contour data type for rho'. */
-        private static final ContourDataType<Double, WeightedMeanAndSum<Double, Double>> CONTOUR_DATA_TYPE_RHO2 =
-                new ContourDataType<Double, WeightedMeanAndSum<Double, Double>>()
+        private static final ContourDataType<Double, ArithmeticMean<Double, Double>> CONTOUR_DATA_TYPE_RHO2 =
+                new ContourDataType<Double, ArithmeticMean<Double, Double>>()
                 {
                     /** {@inheritDoc} */
                     @Override
-                    public WeightedMeanAndSum<Double, Double> identity()
+                    public ArithmeticMean<Double, Double> identity()
                     {
-                        return new WeightedMeanAndSum<>();
+                        return new ArithmeticMean<>();
                     }
 
                     /** {@inheritDoc} */
                     @Override
-                    public WeightedMeanAndSum<Double, Double> processSeries(
-                            final WeightedMeanAndSum<Double, Double> intermediate, final List<TrajectoryGroup<?>> trajectories,
-                            final List<Length> xFrom, final List<Length> xTo, final Time tFrom, final Time tTo)
+                    public ArithmeticMean<Double, Double> processSeries(final ArithmeticMean<Double, Double> intermediate,
+                            final List<TrajectoryGroup<?>> trajectories, final List<Length> xFrom, final List<Length> xTo,
+                            final Time tFrom, final Time tTo)
                     {
                         for (int i = 0; i < trajectories.size(); i++)
                         {
@@ -842,7 +845,7 @@ public class SocialPressureProxy
 
                     /** {@inheritDoc} */
                     @Override
-                    public Double finalize(final WeightedMeanAndSum<Double, Double> intermediate)
+                    public Double finalize(final ArithmeticMean<Double, Double> intermediate)
                     {
                         return intermediate.getMean();
                     }
@@ -865,7 +868,7 @@ public class SocialPressureProxy
         public ContourPlotRhoProxy(final String caption, final OtsSimulatorInterface simulator,
                 final ContourDataSource dataPool)
         {
-            super(caption, simulator, dataPool, createPaintScale(), 0.2, "%.2f", "rho' %.2f");
+            super(caption, new OtsPlotScheduler(simulator), dataPool, createPaintScale(), 0.2, "%.2f", "rho' %.2f");
         }
 
         /**
@@ -902,7 +905,7 @@ public class SocialPressureProxy
 
         /** {@inheritDoc} */
         @Override
-        protected ContourDataType<Double, WeightedMeanAndSum<Double, Double>> getContourDataType()
+        protected ContourDataType<Double, ArithmeticMean<Double, Double>> getContourDataType()
         {
             return CONTOUR_DATA_TYPE_RHO2;
         }
@@ -928,6 +931,10 @@ public class SocialPressureProxy
         {
             try
             {
+                if (gtu.getGtu().getStrategicalPlanner() == null)
+                {
+                    return FloatLength.NaN;
+                }
                 PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders = gtu.getGtu().getTacticalPlanner().getPerception()
                         .getPerceptionCategory(NeighborsPerception.class).getLeaders(RelativeLane.CURRENT);
                 if (leaders.isEmpty())
@@ -965,6 +972,10 @@ public class SocialPressureProxy
         {
             try
             {
+                if (gtu.getGtu().getStrategicalPlanner() == null)
+                {
+                    return FloatSpeed.NaN;
+                }
                 PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders = gtu.getGtu().getTacticalPlanner().getPerception()
                         .getPerceptionCategory(NeighborsPerception.class).getLeaders(RelativeLane.CURRENT);
                 if (leaders.isEmpty())
@@ -1002,6 +1013,10 @@ public class SocialPressureProxy
         {
             try
             {
+                if (gtu.getGtu().getStrategicalPlanner() == null)
+                {
+                    return FloatSpeed.NaN;
+                }
                 PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders = gtu.getGtu().getTacticalPlanner().getPerception()
                         .getPerceptionCategory(NeighborsPerception.class).getLeaders(RelativeLane.CURRENT);
                 if (leaders.isEmpty())

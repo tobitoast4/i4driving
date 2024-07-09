@@ -29,20 +29,23 @@ import org.djutils.data.Column;
 import org.djutils.data.ListTable;
 import org.djutils.data.Row;
 import org.djutils.data.csv.CsvData;
+import org.djutils.draw.point.Point2d;
 import org.djutils.exceptions.Try;
+import org.opentrafficsim.animation.colorer.FixedColor;
+import org.opentrafficsim.animation.colorer.ReactionTimeColorer;
+import org.opentrafficsim.animation.colorer.TaskColorer;
+import org.opentrafficsim.animation.colorer.TaskSaturationColorer;
+import org.opentrafficsim.animation.gtu.colorer.AccelerationGtuColorer;
+import org.opentrafficsim.animation.gtu.colorer.SpeedGtuColorer;
+import org.opentrafficsim.animation.gtu.colorer.SwitchableGtuColorer;
 import org.opentrafficsim.base.Resource;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterSet;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.Parameters;
-import org.opentrafficsim.core.animation.gtu.colorer.AccelerationGtuColorer;
-import org.opentrafficsim.core.animation.gtu.colorer.SpeedGtuColorer;
-import org.opentrafficsim.core.animation.gtu.colorer.SwitchableGtuColorer;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
-import org.opentrafficsim.core.geometry.OtsLine3d;
-import org.opentrafficsim.core.geometry.OtsPoint3d;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuErrorHandler;
 import org.opentrafficsim.core.gtu.GtuException;
@@ -61,10 +64,6 @@ import org.opentrafficsim.i4driving.tactical.perception.LaneChangeTask;
 import org.opentrafficsim.i4driving.tactical.perception.TaskManagerAr;
 import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
-import org.opentrafficsim.road.gtu.colorer.FixedColor;
-import org.opentrafficsim.road.gtu.colorer.ReactionTimeColorer;
-import org.opentrafficsim.road.gtu.colorer.TaskColorer;
-import org.opentrafficsim.road.gtu.colorer.TaskSaturationColorer;
 import org.opentrafficsim.road.gtu.lane.CollisionDetector;
 import org.opentrafficsim.road.gtu.lane.CollisionException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
@@ -324,12 +323,12 @@ public class ScenarioDeceleration extends AbstractSimulationScript
 
         // Network
         RoadNetwork network = new RoadNetwork("Cut-in scenario network", sim);
-        OtsPoint3d pointA = new OtsPoint3d(0.0, 0.0, 0.0);
-        OtsPoint3d pointB = new OtsPoint3d(5000.0, 0.0, 0.0);
+        Point2d pointA = new Point2d(0.0, 0.0);
+        Point2d pointB = new Point2d(5000.0, 0.0);
         Node nodeA = new Node(network, "A", pointA);
         Node nodeB = new Node(network, "B", pointB);
-        List<Lane> lanes = new LaneFactory(network, nodeA, nodeB, DefaultsNl.FREEWAY, sim, LaneKeepingPolicy.KEEPRIGHT,
-                DefaultsNl.VEHICLE, new OtsLine3d(pointA, pointB))
+        List<Lane> lanes =
+                new LaneFactory(network, nodeA, nodeB, DefaultsNl.FREEWAY, sim, LaneKeepingPolicy.KEEPRIGHT, DefaultsNl.VEHICLE)
                         .leftToRight(0.0, Length.instantiateSI(3.5), DefaultsRoadNl.FREEWAY,
                                 new Speed(130, SpeedUnit.KM_PER_HOUR))
                         .addLanes().getLanes();
@@ -411,6 +410,8 @@ public class ScenarioDeceleration extends AbstractSimulationScript
                             parameters.setDefaultParameter(Tailgating.RHO);
                             parameters.setDefaultParameter(LmrsParameters.SOCIO);
                         }
+                        parameters.setParameter(Estimation.OVER_EST,
+                                randomStream.nextDouble() <= ScenarioDeceleration.this.fractionOverEstimation ? 1.0 : -1.0);
                         return parameters;
                     }
 
@@ -462,8 +463,7 @@ public class ScenarioDeceleration extends AbstractSimulationScript
                         lanePerception.addPerceptionCategory(new DirectEgoPerception<>(lanePerception));
                         lanePerception.addPerceptionCategory(new AnticipationTrafficPerception(lanePerception));
                         lanePerception.addPerceptionCategory(new DirectInfrastructurePerception(lanePerception));
-                        Estimation estimation = randomStream.nextDouble() <= ScenarioDeceleration.this.fractionOverEstimation
-                                ? Estimation.OVERESTIMATION : Estimation.UNDERESTIMATION;
+                        Estimation estimation = Estimation.FACTOR_ESTIMATION;
                         HeadwayGtuType headwayGtuType = new PerceivedHeadwayGtuType(estimation, Anticipation.CONSTANT_SPEED);
                         lanePerception.addPerceptionCategory(new DirectNeighborsPerception(lanePerception, headwayGtuType));
                         Tailgating tail = (ScenarioDeceleration.this.fullSocio

@@ -2,10 +2,8 @@ package org.opentrafficsim.i4driving.sampling;
 
 import org.djunits.unit.DirectionUnit;
 import org.djunits.value.ValueRuntimeException;
-import org.djunits.value.storage.StorageType;
 import org.djunits.value.vfloat.scalar.FloatDirection;
 import org.djunits.value.vfloat.vector.FloatDirectionVector;
-import org.djunits.value.vfloat.vector.base.FloatVector;
 import org.opentrafficsim.kpi.sampling.data.ExtendedDataFloat;
 import org.opentrafficsim.road.network.sampling.GtuDataRoad;
 
@@ -42,7 +40,7 @@ public class WorldDirData extends ExtendedDataFloat<DirectionUnit, FloatDirectio
     @Override
     protected FloatDirectionVector convert(final float[] storage) throws ValueRuntimeException
     {
-        return FloatVector.instantiate(storage, DirectionUnit.DEFAULT, StorageType.DENSE);
+        return new FloatDirectionVector(storage, DirectionUnit.DEFAULT);
     }
 
     /** {@inheritDoc} */

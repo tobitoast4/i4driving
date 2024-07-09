@@ -2,7 +2,6 @@ package org.opentrafficsim.i4driving.tactical;
 
 import java.lang.reflect.Field;
 import java.util.NoSuchElementException;
-import java.util.Set;
 
 import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
@@ -129,7 +128,7 @@ public class CommandsHandler
             }
         }
         Throw.when(lane == null, NoSuchElementException.class, "Lane %s is not present in link %s.", laneId, linkId);
-        Set<LanePosition> position = Set.of(new LanePosition(lane, x));
+        LanePosition position = new LanePosition(lane, x);
 
         // strategical planner (also sets default parameters)
         Node destination = this.network.getNode(this.commands.getGenerationInfo().getDestination());
@@ -247,7 +246,7 @@ public class CommandsHandler
                 this.commands.getGtuId());
         return this.gtu;
     }
-    
+
     /**
      * Returns the GTU id.
      * @return String; GTU id.

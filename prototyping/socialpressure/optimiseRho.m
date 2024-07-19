@@ -6,7 +6,7 @@
 % is excluded from the repository.
 %
 % Author: Wouter Schakel (w.j.schakel@tudelft.nl)
-% Date: 27-06-2024
+% Date: 19-07-2024
 
 % Load data from .csv file.
 fid = fopen('rho.csv');
@@ -18,6 +18,18 @@ catch ex
     disp(['Unable to read data: ' ex.message]);
 end
 fclose(fid);
+
+% Make x-coordinate absolute, not per section.
+these = strcmp(t{2}, 'BC');
+t{6}(these) = t{6}(these) + 1500;
+these = strcmp(t{2}, 'CD');
+t{6}(these) = t{6}(these) + 3000;
+
+% Remove warm-up area
+these = t{6} < 500;
+for i = 1:length(t)
+    t{i}(these) = [];
+end
 
 % Find columns.
 rhoCol = strcmp(header{1}, 'rho');
@@ -38,7 +50,7 @@ a = t{aCol}(these);
 
 % Optimization.
 fun = @(x) getRSquared(x, rho, s, v0lead, vLead, v, a);
-x0 = [1.6, 2.09]; % [T, bScale], or [bScale] to optimize with fixed T=1.6s
+x0 = [2.09]; % [T, bScale], or [bScale] to optimize with fixed T=1.6s
 options = optimset('ObjectiveLimit', 0.001, 'TolX', 0.001, 'Display', 'iter', 'OutputFcn', @outfun);
 x = fminsearch(fun, x0, options);
 
@@ -58,7 +70,7 @@ function err = getRSquared(x, rho, s, v0lead, vLead, v, a)
     aLead = 1.25 * min(max(1-(v./v0lead).^4, -0.5), 1-(ss./s).^2);
 
     % Distance discount and approximate rho value.
-    discount = 1 - (s / 295);
+    discount = 1;%1 - (s / 295);
     rhofit = max(0.0, min((a - aLead) / bScale, 1.0)) .* discount;
     
     % R-squared

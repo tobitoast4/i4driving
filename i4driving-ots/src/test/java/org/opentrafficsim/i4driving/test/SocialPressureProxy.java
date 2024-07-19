@@ -159,7 +159,7 @@ public class SocialPressureProxy
     private static ExtendedDataRhoProxy RHO_PROXY;
 
     /** Whether to show GUI. */
-    @Option(names = "--gui", description = "GUI", defaultValue = "true")
+    @Option(names = "--gui", description = "GUI", defaultValue = "false")
     private boolean gui;
 
     /** Output directory. */
@@ -171,22 +171,25 @@ public class SocialPressureProxy
     private boolean multiLane;
 
     /** Whether to apply a distance discounting on the social pressure proxy. */
-    @Option(names = "--discounted", description = "Space discounted social pressure proxy.", defaultValue = "true")
+    @Option(names = "--discounted", description = "Space discounted social pressure proxy.", defaultValue = "false")
     private boolean discounted;
 
     /** Whether to apply a higher speed limit in the first section. */
-    @Option(names = "--speedDrop", description = "Apply a 130-100km/h speed drop, or all 100km/h.", defaultValue = "false")
+    @Option(names = "--speedDrop", description = "Apply a 130-100km/h speed drop, or all 100km/h.", defaultValue = "true")
     private boolean speedDrop;
 
-    // The following two parameters were calibrated on a single lane without speed drop
+    /*
+     * The following two parameters were calibrated on a multi-lane road with speed drop. As the proxy headway was calibrated
+     * close to ~1.7s, it is instead simplified to the value of Tmax. The proxy deceleration was calibrated very close to 3m/s2.
+     */
 
     /** Desired headway used in proxy car-following. */
     @Option(names = "--proxyHeadway", description = "Desired headway used in proxy car-following.")
-    private Duration proxyHeadway = Duration.instantiateSI(2.146);
+    private Duration proxyHeadway = Duration.instantiateSI(1.6);
 
     /** Deceleration used to scale proxy car-following. */
     @Option(names = "--proxyDeceleration", description = "Deceleration used to scale proxy car-following.")
-    private Acceleration proxyDeceleration = Acceleration.instantiateSI(6.309);
+    private Acceleration proxyDeceleration = Acceleration.instantiateSI(3.0);
 
     /**
      * Main method.
@@ -318,6 +321,7 @@ public class SocialPressureProxy
 
         /**
          * Returns the network.
+         * @return RoadNetwork; network.
          */
         @Override
         public RoadNetwork getNetwork()
@@ -327,6 +331,7 @@ public class SocialPressureProxy
 
         /**
          * Returns the sampler.
+         * @return RoadSampler; sampler.
          */
         public RoadSampler getSampler()
         {

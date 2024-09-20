@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.Test;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.AttentionMatrix;
 
 public class AttentionTest
 {

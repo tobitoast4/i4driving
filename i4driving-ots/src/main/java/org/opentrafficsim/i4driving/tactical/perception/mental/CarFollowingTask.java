@@ -1,4 +1,4 @@
-package org.opentrafficsim.i4driving.tactical.perception;
+package org.opentrafficsim.i4driving.tactical.perception.mental;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.opentrafficsim.base.parameters.ParameterException;
@@ -16,11 +16,16 @@ import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.TaskHead
 import org.opentrafficsim.road.gtu.lane.perception.headway.HeadwayGtu;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AbstractTask;
 
+/**
+ * Car following task in anticipation reliance framework. This is based on headway scaled by {@code h} in an exponential
+ * relation.
+ * @author wjschakel
+ */
 public class CarFollowingTask extends AbstractTask
 {
 
     /** Car-following task parameter. */
-    public static final ParameterTypeDuration HEXP = new ParameterTypeDuration("Hexp",
+    public static final ParameterTypeDuration HEXP = new ParameterTypeDuration("h_exp",
             "Exponential decay of car-following task by headway.", Duration.instantiateSI(4.0), NumericConstraint.POSITIVE);
 
     /**

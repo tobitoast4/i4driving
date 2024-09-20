@@ -15,6 +15,11 @@ import org.opentrafficsim.road.gtu.lane.perception.RelativeLane;
 import org.opentrafficsim.road.gtu.lane.perception.categories.IntersectionPerception;
 import org.opentrafficsim.road.network.lane.object.trafficlight.TrafficLight;
 
+/**
+ * Task demand for traffic lights. This is defined as {@code exp(-T/h)} where {@code T} is the time headway to the traffic light
+ * and {@code h} is the car-following task parameter that scales it.
+ * @author wjschakel
+ */
 public class ChannelTaskTrafficLight implements ChannelTask
 {
 

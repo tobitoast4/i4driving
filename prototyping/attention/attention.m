@@ -26,9 +26,12 @@ for i = 1:n
             % monotasking: probability of staying on a task is its TD
             % for TD approaching 1, this creates attention tunneling
             P(i,i) = TD(i);
-        else
+        elseif sumTD > TD(i)
             % if driver switches, another task is selection by ratio of TD
             P(i,j) = (1-TD(i)) * TD(j) / (sumTD-TD(i));
+        else
+            % only one channel with task demand, do not switch
+            P(i,j) = 0.0;
         end
     end
 end
@@ -49,10 +52,11 @@ AR = max(0, TD(:) - S(:));
 ARratio = AR ./ TD(:);
 ARratio(TD(:)==0) = 1;
 tau = (tauMax / TC)*ARratio;
-TS = max(0, sumTD/TC - 1);
+att = min(TD, S');
+TS = max(1, sumTD/TC);
 if (sumTD==0); Smulti = ones(n,1)/n; else; Smulti = TD(:)/sumTD; end
 ARmulti = max(0, TD(:) - Smulti);
-if (sumTD==0); tauMulti=tauMax; else; tauMulti = (tauMax / TC) * (sum(ARmulti)/sumTD); end  
+if (sumTD==0); tauMulti=tauMax; else; tauMulti = (tauMax / TC) * (sum(ARmulti)/sumTD); end 
 
 % Display results.
 clc;
@@ -62,8 +66,10 @@ disp(['TD:  ' blanks num2str(TD(:)', format) blanks '(task demand)'])
 disp(['TS:  ' blanks num2str(TS, format)])
 disp('=Serial monotasker=')
 disp(['AR:  ' blanks num2str(AR', format) blanks '(anticipation reliance)'])
-disp(['S:   ' blanks num2str(S', format) blanks '(steady state, or attention)'])
+disp(['S:   ' blanks num2str(S', format) blanks '(steady state)'])
+disp(['Att: ' blanks num2str(att, format) blanks '(attention)'])
 disp(['tau: ' blanks num2str(tau', format) blanks '(perception delay)'])
+disp(['Tr:  ' blanks num2str(3.0 - att*2.5, format) blanks '(reaction time)'])
 disp('')
 disp('=Multitasker=')
 disp(['AR*: ' blanks num2str(ARmulti', format)])

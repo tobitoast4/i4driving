@@ -11,8 +11,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 
+import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
+import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.exceptions.Try;
 import org.djutils.immutablecollections.ImmutableSet;
 import org.opentrafficsim.base.parameters.ParameterTypeDuration;
@@ -45,6 +47,9 @@ public class ChannelTaskConflict implements ChannelTask
 
     /** Car-following task parameter. */
     public static final ParameterTypeDuration HEXP = CarFollowingTask.HEXP;
+
+    /** We need to see whether we need to account for acceleration. */
+    private static final boolean USE_ACCELERATION = true;
 
     /** Comparator for underlying objects. */
     // TODO: remove this and its use once UnderlyingDistance implements Comparable
@@ -153,6 +158,7 @@ public class ChannelTaskConflict implements ChannelTask
     @Override
     public double getDemand(final LanePerception perception)
     {
+        // In the following, 'headway' means time until static conflict is reached, possibly with acceleration.
         // Get minimum headway of first vehicle on each conflict in the group
         Duration conflictHeadway = Duration.POSITIVE_INFINITY;
         LaneBasedGtu gtu = Try.assign(() -> perception.getGtu(), "Gtu not initialized.");
@@ -164,13 +170,36 @@ public class ChannelTaskConflict implements ChannelTask
             if (!conflictingGtus.isEmpty())
             {
                 HeadwayGtu conflictingGtu = conflictingGtus.first();
-                conflictHeadway = Duration.min(conflictHeadway, conflictingGtu.getDistance().divide(conflictingGtu.getSpeed()));
+                if (USE_ACCELERATION)
+                {
+                    Acceleration a = Try.assign(() -> conflictingGtu.getParameters().getParameter(ParameterTypes.A),
+                            "No parameter A in conflicting GTU.");
+                    conflictHeadway = ttcFree(conflictingGtu.getDistance(), conflictingGtu.getSpeed(),
+                            conflictingGtu.getDesiredSpeed(), a);
+                }
+                else
+                {
+                    conflictHeadway =
+                            Duration.min(conflictHeadway, conflictingGtu.getDistance().divide(conflictingGtu.getSpeed()));
+                }
             }
         }
         // Get maximum of own and minimum conflicting headway to represent urgency
         EgoPerception<?, ?> ego =
                 Try.assign(() -> perception.getPerceptionCategory(EgoPerception.class), "EgoPerception not present.");
-        Duration headway = Duration.max(conflictHeadway, this.conflicts.first().getDistance().divide(ego.getSpeed()));
+        Duration headway;
+        if (USE_ACCELERATION)
+        {
+            Acceleration a = Try.assign(() -> perception.getGtu().getParameters().getParameter(ParameterTypes.A),
+                    "No parameter A in GTU.");
+            Speed desiredSpeed = Try.assign(() -> perception.getGtu().getDesiredSpeed(), "GTU not initialized.");
+            Duration egoHeadway = ttcFree(this.conflicts.first().getDistance(), ego.getSpeed(), desiredSpeed, a);
+            headway = Duration.max(conflictHeadway, egoHeadway);
+        }
+        else
+        {
+            headway = Duration.max(conflictHeadway, this.conflicts.first().getDistance().divide(ego.getSpeed()));
+        }
         // Scale by h in exponential function
         Duration h = Try.assign(() -> perception.getGtu().getParameters().getParameter(HEXP), "Parameter h_exp not present.");
         return Math.exp(-headway.si / h.si);
@@ -224,6 +253,32 @@ public class ChannelTaskConflict implements ChannelTask
                 appendUpstreamNodes(upstreamLink, nextDistance, x0, nodes);
             }
         }
+    }
+
+    /**
+     * Returns the duration until distance is covered assuming constant acceleration up to the desired speed.
+     * @param distance Length; distance.
+     * @param speed Speed; initial speed.
+     * @param desiredSpeed Speed; desired speed.
+     * @param acceleration Acceleration; (assumed) acceleration.
+     * @return time until distance is covered.
+     */
+    private static Duration ttcFree(final Length distance, final Speed speed, final Speed desiredSpeed,
+            final Acceleration acceleration)
+    {
+        if (speed.gt(desiredSpeed))
+        {
+            return distance.divide(speed);
+        }
+        double tAccelerate = (desiredSpeed.si - speed.si) / acceleration.si;
+        double dxAccelerate = speed.si * tAccelerate + .5 * acceleration.si * tAccelerate * tAccelerate;
+        if (dxAccelerate <= distance.si)
+        {
+            double dxRemain = distance.si - dxAccelerate;
+            return Duration.instantiateSI(tAccelerate + dxRemain / desiredSpeed.si);
+        }
+        return Duration.instantiateSI(
+                (Math.sqrt(speed.si * speed.si + 2.0 * acceleration.si + distance.si) - speed.si) / acceleration.si);
     }
 
 }

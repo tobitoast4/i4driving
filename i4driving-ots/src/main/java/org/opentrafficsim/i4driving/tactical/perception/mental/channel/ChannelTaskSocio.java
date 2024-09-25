@@ -58,7 +58,7 @@ public class ChannelTaskSocio implements ChannelTask
             double socio = perception.getGtu().getParameters().getParameter(LmrsParameters.SOCIO);
             return followers.next().getParameters().getParameter(Tailgating.RHO) * socio;
         }
-        catch (ParameterException | GtuException ex)
+        catch (ParameterException ex)
         {
             // follower does not provide social pressure, ignore
             return 0.0;

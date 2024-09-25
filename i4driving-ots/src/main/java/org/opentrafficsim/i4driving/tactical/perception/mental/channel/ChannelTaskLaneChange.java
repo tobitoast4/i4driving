@@ -65,7 +65,7 @@ public class ChannelTaskLaneChange implements ChannelTask
             double dRight = perception.getGtu().getParameters().getParameter(DRIGHT);
             return this.left ? (dLeft >= dRight ? dLeft : 0.0) : (dRight >= dLeft ? dRight : 0.0);
         }
-        catch (GtuException | ParameterException ex)
+        catch (ParameterException ex)
         {
             throw new RuntimeException(ex);
         }

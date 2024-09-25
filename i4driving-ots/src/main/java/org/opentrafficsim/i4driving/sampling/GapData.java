@@ -31,7 +31,7 @@ public class GapData extends ExtendedDataLength<GtuDataRoad>
         LaneBasedGtu g = gtu.getGtu();
         try
         {
-            Lane lane = g.getReferencePosition().getLane();
+            Lane lane = g.getReferencePosition().lane();
             Length front = g.position(lane, g.getFront());
             ImmutableList<LaneBasedGtu> gtus = lane.getGtuList();
             int index = gtus.indexOf(g) + 1;

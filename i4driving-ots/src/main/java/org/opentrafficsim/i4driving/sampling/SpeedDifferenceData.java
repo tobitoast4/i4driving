@@ -30,7 +30,7 @@ public class SpeedDifferenceData extends ExtendedDataSpeed<GtuDataRoad>
         LaneBasedGtu g = gtu.getGtu();
         try
         {
-            Lane lane = g.getReferencePosition().getLane();
+            Lane lane = g.getReferencePosition().lane();
             ImmutableList<LaneBasedGtu> gtus = lane.getGtuList();
             int index = gtus.indexOf(g) + 1;
             if (index < gtus.size())

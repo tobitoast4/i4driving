@@ -74,6 +74,7 @@ import org.opentrafficsim.kpi.sampling.data.ExtendedDataNumber;
 import org.opentrafficsim.kpi.sampling.data.ExtendedDataSpeed;
 import org.opentrafficsim.kpi.sampling.data.ExtendedDataType;
 import org.opentrafficsim.kpi.sampling.meta.FilterDataGtuType;
+import org.opentrafficsim.kpi.sampling.meta.FilterDataType;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.GeneratorPositions.LaneBias;
 import org.opentrafficsim.road.gtu.generator.GeneratorPositions.LaneBiases;
@@ -370,15 +371,15 @@ public class SocialPressureProxy
                 List<Lane> lanesAB = new LaneFactory(this.network, nodeA, nodeB, DefaultsNl.FREEWAY, getSimulator(),
                         LaneKeepingPolicy.KEEPRIGHT, DefaultsNl.VEHICLE)
                                 .leftToRight(dLat1, laneWidth, DefaultsRoadNl.FREEWAY, speedLimit1).addLanes(upSections)
-                                .addShoulder(laneWidth, LateralDirectionality.NONE).getLanes();
+                                .addShoulder(laneWidth, LateralDirectionality.NONE, DefaultsRoadNl.FREEWAY).getLanes();
                 List<Lane> lanesBC = new LaneFactory(this.network, nodeB, nodeC, DefaultsNl.FREEWAY, getSimulator(),
                         LaneKeepingPolicy.KEEPRIGHT, DefaultsNl.VEHICLE)
                                 .leftToRight(dLat1, laneWidth, DefaultsRoadNl.FREEWAY, speedLimit2).addLanes(upSections)
-                                .addShoulder(laneWidth, LateralDirectionality.NONE).getLanes();
+                                .addShoulder(laneWidth, LateralDirectionality.NONE, DefaultsRoadNl.FREEWAY).getLanes();
                 List<Lane> lanesCD = new LaneFactory(this.network, nodeC, nodeD, DefaultsNl.FREEWAY, getSimulator(),
                         LaneKeepingPolicy.KEEPRIGHT, DefaultsNl.VEHICLE)
                                 .leftToRight(dLat2, laneWidth, DefaultsRoadNl.FREEWAY, speedLimit2).addLanes(downSections)
-                                .addShoulder(laneWidth, LateralDirectionality.NONE).getLanes();
+                                .addShoulder(laneWidth, LateralDirectionality.NONE, DefaultsRoadNl.FREEWAY).getLanes();
 
                 // Demand
                 DoubleVectorData vectorData = new DoubleVectorDataDense(new double[] {0.0, 1800.0, 3600.0});
@@ -481,14 +482,15 @@ public class SocialPressureProxy
                 OdApplier.applyOd(this.network, od, options, DefaultsRoadNl.VEHICLES);
 
                 // Sampler
-                Set<ExtendedDataType<?, ?, ?, GtuDataRoad>> extendedData = new LinkedHashSet<>();
+                Set<ExtendedDataType<?, ?, ?, ? super GtuDataRoad>> extendedData = new LinkedHashSet<>();
                 extendedData.add(RHO);
                 extendedData.add(RHO_PROXY);
                 extendedData.add(new ExtendedDataHeadway());
                 extendedData.add(new ExtendedDataDesiredSpeedLeader());
                 extendedData.add(new ExtendedDataSpeedLeader());
-                this.sampler = new RoadSampler(extendedData, Set.of(new FilterDataGtuType()), this.network,
-                        Frequency.instantiateSI(2.0));
+                Set<FilterDataType<?, ? super GtuDataRoad>> filterData = new LinkedHashSet<>();
+                filterData.add(new FilterDataGtuType());
+                this.sampler = new RoadSampler(extendedData, filterData, this.network, Frequency.instantiateSI(2.0));
                 registerLanes(this.sampler, lanesAB);
                 registerLanes(this.sampler, lanesBC);
                 registerLanes(this.sampler, lanesCD);
@@ -1030,7 +1032,7 @@ public class SocialPressureProxy
                 }
                 LaneBasedGtu leader = leaders.underlying().next();
                 double v0 = Math.min(leader.getMaximumSpeed().si, leader.getParameters().getParameter(ParameterTypes.FSPEED)
-                        * leader.getReferencePosition().getLane().getSpeedLimit(leader.getType()).si);
+                        * leader.getReferencePosition().lane().getSpeedLimit(leader.getType()).si);
                 return FloatSpeed.instantiateSI((float) v0);
             }
             catch (OperationalPlanException | ParameterException | NetworkException | GtuException e)

@@ -5,7 +5,6 @@ import java.util.function.Function;
 
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
-import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 

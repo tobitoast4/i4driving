@@ -6,7 +6,6 @@ import java.util.function.Function;
 
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.RelativeLane;

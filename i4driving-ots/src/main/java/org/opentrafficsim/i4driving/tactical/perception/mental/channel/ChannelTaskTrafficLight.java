@@ -29,7 +29,7 @@ public class ChannelTaskTrafficLight implements ChannelTask
     /** Default set that is returned by the supplier. */
     private static final Set<ChannelTask> SET = Set.of(new ChannelTaskTrafficLight());
 
-    /** Standard supplier that supplies a single instance of the car-following task. */
+    /** Standard supplier that supplies a single instance of the traffic light task. */
     public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
 
     /** {@inheritDoc} */

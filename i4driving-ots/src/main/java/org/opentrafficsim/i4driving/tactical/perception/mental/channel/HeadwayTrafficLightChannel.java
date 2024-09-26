@@ -19,7 +19,7 @@ public class HeadwayTrafficLightChannel extends AbstractHeadwayLaneBasedObject /
 {
 
     /** */
-    private static final long serialVersionUID = 20160410L;
+    private static final long serialVersionUID = 20240925L;
 
     /** the traffic light object for further observation, can not be null. */
     private final TrafficLight trafficLight;
@@ -65,6 +65,7 @@ public class HeadwayTrafficLightChannel extends AbstractHeadwayLaneBasedObject /
     }
 
     /**
+     * Returns the traffic light color.
      * @return the traffic light color.
      */
     public final TrafficLightColor getTrafficLightColor()

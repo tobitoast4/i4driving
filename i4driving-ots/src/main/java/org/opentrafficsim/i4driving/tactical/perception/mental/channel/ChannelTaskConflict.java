@@ -63,7 +63,10 @@ public class ChannelTaskConflict implements ChannelTask
         }
     };
 
-    /** Standard supplier that supplies a task per grouped set of conflicts based on common upstream nodes. */
+    /**
+     * Standard supplier that supplies a task per grouped set of conflicts based on common upstream nodes. This also adds a
+     * scanning task demand to each of these channels.
+     */
     public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (perception) ->
     {
         IntersectionPerception intersection =
@@ -118,6 +121,7 @@ public class ChannelTaskConflict implements ChannelTask
         for (SortedSet<UnderlyingDistance<Conflict>> group : groups.keySet())
         {
             tasks.add(new ChannelTaskConflict(group));
+            tasks.add(new ChannelTaskScan(group));
             // make sure the channel (key is first conflict) can be found for all individual conflicts
             if (perception.getMental() instanceof ChannelMental)
             {

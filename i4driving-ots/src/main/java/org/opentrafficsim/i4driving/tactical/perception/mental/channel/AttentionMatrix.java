@@ -2,7 +2,6 @@ package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
 
 import org.djutils.exceptions.Throw;
 
-import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 
 /**

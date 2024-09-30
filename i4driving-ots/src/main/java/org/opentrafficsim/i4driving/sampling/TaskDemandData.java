@@ -16,7 +16,7 @@ public class TaskDemandData extends ExtendedDataNumber<GtuDataRoad>
 
     /**
      * Constructor.
-     * @param taskId String; task id
+     * @param taskId task id
      */
     public TaskDemandData(final String taskId)
     {

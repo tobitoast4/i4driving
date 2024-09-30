@@ -13,7 +13,7 @@ public class Settings
 
     /**
      * Returns the argument array as though they were given as command line arguments.
-     * @return String[]; argument array as though they were given as command line arguments.
+     * @return argument array as though they were given as command line arguments.
      */
     public String[] getArguments()
     {

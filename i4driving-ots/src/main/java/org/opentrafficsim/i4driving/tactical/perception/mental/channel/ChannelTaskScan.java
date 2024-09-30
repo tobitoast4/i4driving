@@ -31,7 +31,7 @@ public class ChannelTaskScan implements ChannelTask
 
     /**
      * Constructor.
-     * @param channel Object; channel.
+     * @param channel channel.
      */
     public ChannelTaskScan(final Object channel)
     {

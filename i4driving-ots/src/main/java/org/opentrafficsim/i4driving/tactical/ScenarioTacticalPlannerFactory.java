@@ -14,8 +14,8 @@ public class ScenarioTacticalPlannerFactory extends AbstractLaneBasedTacticalPla
 
     /**
      * Constructor.
-     * @param carFollowingModelFactory CarFollowingModelFactory&lt;? extends CarFollowingModel&gt;; car-following mode factory.
-     * @param perceptionFactory PerceptionFactory; perception factory.
+     * @param carFollowingModelFactory car-following mode factory.
+     * @param perceptionFactory perception factory.
      */
     public ScenarioTacticalPlannerFactory(final CarFollowingModelFactory<? extends CarFollowingModel> carFollowingModelFactory,
             final PerceptionFactory perceptionFactory)

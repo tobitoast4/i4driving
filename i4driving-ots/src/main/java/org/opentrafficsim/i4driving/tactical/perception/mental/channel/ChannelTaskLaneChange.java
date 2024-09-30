@@ -33,7 +33,7 @@ public class ChannelTaskLaneChange implements ChannelTask
 
     /**
      * Constructor.
-     * @param left boolean; whether this task instance regards the left side.
+     * @param left whether this task instance regards the left side.
      */
     private ChannelTaskLaneChange(final boolean left)
     {

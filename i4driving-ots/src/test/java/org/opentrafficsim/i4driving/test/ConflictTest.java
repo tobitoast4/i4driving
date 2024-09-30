@@ -81,9 +81,9 @@ public class ConflictTest extends OtsSimulationApplication<ConflictModel>
 
     /**
      * Create a T-Junction demo.
-     * @param title String; the title of the Frame
-     * @param panel OtsAnimationPanel; the tabbed panel to display
-     * @param model TJunctionModel; the model
+     * @param title the title of the Frame
+     * @param panel the tabbed panel to display
+     * @param model the model
      * @throws OtsDrawingException on animation error
      */
     public ConflictTest(final String title, final OtsAnimationPanel panel, final ConflictModel model) throws OtsDrawingException
@@ -93,7 +93,7 @@ public class ConflictTest extends OtsSimulationApplication<ConflictModel>
 
     /**
      * Main program.
-     * @param args String[]; the command line arguments (not used)
+     * @param args the command line arguments (not used)
      */
     public static void main(final String[] args)
     {
@@ -102,7 +102,7 @@ public class ConflictTest extends OtsSimulationApplication<ConflictModel>
 
     /**
      * Start the demo.
-     * @param exitOnClose boolean; when running stand-alone: true; when running as part of a demo: false
+     * @param exitOnClose when running stand-alone: true; when running as part of a demo: false
      */
     public static void demo(final boolean exitOnClose)
     {
@@ -135,7 +135,7 @@ public class ConflictTest extends OtsSimulationApplication<ConflictModel>
         private RoadNetwork network;
 
         /**
-         * @param simulator OtsSimulatorInterface; the simulator for this model
+         * @param simulator the simulator for this model
          */
         public ConflictModel(final OtsSimulatorInterface simulator)
         {

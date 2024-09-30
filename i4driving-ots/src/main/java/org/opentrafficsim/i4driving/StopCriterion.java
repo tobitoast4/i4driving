@@ -26,10 +26,10 @@ public class StopCriterion
 
     /**
      * Constructor.
-     * @param simulator OtsSimulatorInterface; simulator.
-     * @param network RoadNetwork; network.
-     * @param startTime Time; start time.
-     * @param interval Duration; interval.
+     * @param simulator simulator.
+     * @param network network.
+     * @param startTime start time.
+     * @param interval interval.
      */
     public StopCriterion(final OtsSimulatorInterface simulator, final RoadNetwork network, final Time startTime,
             final Duration interval)

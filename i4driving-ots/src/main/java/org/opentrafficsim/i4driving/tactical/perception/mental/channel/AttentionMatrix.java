@@ -29,7 +29,7 @@ public class AttentionMatrix
      * staying on a task is the task demand of the task, while the probability of switching is the complement. The task that
      * will then be switched to is selected by weighting them by their task demand. This creates a transition matrix in a Markov
      * chain. The steady-state of this Markov chain is the attention distribution.
-     * @param demand double[]; level of mental task demand per channel.
+     * @param demand level of mental task demand per channel.
      * @throws IllegalArgumentException when a demand value is below 0 or larger than 1
      */
     public AttentionMatrix(double[] demand)
@@ -94,7 +94,7 @@ public class AttentionMatrix
          * matrix has an eigenvalue 1, and the pertaining eigenvector is the steady-state. This steady state is the distribution
          * of attention (in time) over the channels.
          */
-        EigenvalueDecomposition ed = new EigenvalueDecomposition(matrix);
+        var ed = matrix.eig();
         double[] eigenValues = ed.getRealEigenvalues();
         // find the eigenvalue closest to 1 (these values are not highly exact)
         int eigenIndex = 0;
@@ -134,8 +134,8 @@ public class AttentionMatrix
 
     /**
      * Returns the fraction of time that is spent on channel <i>i</i>.
-     * @param i int; index of channel.
-     * @return double; fraction of time that is spent on channel <i>i</i>.
+     * @param i index of channel.
+     * @return fraction of time that is spent on channel <i>i</i>.
      */
     public double getAttention(final int i)
     {
@@ -145,8 +145,8 @@ public class AttentionMatrix
     /**
      * Returns the level of anticipation reliance for channel <i>i</i>. This is the fraction of time that is reduced from
      * perceiving channel <i>i</i>, relative to the desired fraction of time to perceive channel <i>i</i>.
-     * @param i int; index of channel.
-     * @return double; level of anticipation reliance for channel <i>i</i>.
+     * @param i index of channel.
+     * @return level of anticipation reliance for channel <i>i</i>.
      */
     public double getAnticipationReliance(final int i)
     {
@@ -155,12 +155,12 @@ public class AttentionMatrix
 
     /**
      * Returns the deterioration of channel <i>i</i>. This is the anticipation reliance for channel <i>i</i>, divided by the
-     * desired level of attention for channel <i>i</i>. This value is an indication of perception delay and reaction time for
-     * the channel.
+     * desired level of attention for channel <i>i</i>. This value is an indication of perception delay and update time for the
+     * channel.
      * <p>
      * If demand for the channel is 0, this method returns 0.
-     * @param i int; index of channel.
-     * @return double; fraction of anticipation reliance over desired attention for channel <i>i</i>.
+     * @param i index of channel.
+     * @return fraction of anticipation reliance over desired attention for channel <i>i</i>.
      */
     public double getDeterioration(final int i)
     {

@@ -56,9 +56,9 @@ public class CommandsHandler
 
     /**
      * Constructor.
-     * @param network RoadNetwork; network.
-     * @param commands Commands; commands for a specific GTU.
-     * @param strategicalFactory LaneBasedStrategicalRoutePlannerFactory; strategical planner, may be {@code null} if no
+     * @param network network.
+     * @param commands commands for a specific GTU.
+     * @param strategicalFactory strategical planner, may be {@code null} if no
      *            generation info is provided in the {@code Commands}.
      */
     public CommandsHandler(final RoadNetwork network, final Commands commands,
@@ -181,7 +181,7 @@ public class CommandsHandler
 
     /**
      * Executes a command.
-     * @param command Command; command.
+     * @param command command.
      */
     @SuppressWarnings("unused") // scheduled
     private void executeCommand(final Command command)
@@ -234,7 +234,7 @@ public class CommandsHandler
 
     /**
      * Retrieves the GTU from the network and remembers it for later use.
-     * @return LaneBasedGtu; GTU.
+     * @return GTU.
      */
     private LaneBasedGtu getGtu()
     {
@@ -249,7 +249,7 @@ public class CommandsHandler
 
     /**
      * Returns the GTU id.
-     * @return String; GTU id.
+     * @return GTU id.
      */
     public String getGtuId()
     {

@@ -36,10 +36,10 @@ public class HeadwayTrafficLightChannel extends AbstractHeadwayLaneBasedObject /
     /**
      * Construct a new Headway information object, for a traffic light ahead of us (or behind us, although that does not seem
      * very useful).
-     * @param trafficLight TrafficLight; the traffic light object for further observation, can not be null.
-     * @param distance Length; the distance to the traffic light, distance cannot be null.
-     * @param turnOnRed boolean; whether the perceiving GTU may turn on red.
-     * @param perceptionDelay Supplier&lt;Duration&gt;; perception delay supplier.
+     * @param trafficLight the traffic light object for further observation, can not be null.
+     * @param distance the distance to the traffic light, distance cannot be null.
+     * @param turnOnRed whether the perceiving GTU may turn on red.
+     * @param perceptionDelay perception delay supplier.
      * @throws GtuException when id is null, or parameters are inconsistent
      */
     public HeadwayTrafficLightChannel(final TrafficLight trafficLight, final Length distance, final boolean turnOnRed,
@@ -54,7 +54,7 @@ public class HeadwayTrafficLightChannel extends AbstractHeadwayLaneBasedObject /
 
     /**
      * Get the id of the traffic light; throw an exception if traffic light is null.
-     * @param trafficLight TrafficLight; the traffic light object for further observation, can not be null.
+     * @param trafficLight the traffic light object for further observation, can not be null.
      * @return he id of the traffic light.
      * @throws GtuException when the trafficLight object is null
      */
@@ -77,7 +77,7 @@ public class HeadwayTrafficLightChannel extends AbstractHeadwayLaneBasedObject /
 
     /**
      * Whether the perceiving GTU may turn on red.
-     * @return boolean; whether the perceiving GTU may turn on red.
+     * @return whether the perceiving GTU may turn on red.
      */
     public final boolean canTurnOnRed()
     {

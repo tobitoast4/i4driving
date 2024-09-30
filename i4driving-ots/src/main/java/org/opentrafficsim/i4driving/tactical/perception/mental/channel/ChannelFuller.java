@@ -88,8 +88,8 @@ public class ChannelFuller implements ChannelMental
 
     /**
      * Constructor.
-     * @param taskSuppliers Collection&lt;Function&lt;LanePerception, Set&lt;ChannelTask&gt;&gt;&gt;; task suppliers.
-     * @param behavioralAdapatations Set&lt;BehavioralAdaptation&gt;; behavioral adaptations.
+     * @param taskSuppliers task suppliers.
+     * @param behavioralAdapatations behavioral adaptations.
      */
     public ChannelFuller(final Collection<Function<LanePerception, Set<ChannelTask>>> taskSuppliers,
             final Set<BehavioralAdaptation> behavioralAdapatations)
@@ -176,7 +176,7 @@ public class ChannelFuller implements ChannelMental
     /**
      * Returns the relevant channel key for the object. This is a channel key mapped to the object, or the object itself if
      * there is no such mapping (in which case the object should itself directly be a channel key).
-     * @param obj Object; object.
+     * @param obj object.
      * @return relevant channel key for the object.
      */
     private Object getChannel(final Object obj)

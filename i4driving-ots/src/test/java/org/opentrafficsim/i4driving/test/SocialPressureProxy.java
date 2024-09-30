@@ -194,7 +194,7 @@ public class SocialPressureProxy
 
     /**
      * Main method.
-     * @param args String[]; command line arguments (ignored);
+     * @param args command line arguments (ignored);
      */
     public static void main(final String[] args)
     {
@@ -282,8 +282,8 @@ public class SocialPressureProxy
 
     /**
      * Returns the model.
-     * @param simulator OtsSimulatorInterface; simulator.
-     * @return SocialPressureProxyModel; model.
+     * @param simulator simulator.
+     * @return model.
      */
     private SocialPressureProxyModel getModel(final OtsSimulatorInterface simulator)
     {
@@ -311,8 +311,8 @@ public class SocialPressureProxy
 
         /**
          * Constructor.
-         * @param simulator OtsSimulatorInterface; simulator.
-         * @param outputDir String; output directory.
+         * @param simulator simulator.
+         * @param outputDir output directory.
          */
         public SocialPressureProxyModel(final OtsSimulatorInterface simulator, final String outputDir)
         {
@@ -322,7 +322,7 @@ public class SocialPressureProxy
 
         /**
          * Returns the network.
-         * @return RoadNetwork; network.
+         * @return network.
          */
         @Override
         public RoadNetwork getNetwork()
@@ -332,7 +332,7 @@ public class SocialPressureProxy
 
         /**
          * Returns the sampler.
-         * @return RoadSampler; sampler.
+         * @return sampler.
          */
         public RoadSampler getSampler()
         {
@@ -506,8 +506,8 @@ public class SocialPressureProxy
 
         /**
          * Register lanes in the sampler for sampling.
-         * @param sampler RoadSampler; sampler.
-         * @param lanes List&lt;Lane&gt;; lanes.
+         * @param sampler sampler.
+         * @param lanes lanes.
          */
         private void registerLanes(final RoadSampler sampler, final List<Lane> lanes)
         {
@@ -598,9 +598,9 @@ public class SocialPressureProxy
 
         /**
          * Constructor.
-         * @param discounted boolean; whether to apply a distance discounting on the social pressure proxy.
-         * @param proxyHeadway Duration; desired headway used in proxy car-following.
-         * @param proxyDeceleration Acceleration; deceleration used to scale proxy car-following.
+         * @param discounted whether to apply a distance discounting on the social pressure proxy.
+         * @param proxyHeadway desired headway used in proxy car-following.
+         * @param proxyDeceleration deceleration used to scale proxy car-following.
          */
         public ExtendedDataRhoProxy(final boolean discounted, final Duration proxyHeadway, final Acceleration proxyDeceleration)
         {
@@ -740,9 +740,9 @@ public class SocialPressureProxy
         /**
          * Constructor. In case this plot is created live, the sampler of the sample data in the data source needs to have the
          * extended data type {@code ReferenceSpeed.INSTANCE} registered.
-         * @param caption String; caption
-         * @param simulator OtsSimulatorInterface; simulator
-         * @param dataPool ContourDataSource; data pool
+         * @param caption caption
+         * @param simulator simulator
+         * @param dataPool data pool
          */
         public ContourPlotRho(final String caption, final OtsSimulatorInterface simulator, final ContourDataSource dataPool)
         {
@@ -751,7 +751,7 @@ public class SocialPressureProxy
 
         /**
          * Creates a paint scale from red, via yellow to green.
-         * @return ContinuousColorPaintScale; paint scale
+         * @return paint scale
          */
         private static BoundsPaintScale createPaintScale()
         {
@@ -868,9 +868,9 @@ public class SocialPressureProxy
         /**
          * Constructor. In case this plot is created live, the sampler of the sample data in the data source needs to have the
          * extended data type {@code ReferenceSpeed.INSTANCE} registered.
-         * @param caption String; caption
-         * @param simulator OtsSimulatorInterface; simulator
-         * @param dataPool ContourDataSource; data pool
+         * @param caption caption
+         * @param simulator simulator
+         * @param dataPool data pool
          */
         public ContourPlotRhoProxy(final String caption, final OtsSimulatorInterface simulator,
                 final ContourDataSource dataPool)
@@ -880,7 +880,7 @@ public class SocialPressureProxy
 
         /**
          * Creates a paint scale from red, via yellow to green.
-         * @return ContinuousColorPaintScale; paint scale
+         * @return paint scale
          */
         private static BoundsPaintScale createPaintScale()
         {

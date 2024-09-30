@@ -20,13 +20,13 @@ public interface ChannelTask extends Identifiable
     
     /**
      * Return the channel this task pertains to.
-     * @return Object; channel this task pertains to.
+     * @return channel this task pertains to.
      */
     Object getChannel();
 
     /**
      * Returns the level of task demand.
-     * @param perception LanePerception; perception.
+     * @param perception perception.
      * @return level of task demand.
      */
     double getDemand(LanePerception perception);

@@ -43,9 +43,9 @@ public class HeadwayGtuTypeChannel implements HeadwayGtuType
 
     /**
      * Constructor.
-     * @param estimation Estimation; estimation
-     * @param anticipation Anticipation; anticipation
-     * @param perceptionDelay Supplier&lt;Duration&gt;; perception delay supplier.
+     * @param estimation estimation
+     * @param anticipation anticipation
+     * @param perceptionDelay perception delay supplier.
      */
     public HeadwayGtuTypeChannel(final Estimation estimation, final Anticipation anticipation,
             final Supplier<Duration> perceptionDelay)

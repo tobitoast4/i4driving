@@ -34,7 +34,7 @@ public class TaskManagerAr implements TaskManager
     
     /**
      * Constructor.
-     * @param primaryTaskId String; primary task id.
+     * @param primaryTaskId primary task id.
      */
     public TaskManagerAr(final String primaryTaskId)
     {

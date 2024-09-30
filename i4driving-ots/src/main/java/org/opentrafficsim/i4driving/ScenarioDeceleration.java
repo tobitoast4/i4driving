@@ -571,7 +571,7 @@ public class ScenarioDeceleration extends AbstractSimulationScript
 
     /**
      * Returns a reader for GSON to read a file.
-     * @param file String; file name.
+     * @param file file name.
      * @return Reader for GSON to read a file.
      */
     private final static Reader getReader(final String file)

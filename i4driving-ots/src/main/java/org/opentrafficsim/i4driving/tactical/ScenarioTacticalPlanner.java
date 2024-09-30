@@ -88,13 +88,13 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Constructor setting the car-following model.
-     * @param carFollowingModel CarFollowingModel; Car-following model.
-     * @param gtu LaneBasedGtu; GTU
-     * @param lanePerception LanePerception; perception
-     * @param synchronization Synchronization; type of synchronization
-     * @param cooperation Cooperation; type of cooperation
-     * @param gapAcceptance GapAcceptance; gap-acceptance
-     * @param tailgating Tailgating; tail gating
+     * @param carFollowingModel Car-following model.
+     * @param gtu GTU
+     * @param lanePerception perception
+     * @param synchronization type of synchronization
+     * @param cooperation type of cooperation
+     * @param gapAcceptance gap-acceptance
+     * @param tailgating tail gating
      */
     public ScenarioTacticalPlanner(final CarFollowingModel carFollowingModel, final LaneBasedGtu gtu,
             final LanePerception lanePerception, final Synchronization synchronization, final Cooperation cooperation,
@@ -257,7 +257,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Sets a fixed acceleration.
-     * @param acceleration Acceleration; acceleration;
+     * @param acceleration acceleration;
      */
     public void setAcceleration(final Acceleration acceleration)
     {
@@ -276,8 +276,8 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Sets the indicator.
-     * @param indicator LateralDirectionality; indicator.
-     * @param duration Duration; duration;
+     * @param indicator indicator.
+     * @param duration duration;
      */
     public void setIndicator(final LateralDirectionality indicator, final Duration duration)
     {
@@ -316,7 +316,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Sets the desired speed.
-     * @param speed Speed; desired speed.
+     * @param speed desired speed.
      */
     public void setDesiredSpeed(final Speed speed)
     {
@@ -380,7 +380,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Sets the desired speed model in the car-following mode using reflection.
-     * @param desiredSpeedModel DesiredSpeedModel; desired speed model.
+     * @param desiredSpeedModel desired speed model.
      */
     private void setDesiredSpeedModel(final DesiredSpeedModel desiredSpeedModel)
     {
@@ -398,8 +398,8 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Set parameter.
-     * @param parameter String; parameter type.
-     * @param value String; string representation of the value.
+     * @param parameter parameter type.
+     * @param value string representation of the value.
      * @throws ParameterException when the parameter value does not comply to the type.
      */
     @SuppressWarnings("unchecked")
@@ -449,7 +449,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /**
      * Initiates a lane change.
-     * @param direction LateralDirectionality; lane change direction.
+     * @param direction lane change direction.
      */
     public void changeLane(final LateralDirectionality direction)
     {

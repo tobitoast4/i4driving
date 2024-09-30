@@ -39,7 +39,7 @@ public class DefaultGsonBuilder
     
     /**
      * Returns a {@code Gson} with all adapters registered.
-     * @return Gson; with all adapters registered.
+     * @return with all adapters registered.
      */
     public static Gson get()
     {

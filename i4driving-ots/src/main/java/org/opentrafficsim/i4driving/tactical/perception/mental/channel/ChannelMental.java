@@ -12,22 +12,22 @@ public interface ChannelMental extends Mental
 
     /**
      * Returns the perception delay belonging to a perception channel.
-     * @param obj Object; object that is a channel key, or that is mapped to a channel key.
+     * @param obj object that is a channel key, or that is mapped to a channel key.
      * @return perception delay belonging to a perception channel.
      */
     Duration getPerceptionDelay(Object obj);
 
     /**
      * Returns the level of attention of a perception channel.
-     * @param obj Object; object that is a channel key, or that is mapped to a channel key.
+     * @param obj object that is a channel key, or that is mapped to a channel key.
      * @return level of attention of a perception channel.
      */
     double getAttention(Object obj);
     
     /**
      * Maps an object to a channel key.
-     * @param obj Object; object.
-     * @param channel Object; channel key.
+     * @param obj object.
+     * @param channel channel key.
      */
     void mapToChannel(Object obj, Object channel);
 

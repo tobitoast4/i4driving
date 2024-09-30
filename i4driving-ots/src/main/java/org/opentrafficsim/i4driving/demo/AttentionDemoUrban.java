@@ -104,7 +104,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
 
     /**
      * Main program.
-     * @param args String[]; command line arguments. See AbstractSimulationScript for available arguments.
+     * @param args command line arguments. See AbstractSimulationScript for available arguments.
      * @throws Exception when an exception occurs.
      */
     public static void main(String[] args) throws Exception

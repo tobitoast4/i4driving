@@ -118,17 +118,17 @@ public class ChannelTaskConflict implements ChannelTask
 
         // Create task for each group
         Set<ChannelTask> tasks = new LinkedHashSet<>();
-        for (SortedSet<UnderlyingDistance<Conflict>> group : groups.keySet())
-        {
-            tasks.add(new ChannelTaskConflict(group));
-            tasks.add(new ChannelTaskScan(group));
-            // make sure the channel (key is first conflict) can be found for all individual conflicts
-            if (perception.getMental() instanceof ChannelMental)
+            for (SortedSet<UnderlyingDistance<Conflict>> group : groups.keySet())
             {
-                ChannelMental channelMental = (ChannelMental) perception.getMental();
-                group.forEach((c) -> channelMental.mapToChannel(c.getObject(), group.first().getObject()));
+                tasks.add(new ChannelTaskConflict(group));
+                tasks.add(new ChannelTaskScan(group));
+                // make sure the channel (key is first conflict) can be found for all individual conflicts
+                if (perception.getMental() instanceof ChannelMental)
+                {
+                    ChannelMental channelMental = (ChannelMental) perception.getMental();
+                    group.forEach((c) -> channelMental.mapToChannel(c.getObject(), group.first().getObject()));
+                }
             }
-        }
         return tasks;
     };
 
@@ -137,7 +137,7 @@ public class ChannelTaskConflict implements ChannelTask
 
     /**
      * Constructor.
-     * @param conflicts SortedSet&lt;UnderlyingDistance&lt;Conflict&gt;&gt;; conflicts in the group.
+     * @param conflicts conflicts in the group.
      */
     private ChannelTaskConflict(final SortedSet<UnderlyingDistance<Conflict>> conflicts)
     {
@@ -211,8 +211,8 @@ public class ChannelTaskConflict implements ChannelTask
 
     /**
      * Finds all nodes within a given distance upstream of a conflict, stopping at any diverge, branging at merges.
-     * @param conflict Conflict; conflict.
-     * @param x0 Length; distance to loop upstream.
+     * @param conflict conflict.
+     * @param x0 distance to loop upstream.
      * @return set of all upstream nodes within distance.
      */
     private static Set<Node> getUpstreamNodes(final Conflict conflict, final Length x0)
@@ -226,10 +226,10 @@ public class ChannelTaskConflict implements ChannelTask
 
     /**
      * Append upstream nodes, branging upstream at merges, stopping at any diverge.
-     * @param link Link; next link to move along.
-     * @param distance Length; distance between end of link and conflict, upstream of conflict.
-     * @param x0 Length; search distance.
-     * @param nodes Set&lt;Node&gt;; collected nodes.
+     * @param link next link to move along.
+     * @param distance distance between end of link and conflict, upstream of conflict.
+     * @param x0 search distance.
+     * @param nodes collected nodes.
      */
     private static void appendUpstreamNodes(final Link link, final Length distance, final Length x0, final Set<Node> nodes)
     {
@@ -261,10 +261,10 @@ public class ChannelTaskConflict implements ChannelTask
 
     /**
      * Returns the duration until distance is covered assuming constant acceleration up to the desired speed.
-     * @param distance Length; distance.
-     * @param speed Speed; initial speed.
-     * @param desiredSpeed Speed; desired speed.
-     * @param acceleration Acceleration; (assumed) acceleration.
+     * @param distance distance.
+     * @param speed initial speed.
+     * @param desiredSpeed desired speed.
+     * @param acceleration (assumed) acceleration.
      * @return time until distance is covered.
      */
     private static Duration ttcFree(final Length distance, final Speed speed, final Speed desiredSpeed,

@@ -16,7 +16,7 @@ public class TaskAnticipationRelianceData extends ExtendedDataNumber<GtuDataRoad
 
     /**
      * Constructor.
-     * @param taskId String; task id
+     * @param taskId task id
      */
     public TaskAnticipationRelianceData(final String taskId)
     {

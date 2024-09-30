@@ -49,7 +49,7 @@ public class ChannelTaskSignal implements ChannelTask
 
     /**
      * Constructor.
-     * @param channel Object; channel.
+     * @param channel channel.
      */
     public ChannelTaskSignal(final Object channel)
     {

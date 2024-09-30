@@ -66,7 +66,7 @@ public class InjectionsDemo extends AbstractSimulationScript
 
     /**
      * Main program.
-     * @param args String[]; command line arguments. See AbstractSimulationScript for available arguments.
+     * @param args command line arguments. See AbstractSimulationScript for available arguments.
      * @throws Exception when an exception occurs.
      */
     public static void main(String[] args) throws Exception
@@ -149,9 +149,9 @@ public class InjectionsDemo extends AbstractSimulationScript
     /**
      * This method creates injections for two vehicles. The first arrives at 1s on the slow lane and has a slower maximum speed.
      * The second arrives at 4s on the fast lane and has a higher maximum speed.
-     * @param network RoadNetwork; network.
-     * @param stream StreamInterface; random number stream.
-     * @return Injections; injections for two GTUs.
+     * @param network network.
+     * @param stream random number stream.
+     * @return injections for two GTUs.
      */
     private static Injections getInjections(final RoadNetwork network, final StreamInterface stream)
     {
@@ -184,7 +184,7 @@ public class InjectionsDemo extends AbstractSimulationScript
     /**
      * This method creates a list of table columns for a table that contains information for GTU injections. There are more
      * columns available, see {@code Injections} class and constructor.
-     * @return List&lt;Column&lt;?&gt;&gt;; list of columns.
+     * @return list of columns.
      * @see Injections
      */
     private static List<Column<?>> getColumns()

@@ -40,7 +40,7 @@ public class ChannelTaskCutin implements ChannelTask
 
     /**
      * Constructor.
-     * @param left boolean; whether this task instance regards the left side.
+     * @param left whether this task instance regards the left side.
      */
     private ChannelTaskCutin(final boolean left)
     {

@@ -64,9 +64,9 @@ public class IntersectionPerceptionChannel extends AbstractPerceptionCategory<La
 
     /**
      * Constructor.
-     * @param perception LanePerception; perception.
-     * @param estimation Estimation; estimation.
-     * @param anticipation Anticipation; anticipation.
+     * @param perception perception.
+     * @param estimation estimation.
+     * @param anticipation anticipation.
      */
     public IntersectionPerceptionChannel(final LanePerception perception, final Estimation estimation,
             final Anticipation anticipation)
@@ -111,7 +111,7 @@ public class IntersectionPerceptionChannel extends AbstractPerceptionCategory<La
 
     /**
      * Compute traffic lights.
-     * @param lane RelativeLane; lane
+     * @param lane lane
      * @return PerceptionCollectable of traffic lights
      */
     private PerceptionCollectable<HeadwayTrafficLight, TrafficLight> computeTrafficLights(final RelativeLane lane)
@@ -163,7 +163,7 @@ public class IntersectionPerceptionChannel extends AbstractPerceptionCategory<La
 
     /**
      * Compute conflicts.
-     * @param lane RelativeLane; lane
+     * @param lane lane
      * @return PerceptionCollectable of conflicts
      */
     private PerceptionCollectable<HeadwayConflict, Conflict> computeConflicts(final RelativeLane lane)
@@ -281,8 +281,8 @@ public class IntersectionPerceptionChannel extends AbstractPerceptionCategory<La
 
     /**
      * Compute whether there is a conflict alongside.
-     * @param lat LateralDirectionality; lateral directionality
-     * @return boolean; whether there is a conflict alongside
+     * @param lat lateral directionality
+     * @return whether there is a conflict alongside
      */
     private boolean computeConflictAlongside(final LateralDirectionality lat)
     {

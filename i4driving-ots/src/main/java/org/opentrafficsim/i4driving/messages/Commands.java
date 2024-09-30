@@ -33,7 +33,7 @@ public class Commands
 
     /**
      * Returns the GTU id.
-     * @return String; GTU id.
+     * @return GTU id.
      */
     public String getGtuId()
     {
@@ -42,7 +42,7 @@ public class Commands
 
     /**
      * Returns the generation info.
-     * @return GenerationInfo; generation info, {@code null} if GTU should be found from another source.
+     * @return generation info, {@code null} if GTU should be found from another source.
      */
     public GenerationInfo getGenerationInfo()
     {
@@ -51,7 +51,7 @@ public class Commands
 
     /**
      * Commands to give to the GTU.
-     * @return ImmutableList&lt;Command&gt;; commands to give to the GTU.
+     * @return commands to give to the GTU.
      */
     public ImmutableList<Command> getCommands()
     {
@@ -91,7 +91,7 @@ public class Commands
 
         /**
          * Returns the generation time.
-         * @return Time; generation time.
+         * @return generation time.
          */
         public Time getTime()
         {
@@ -100,7 +100,7 @@ public class Commands
 
         /**
          * Returns the initial speed.
-         * @return Speed; initial speed.
+         * @return initial speed.
          */
         public Speed getInitialSpeed()
         {
@@ -109,7 +109,7 @@ public class Commands
 
         /**
          * Returns the GTU type id.
-         * @return String; GTU type id.
+         * @return GTU type id.
          */
         public String getGtuType()
         {
@@ -118,7 +118,7 @@ public class Commands
 
         /**
          * Returns the initial position.
-         * @return LanePosition; initial position.
+         * @return initial position.
          */
         public LanePosition getInitialPosition()
         {
@@ -127,7 +127,7 @@ public class Commands
 
         /**
          * Returns the destination node id.
-         * @return String; destination node id;
+         * @return destination node id;
          */
         public String getDestination()
         {
@@ -173,7 +173,7 @@ public class Commands
 
         /**
          * Returns link id.
-         * @return String; link id.
+         * @return link id.
          */
         public String getLink()
         {
@@ -182,7 +182,7 @@ public class Commands
 
         /**
          * Returns the lane id.
-         * @return String; lane id.
+         * @return lane id.
          */
         public String getLane()
         {
@@ -191,7 +191,7 @@ public class Commands
 
         /**
          * Returns the x-position.
-         * @return Length; x-position.
+         * @return x-position.
          */
         public Length getX()
         {
@@ -223,7 +223,7 @@ public class Commands
 
         /**
          * Returns the time for the command.
-         * @return Time; time for the command.
+         * @return time for the command.
          */
         public Time getTime()
         {
@@ -232,7 +232,7 @@ public class Commands
 
         /**
          * Returns the command type.
-         * @return CommandType; command type.
+         * @return command type.
          */
         public CommandType getType()
         {
@@ -241,8 +241,8 @@ public class Commands
 
         /**
          * Returns the data under the name of the given field.
-         * @param field String; name of the data field.
-         * @return String; value of the data.
+         * @param field name of the data field.
+         * @return value of the data.
          * @throws NoSuchFieldException if no field is present under the given name.
          */
         public String getData(final String field) throws NoSuchFieldException
@@ -297,7 +297,7 @@ public class Commands
 
         /**
          * Constructor.
-         * @param printValue String; print value for in JSON file.
+         * @param printValue print value for in JSON file.
          */
         private CommandType(final String printValue)
         {
@@ -306,7 +306,7 @@ public class Commands
 
         /**
          * Returns the print value for in a JSON file.
-         * @return String; print value for in a JSON file.
+         * @return print value for in a JSON file.
          */
         public String printValue()
         {

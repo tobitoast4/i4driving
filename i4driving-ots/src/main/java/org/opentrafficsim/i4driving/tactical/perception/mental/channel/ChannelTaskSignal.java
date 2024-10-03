@@ -28,23 +28,25 @@ public class ChannelTaskSignal implements ChannelTask
 
     /** Signal task demand. */
     public static final ParameterTypeDouble TDSIGNAL =
-            new ParameterTypeDouble("td_signal", "Signal task demand", 0.25, NumericConstraint.POSITIVEZERO);
+            new ParameterTypeDouble("td_signal", "Signal task demand", 0.2, NumericConstraint.POSITIVEZERO);
 
     /** Look-ahead distance. */
     public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
 
     /** Standard set of left, right and front signal task. */
-    private final static Set<ChannelTask> SET =
+    private static final Set<ChannelTask> SET =
             Set.of(new ChannelTaskSignal(LEFT), new ChannelTaskSignal(RIGHT), new ChannelTaskSignal(FRONT));
 
     /** Standard supplier that supplies instances for left, right and front signal task. */
-    public final static Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
+    public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
 
     /** Channel. */
     private final Object channel;
 
+    /** Predicate to test the signal on a GTU. */
     private final Predicate<LaneBasedGtu> predicate;
 
+    /** Relative lane that applies. */
     private final RelativeLane lane;
 
     /**
@@ -110,7 +112,7 @@ public class ChannelTaskSignal implements ChannelTask
     @Override
     public Object getChannel()
     {
-        return null;
+        return this.channel;
     }
 
     /** {@inheritDoc} */
@@ -127,9 +129,9 @@ public class ChannelTaskSignal implements ChannelTask
             {
                 Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(LOOKAHEAD),
                         "Parameter LOOKAHEAD not present.");
-                double td_signal = Try.assign(() -> perception.getGtu().getParameters().getParameter(TDSIGNAL),
+                double tdSignal = Try.assign(() -> perception.getGtu().getParameters().getParameter(TDSIGNAL),
                         "Parameter td_signal not available.");
-                return td_signal * (1.0 - leader.getDistance().si / x0.si);
+                return tdSignal * (1.0 - leader.getDistance().si / x0.si);
             }
         }
         return 0.0;

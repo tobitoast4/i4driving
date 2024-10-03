@@ -23,17 +23,17 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
  * to the leader with lane change desire and {@code x0} is the look-ahead distance.
  * @author wjschakel
  */
-public class ChannelTaskCutin implements ChannelTask
+public final class ChannelTaskCutin implements ChannelTask
 {
 
     /** Look-ahead distance. */
     public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
 
     /** Standard set of left and right cut-in task. */
-    private final static Set<ChannelTask> SET = Set.of(new ChannelTaskCutin(true), new ChannelTaskCutin(false));
+    private static final Set<ChannelTask> SET = Set.of(new ChannelTaskCutin(true), new ChannelTaskCutin(false));
 
     /** Standard supplier that supplies instances for left and right cut-in task. */
-    public final static Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
+    public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
 
     /** Whether this task instance regards the left side. */
     private final boolean left;

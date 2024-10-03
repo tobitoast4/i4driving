@@ -75,7 +75,9 @@ public class HeadwayGtuTypeChannel implements HeadwayGtuType
         }
         NeighborTriplet triplet = this.estimation.estimate(perceivingGtu, perceivedGtu, distance, downstream, this.when);
         triplet = this.anticipation.anticipate(triplet, tr, this.traveledDistance, downstream);
-        return new HeadwayGtuPerceived(perceivedGtu, triplet.headway(), triplet.speed(), triplet.acceleration());
+        // GTU is estimated to not be downstream/upstream, but it actually is. This is required to prevent exceptions.
+        Length headway = Length.max(triplet.headway(), Length.instantiateSI(0.001));
+        return new HeadwayGtuPerceived(perceivedGtu, headway, triplet.speed(), triplet.acceleration());
     }
 
     /** {@inheritDoc} */

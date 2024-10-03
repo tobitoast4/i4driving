@@ -8,12 +8,15 @@ import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterTypeLength;
+import org.opentrafficsim.base.parameters.ParameterTypeSpeed;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
+import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable.UnderlyingDistance;
 import org.opentrafficsim.road.gtu.lane.perception.RelativeLane;
+import org.opentrafficsim.road.gtu.lane.perception.categories.IntersectionPerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.NeighborsPerception;
 
 /**
@@ -26,6 +29,9 @@ public class ChannelTaskAcceleration implements ChannelTask
 
     /** Look-ahead distance. */
     public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
+
+    /** Speed threshold below which traffic is considered congested. */
+    public static final ParameterTypeSpeed VCONG = ParameterTypes.VCONG;
 
     /** Default set that is returned by the supplier. */
     private static final Set<ChannelTask> SET = Set.of(new ChannelTaskAcceleration());
@@ -56,20 +62,41 @@ public class ChannelTaskAcceleration implements ChannelTask
         EgoPerception<?, ?> ego =
                 Try.assign(() -> perception.getPerceptionCategory(EgoPerception.class), "EgoPerception not present.");
         Speed v = ego.getSpeed();
-        Speed v0 = Try.assign(() -> perception.getGtu().getDesiredSpeed(), "GTU not initialized.");
+        Speed vCong = Try.assign(() -> perception.getGtu().getParameters().getParameter(VCONG), "Parameter VCONG not present");
         Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(LOOKAHEAD),
                 "Parameter LOOKAHEAD not present.");
         Iterator<UnderlyingDistance<LaneBasedGtu>> leaders =
                 neighbors.getLeaders(RelativeLane.CURRENT).underlyingWithDistance();
+        /*
+         * We limit this search by a first conflict. Traffic from other directions on the intersection should not let the
+         * required level of attention for free acceleration flicker for each passing vehicle.
+         */
+        Length limit = Length.POSITIVE_INFINITY;
+        try
+        {
+            var conflicts = perception.getPerceptionCategory(IntersectionPerception.class).getConflicts(RelativeLane.CURRENT);
+            if (!conflicts.isEmpty())
+            {
+                limit = conflicts.first().getDistance();
+            }
+        }
+        catch (OperationalPlanException ex)
+        {
+            // ignore if intersections are no perceived
+        }
         double td = 0.0;
         while (leaders.hasNext())
         {
             UnderlyingDistance<LaneBasedGtu> leader = leaders.next();
+            if (leader.getDistance().gt(limit))
+            {
+                break;
+            }
             Speed vLead = leader.getObject().getSpeed();
             Length s = leader.getDistance();
-            td = Math.max(td, (vLead.si - v.si) * (1.0 - s.si / x0.si) / v0.si);
+            td = Math.max(td, (vLead.si - v.si) * (1.0 - s.si / x0.si) / vCong.si);
         }
-        return td;
+        return td >= 1.0 ? 0.999 : td;
     }
 
 }

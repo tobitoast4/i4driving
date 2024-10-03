@@ -17,14 +17,14 @@ public class ChannelTaskScan implements ChannelTask
 
     /** Scanning task demand. */
     public static final ParameterTypeDouble TDSCAN =
-            new ParameterTypeDouble("td_scan", "Scanning task demand", 0.1, NumericConstraint.POSITIVEZERO);
+            new ParameterTypeDouble("td_scan", "Scanning task demand", 0.05, NumericConstraint.POSITIVEZERO);
 
     /** Standard set of left, right, front and rear scan task. */
-    private final static Set<ChannelTask> SET = Set.of(new ChannelTaskScan(LEFT), new ChannelTaskScan(RIGHT),
+    private static final Set<ChannelTask> SET = Set.of(new ChannelTaskScan(LEFT), new ChannelTaskScan(RIGHT),
             new ChannelTaskScan(FRONT), new ChannelTaskScan(REAR));
 
     /** Standard supplier that supplies instances for left, right, front and rear scan task. */
-    public final static Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
+    public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
 
     /** Channel. */
     private final Object channel;

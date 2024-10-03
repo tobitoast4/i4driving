@@ -7,16 +7,16 @@ public interface ChannelTask extends Identifiable
 {
 
     /** Standard front channel. */
-    final Object FRONT = "Front";
+    Object FRONT = "Front";
     
     /** Standard rear channel. */
-    final Object REAR = "Rear";
+    Object REAR = "Rear";
     
     /** Standard left channel. */
-    final Object LEFT = "Left";
+    Object LEFT = "Left";
     
     /** Standard right channel. */
-    final Object RIGHT = "Right";
+    Object RIGHT = "Right";
     
     /**
      * Return the channel this task pertains to.

@@ -111,7 +111,8 @@ public class ChannelFuller implements ChannelMental
         {
             for (ChannelTask task : taskFunction.apply(perception)) // if applicable will (re)map objects to channel keys
             {
-                channelTaskDemand.merge(task.getChannel(), task.getDemand(perception), Math::max); // map to max value
+                double td = task.getDemand(perception);
+                channelTaskDemand.merge(task.getChannel(), td, Math::max); // map to max value
             }
         }
 

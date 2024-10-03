@@ -40,7 +40,7 @@ import org.opentrafficsim.road.network.lane.conflict.Conflict;
  * time until the respective conflict of a conflicting vehicle and {@code h} is the car-following task parameter that scales it.
  * @author wjschakel
  */
-public class ChannelTaskConflict implements ChannelTask
+public final class ChannelTaskConflict implements ChannelTask
 {
     /** Look-ahead distance. */
     public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
@@ -49,17 +49,22 @@ public class ChannelTaskConflict implements ChannelTask
     public static final ParameterTypeDuration HEXP = CarFollowingTask.HEXP;
 
     /** We need to see whether we need to account for acceleration. */
-    private static final boolean USE_ACCELERATION = true;
+    private static final boolean USE_ACCELERATION = false;
 
     /** Comparator for underlying objects. */
     // TODO: remove this and its use once UnderlyingDistance implements Comparable
-    private final static Comparator<UnderlyingDistance<Conflict>> COMPARATOR = new Comparator<>()
+    private static final Comparator<UnderlyingDistance<Conflict>> COMPARATOR = new Comparator<>()
     {
         /** {@inheritDoc} */
         @Override
         public int compare(final UnderlyingDistance<Conflict> o1, final UnderlyingDistance<Conflict> o2)
         {
-            return o1.getDistance().compareTo(o2.getDistance());
+            int out = o1.getDistance().compareTo(o2.getDistance());
+            if (out != 0)
+            {
+                return out;
+            }
+            return o1.getObject().getFullId().compareTo(o2.getObject().getFullId());
         }
     };
 
@@ -80,7 +85,7 @@ public class ChannelTaskConflict implements ChannelTask
         while (conflicts.hasNext())
         {
             UnderlyingDistance<Conflict> conflict = conflicts.next();
-            Set<Node> nodes = getUpstreamNodes(conflict.getObject(), x0);
+            Set<Node> nodes = getUpstreamNodes(conflict.getObject().getOtherConflict(), x0);
             // find overlap
             Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>> group = null;
             Iterator<Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>>> groupIterator = groups.entrySet().iterator();
@@ -118,17 +123,17 @@ public class ChannelTaskConflict implements ChannelTask
 
         // Create task for each group
         Set<ChannelTask> tasks = new LinkedHashSet<>();
-            for (SortedSet<UnderlyingDistance<Conflict>> group : groups.keySet())
+        for (SortedSet<UnderlyingDistance<Conflict>> group : groups.keySet())
+        {
+            tasks.add(new ChannelTaskConflict(group));
+            tasks.add(new ChannelTaskScan(group.first().getObject()));
+            // make sure the channel (key is first conflict) can be found for all individual conflicts
+            if (perception.getMental() instanceof ChannelMental)
             {
-                tasks.add(new ChannelTaskConflict(group));
-                tasks.add(new ChannelTaskScan(group));
-                // make sure the channel (key is first conflict) can be found for all individual conflicts
-                if (perception.getMental() instanceof ChannelMental)
-                {
-                    ChannelMental channelMental = (ChannelMental) perception.getMental();
-                    group.forEach((c) -> channelMental.mapToChannel(c.getObject(), group.first().getObject()));
-                }
+                ChannelMental channelMental = (ChannelMental) perception.getMental();
+                group.forEach((c) -> channelMental.mapToChannel(c.getObject(), group.first().getObject()));
             }
+        }
         return tasks;
     };
 
@@ -170,7 +175,7 @@ public class ChannelTaskConflict implements ChannelTask
         for (UnderlyingDistance<Conflict> conflict : this.conflicts)
         {
             PerceptionCollectable<HeadwayGtu, LaneBasedGtu> conflictingGtus =
-                    conflict.getObject().getUpstreamGtus(gtu, HeadwayGtuType.WRAP, x0);
+                    conflict.getObject().getOtherConflict().getUpstreamGtus(gtu, HeadwayGtuType.WRAP, x0);
             if (!conflictingGtus.isEmpty())
             {
                 HeadwayGtu conflictingGtu = conflictingGtus.first();
@@ -183,8 +188,8 @@ public class ChannelTaskConflict implements ChannelTask
                 }
                 else
                 {
-                    conflictHeadway =
-                            Duration.min(conflictHeadway, conflictingGtu.getDistance().divide(conflictingGtu.getSpeed()));
+                    conflictHeadway = Duration.min(conflictHeadway, conflictingGtu.isParallel() ? Duration.ZERO
+                            : conflictingGtu.getDistance().divide(conflictingGtu.getSpeed()));
                 }
             }
         }
@@ -203,6 +208,10 @@ public class ChannelTaskConflict implements ChannelTask
         else
         {
             headway = Duration.max(conflictHeadway, this.conflicts.first().getDistance().divide(ego.getSpeed()));
+            if (headway.eq0())
+            {
+                return 0.999;
+            }
         }
         // Scale by h in exponential function
         Duration h = Try.assign(() -> perception.getGtu().getParameters().getParameter(HEXP), "Parameter h_exp not present.");

@@ -61,7 +61,7 @@ public class ChannelTaskCarFollowing implements ChannelTask
                 Try.assign(() -> perception.getPerceptionCategory(EgoPerception.class), "EgoPerception not present.");
         Duration headway = leader.next().getDistance().divide(ego.getSpeed());
         Duration h = Try.assign(() -> perception.getGtu().getParameters().getParameter(HEXP), "Parameter h_exp not present.");
-        return Math.exp(-headway.si / h.si);
+        return headway.si <= 0.0 ? 0.999 : Math.exp(-headway.si / h.si);
     }
 
 }

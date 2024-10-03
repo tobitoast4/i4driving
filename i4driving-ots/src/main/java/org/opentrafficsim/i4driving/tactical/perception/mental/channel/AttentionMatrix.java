@@ -15,7 +15,7 @@ public class AttentionMatrix
 {
 
     /** Mental task demand, i.e. desired fraction of time for perception, per channel. */
-    private final double demand[];
+    private final double[] demand;
 
     /** Attention, i.e. fraction of time, per channel. */
     private double[] attention;
@@ -31,7 +31,7 @@ public class AttentionMatrix
      * @param demand level of mental task demand per channel.
      * @throws IllegalArgumentException when a demand value is below 0 or larger than 1
      */
-    public AttentionMatrix(double[] demand)
+    public AttentionMatrix(final double[] demand)
     {
         int n = demand.length;
         this.demand = new double[n];

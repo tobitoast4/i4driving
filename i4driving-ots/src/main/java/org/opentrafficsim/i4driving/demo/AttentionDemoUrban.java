@@ -25,6 +25,10 @@ import org.opentrafficsim.animation.gtu.colorer.AccelerationGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.SpeedGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.SwitchableGtuColorer;
+import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.base.parameters.ParameterSet;
+import org.opentrafficsim.base.parameters.ParameterTypes;
+import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
@@ -40,13 +44,50 @@ import org.opentrafficsim.core.geometry.OtsLine2d;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.gtu.perception.EgoPerception;
+import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
 import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
+import org.opentrafficsim.core.parameters.ParameterFactoryByType;
+import org.opentrafficsim.draw.ColorInterpolator;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelPerceptionFactory;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ConflictUtilTmp;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ConflictUtilTmp.ConflictPlans;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
+import org.opentrafficsim.road.gtu.lane.perception.FilteredIterable;
+import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
+import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable;
+import org.opentrafficsim.road.gtu.lane.perception.PerceptionFactory;
+import org.opentrafficsim.road.gtu.lane.perception.RelativeLane;
+import org.opentrafficsim.road.gtu.lane.perception.categories.IntersectionPerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.NeighborsPerception;
+import org.opentrafficsim.road.gtu.lane.perception.headway.HeadwayConflict;
+import org.opentrafficsim.road.gtu.lane.perception.headway.HeadwayGtu;
+import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
+import org.opentrafficsim.road.gtu.lane.plan.operational.SimpleOperationalPlan;
+import org.opentrafficsim.road.gtu.lane.tactical.AbstractLaneBasedTacticalPlannerFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.Blockable;
+import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModel;
+import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModelFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
+import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationIncentive;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationTrafficLights;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
+import org.opentrafficsim.road.gtu.lane.tactical.util.TrafficLightUtil;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.GapAcceptance;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsUtil;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
+import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.LaneAccessLaw;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
@@ -63,6 +104,7 @@ import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.lane.conflict.ConflictBuilder;
 import org.opentrafficsim.road.network.lane.conflict.ConflictBuilder.RelativeWidthGenerator;
 import org.opentrafficsim.road.network.lane.object.trafficlight.TrafficLight;
+import org.opentrafficsim.road.network.speed.SpeedLimitInfo;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
 import org.opentrafficsim.road.od.Interpolation;
@@ -72,6 +114,9 @@ import org.opentrafficsim.road.od.OdOptions;
 import org.opentrafficsim.swing.script.AbstractSimulationScript;
 import org.opentrafficsim.trafficcontrol.FixedTimeController;
 import org.opentrafficsim.trafficcontrol.FixedTimeController.SignalGroup;
+
+import nl.tudelft.simulation.jstats.distributions.DistContinuous;
+import nl.tudelft.simulation.jstats.streams.StreamInterface;
 
 /**
  * Demo of attention in an urban setting.
@@ -83,10 +128,13 @@ public class AttentionDemoUrban extends AbstractSimulationScript
     /** */
     private static final long serialVersionUID = 20240926L;
 
+    /** Shoulder lane type. */
     private static final LaneType SHOULDER = new LaneType("Shoulder");
 
+    /** Link length. */
     private final double linkLength = 100.0;
 
+    /** Intersection radius. */
     private final double intersection = 15.0;
 
     /**
@@ -98,7 +146,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
         GtuColorer colorer = new SwitchableGtuColorer(0, new FixedColor(Color.BLUE, "Blue"),
                 new SpeedGtuColorer(new Speed(60.0, SpeedUnit.KM_PER_HOUR)),
                 new AccelerationGtuColorer(Acceleration.instantiateSI(-6.0), Acceleration.instantiateSI(2.0)),
-                new SplitColorer());
+                new SplitColorer(), new TaskSaturationChannelColorer());
         setGtuColorer(colorer);
     }
 
@@ -107,16 +155,17 @@ public class AttentionDemoUrban extends AbstractSimulationScript
      * @param args command line arguments. See AbstractSimulationScript for available arguments.
      * @throws Exception when an exception occurs.
      */
-    public static void main(String[] args) throws Exception
+    public static void main(final String[] args) throws Exception
     {
         AttentionDemoUrban demo = new AttentionDemoUrban();
         CliUtil.execute(demo, args);
         demo.start();
     }
 
+    @SuppressWarnings({"checkstyle:methodlength", "checkstyle:firstsentence"})
     /** {@inhertiDoc} */
     @Override
-    protected RoadNetwork setupSimulation(final OtsSimulatorInterface sim) throws Exception
+    protected final RoadNetwork setupSimulation(final OtsSimulatorInterface sim) throws Exception
     {
         RoadNetwork network = new RoadNetwork("urban demo", sim);
 
@@ -277,17 +326,73 @@ public class AttentionDemoUrban extends AbstractSimulationScript
                 {
                     boolean main = (from.getId().startsWith("E") || from.getId().startsWith("W"))
                             && (to.getId().startsWith("E") || to.getId().startsWith("W"));
-                    double[] demand = main ? new double[] {200.0, 300.0} : new double[] {20.0, 30.0};
+                    double f = 1.0;
+                    double[] demand = main ? new double[] {200.0 * f, 300.0 * f} : new double[] {20.0 * f, 30.0 * f};
                     od.putDemandVector(from, to, Category.UNCATEGORIZED, new FrequencyVector(demand, FrequencyUnit.PER_HOUR));
                 }
             }
         }
 
+        StreamInterface stream = sim.getModel().getStream("generation");
+        ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
+        double fractionUnder = 0.8;
+        parameterFactory.addParameter(Estimation.OVER_EST, new DistContinuous(stream)
+        {
+            /** */
+            private static final long serialVersionUID = 20240930L;
+
+            /** {@inheritDoc} */
+            @Override
+            public double getProbabilityDensity(final double x)
+            {
+                return x == -0.4 ? fractionUnder : (x == 0.4 ? 0.4 - fractionUnder : 0.4);
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public double draw()
+            {
+                return getStream().nextDouble() <= fractionUnder ? -0.4 : 0.4;
+            }
+        });
+        PerceptionFactory perceptionFactory = new ChannelPerceptionFactory();
         OdOptions options = new OdOptions();
-        options.set(OdOptions.GTU_TYPE,
-                new DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory(
-                        DefaultLaneBasedGtuCharacteristicsGeneratorOd.defaultLmrs(sim.getModel().getStream("generation")))
-                                .create());
+        CarFollowingModelFactory<IdmPlus> cfFactory = new IdmPlusFactory(stream);
+        AbstractLaneBasedTacticalPlannerFactory<Lmrs> lmrsFactory =
+                new AbstractLaneBasedTacticalPlannerFactory<>(cfFactory, perceptionFactory)
+                {
+                    /** {@inheritDoc} */
+                    @Override
+                    public Lmrs create(final LaneBasedGtu gtu) throws GtuException
+                    {
+                        Lmrs lmrs = new Lmrs(nextCarFollowingModel(gtu), gtu, getPerceptionFactory().generatePerception(gtu),
+                                Synchronization.ALIGN_GAP, Cooperation.PASSIVE, GapAcceptance.INFORMED, Tailgating.NONE);
+                        lmrs.addMandatoryIncentive(new IncentiveRoute());
+                        lmrs.addAccelerationIncentive(new AccelerationConflictsTmp());
+                        lmrs.addAccelerationIncentive(new AccelerationTrafficLights());
+                        return lmrs;
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override
+                    public Parameters getParameters() throws ParameterException
+                    {
+                        ParameterSet parameters = new ParameterSet();
+                        parameters.setDefaultParameters(LmrsUtil.class);
+                        parameters.setDefaultParameters(LmrsParameters.class);
+                        parameters.setDefaultParameters(ConflictUtilTmp.class);
+                        parameters.setDefaultParameters(TrafficLightUtil.class);
+                        getCarFollowingParameters().setAllIn(parameters);
+                        getPerceptionFactory().getParameters().setAllIn(parameters);
+                        parameters.setDefaultParameter(ParameterTypes.VCONG);
+                        parameters.setDefaultParameter(ParameterTypes.T0);
+                        parameters.setDefaultParameter(ParameterTypes.LCDUR);
+                        return parameters;
+                    }
+
+                };
+        options.set(OdOptions.GTU_TYPE, new DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory(
+                new LaneBasedStrategicalRoutePlannerFactory(lmrsFactory, parameterFactory)).create());
         GtuType.registerTemplateSupplier(DefaultsNl.CAR, Defaults.NL);
         OdApplier.applyOd(network, od, options, DefaultsRoadNl.VEHICLES);
 
@@ -395,7 +500,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
     }
 
     // TODO: remove this class when updated SplitColorer is published in OTS
-    private static class SplitColorer implements GtuColorer
+    private static final class SplitColorer implements GtuColorer
     {
 
         /** Left color. */
@@ -424,7 +529,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
 
         /** {@inheritDoc} */
         @Override
-        public final Color getColor(final Gtu gtu)
+        public Color getColor(final Gtu gtu)
         {
             if (!(gtu instanceof LaneBasedGtu))
             {
@@ -526,16 +631,144 @@ public class AttentionDemoUrban extends AbstractSimulationScript
 
         /** {@inheritDoc} */
         @Override
-        public final List<LegendEntry> getLegend()
+        public List<LegendEntry> getLegend()
         {
             return LEGEND;
         }
 
         /** {@inheritDoc} */
         @Override
-        public final String toString()
+        public String toString()
         {
             return "Split";
+        }
+
+    }
+
+    /**
+     * Same as AccelerationConflicts.
+     */
+    public class AccelerationConflictsTmp implements AccelerationIncentive, Blockable
+    {
+
+        /** Set of yield plans at conflicts with priority. Remembering for static model. */
+        private final ConflictPlans yieldPlans = new ConflictPlans();
+
+        /** {@inheritDoc} */
+        @Override
+        public final void accelerate(final SimpleOperationalPlan simplePlan, final RelativeLane lane,
+                final Length mergeDistance, final LaneBasedGtu gtu, final LanePerception perception,
+                final CarFollowingModel carFollowingModel, final Speed speed, final Parameters params,
+                final SpeedLimitInfo speedLimitInfo) throws OperationalPlanException, ParameterException, GtuException
+        {
+            EgoPerception<?, ?> ego = perception.getPerceptionCategory(EgoPerception.class);
+            Acceleration acceleration = ego.getAcceleration();
+            Length length = ego.getLength();
+            Length width = ego.getWidth();
+            Iterable<HeadwayConflict> conflicts =
+                    perception.getPerceptionCategory(IntersectionPerception.class).getConflicts(lane);
+            PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders =
+                    perception.getPerceptionCategory(NeighborsPerception.class).getLeaders(lane);
+            if (!lane.isCurrent())
+            {
+                conflicts = new FilteredIterable<>(conflicts, (conflict) ->
+                {
+                    return conflict.getDistance().gt(mergeDistance);
+                });
+            }
+            conflicts = onRoute(conflicts, gtu);
+            Acceleration a = ConflictUtilTmp.approachConflicts(params, conflicts, leaders, carFollowingModel, length, width,
+                    speed, acceleration, speedLimitInfo, this.yieldPlans, gtu, lane);
+            simplePlan.minimizeAcceleration(a);
+            if (this.yieldPlans.getIndicatorIntent().isLeft())
+            {
+                simplePlan.setIndicatorIntentLeft(this.yieldPlans.getIndicatorObjectDistance());
+            }
+            else if (this.yieldPlans.getIndicatorIntent().isRight())
+            {
+                simplePlan.setIndicatorIntentRight(this.yieldPlans.getIndicatorObjectDistance());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public boolean isBlocking()
+        {
+            return this.yieldPlans.isBlocking();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public final String toString()
+        {
+            return "AccelerationConflicts";
+        }
+
+    }
+
+    public static class TaskSaturationChannelColorer implements GtuColorer
+    {
+
+        /** Full. */
+        static final Color MAX = Color.RED;
+
+        /** Medium. */
+        static final Color MID = Color.YELLOW;
+
+        /** Zero. */
+        static final Color SUBCRIT = Color.GREEN;
+
+        /** Not available. */
+        static final Color NA = Color.WHITE;
+
+        /** Legend. */
+        static final List<LegendEntry> LEGEND;
+
+        static
+        {
+            LEGEND = new ArrayList<>();
+            LEGEND.add(new LegendEntry(SUBCRIT, "sub-critical", "sub-critical task saturation"));
+            LEGEND.add(new LegendEntry(MID, "1.5", "1.5 task saturation"));
+            LEGEND.add(new LegendEntry(MAX, "3.0", "3.0 or larger"));
+            LEGEND.add(new LegendEntry(NA, "N/A", "N/A"));
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public Color getColor(final Gtu gtu)
+        {
+            Double ts = gtu.getParameters().getParameterOrNull(Fuller.TS);
+            if (ts == null)
+            {
+                return NA;
+            }
+            if (ts <= 1.0)
+            {
+                return SUBCRIT;
+            }
+            else if (ts > 3.0)
+            {
+                return MAX;
+            }
+            else if (ts < 1.5)
+            {
+                return ColorInterpolator.interpolateColor(SUBCRIT, MID, (ts - 1.0) / 0.5);
+            }
+            return ColorInterpolator.interpolateColor(MID, MAX, (ts - 1.5) / 1.5);
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public List<LegendEntry> getLegend()
+        {
+            return LEGEND;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString()
+        {
+            return "Task saturation";
         }
 
     }

@@ -13,7 +13,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
  * the relevant direction is equal or larger to the other direction. Otherwise it is 0.
  * @author wjschakel
  */
-public class ChannelTaskLaneChange implements ChannelTask
+public final class ChannelTaskLaneChange implements ChannelTask
 {
 
     /** Current left lane change desire. */

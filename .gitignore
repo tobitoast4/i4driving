@@ -6,3 +6,4 @@
 prototyping/socialpressure/rho.csv*
 *.jar
 *.asv
+.checkstyle

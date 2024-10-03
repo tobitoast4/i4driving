@@ -72,7 +72,7 @@ public class IntersectionPerceptionChannel extends AbstractPerceptionCategory<La
             final Anticipation anticipation)
     {
         super(perception);
-        Throw.when(getPerception().getMental() instanceof ChannelMental, IllegalArgumentException.class,
+        Throw.when(!(getPerception().getMental() instanceof ChannelMental), IllegalArgumentException.class,
                 "Mental module is not channel based.");
         this.mental = (ChannelMental) getPerception().getMental();
         this.estimation = estimation;

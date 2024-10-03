@@ -58,7 +58,7 @@ public class NeighborsPerceptionChannel extends AbstractPerceptionCategory<LaneB
             final Anticipation anticipation)
     {
         super(perception);
-        Throw.when(getPerception().getMental() instanceof ChannelMental, IllegalArgumentException.class,
+        Throw.when(!(getPerception().getMental() instanceof ChannelMental), IllegalArgumentException.class,
                 "Mental module is not channel based.");
         ChannelMental mental = (ChannelMental) getPerception().getMental();
         this.headwayGtuTypeLeft =

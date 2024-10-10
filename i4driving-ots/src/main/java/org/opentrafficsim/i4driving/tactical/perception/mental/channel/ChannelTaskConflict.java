@@ -74,68 +74,20 @@ public final class ChannelTaskConflict implements ChannelTask
      */
     public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (perception) ->
     {
-        IntersectionPerception intersection =
-                Try.assign(() -> perception.getPerceptionCategory(IntersectionPerception.class), "No intersection perception.");
-        Iterator<UnderlyingDistance<Conflict>> conflicts =
-                intersection.getConflicts(RelativeLane.CURRENT).underlyingWithDistance();
-
-        // Find groups of conflicts when their upstream nodes are intersecting sets
-        Map<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>> groups = new LinkedHashMap<>();
-        Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(LOOKAHEAD), "No x0 parameter.");
-        while (conflicts.hasNext())
-        {
-            UnderlyingDistance<Conflict> conflict = conflicts.next();
-            Set<Node> nodes = getUpstreamNodes(conflict.getObject().getOtherConflict(), x0);
-            // find overlap
-            Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>> group = null;
-            Iterator<Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>>> groupIterator = groups.entrySet().iterator();
-            while (groupIterator.hasNext())
-            {
-                Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>> entry = groupIterator.next();
-                if (entry.getValue().stream().anyMatch(nodes::contains))
-                {
-                    // overlap with this entry
-                    if (group == null)
-                    {
-                        entry.getKey().add(conflict);
-                        entry.getValue().addAll(nodes);
-                        group = entry;
-                        // keep looping to also merge other groups if they overlap with the upstream nodes of this conflict
-                    }
-                    else
-                    {
-                        // the nodes overlap with multiple groups that did so far not yet overlap, merge the other group too
-                        group.getKey().addAll(entry.getKey());
-                        group.getValue().addAll(entry.getValue());
-                        groupIterator.remove();
-                    }
-                }
-            }
-            if (group == null)
-            {
-                // no overlap found, make new group
-                // TODO: remove COMPARATOR argument once UnderlyingDistance implements Comparable
-                SortedSet<UnderlyingDistance<Conflict>> key = new TreeSet<>(COMPARATOR);
-                key.add(conflict);
-                groups.put(key, nodes);
-            }
-        }
-
-        // Create task for each group
         Set<ChannelTask> tasks = new LinkedHashSet<>();
-        for (SortedSet<UnderlyingDistance<Conflict>> group : groups.keySet())
+        ChannelMental channelMental = (perception.getMental() instanceof ChannelMental m) ? m : null;
+        for (SortedSet<UnderlyingDistance<Conflict>> group : findConflictGroups(perception))
         {
-            if (group.stream().anyMatch((u) -> u.getObject().getConflictType().isSplit()))
+            splitCarFollowing(tasks, group, channelMental);
+            if (!group.isEmpty())
             {
-                // TODO: add a car-following-like task to FRONT channel
-            }
-            tasks.add(new ChannelTaskConflict(group));
-            tasks.add(new ChannelTaskScan(group.first().getObject()));
-            // make sure the channel (key is first conflict) can be found for all individual conflicts
-            if (perception.getMental() instanceof ChannelMental)
-            {
-                ChannelMental channelMental = (ChannelMental) perception.getMental();
-                group.forEach((c) -> channelMental.mapToChannel(c.getObject(), group.first().getObject()));
+                tasks.add(new ChannelTaskConflict(group));
+                tasks.add(new ChannelTaskScan(group.first().getObject()));
+                // make sure the channel (key is first conflict) can be found for all individual conflicts
+                if (channelMental != null)
+                {
+                    group.forEach((c) -> channelMental.mapToChannel(c.getObject(), group.first().getObject()));
+                }
             }
         }
         return tasks;
@@ -223,6 +175,62 @@ public final class ChannelTaskConflict implements ChannelTask
     }
 
     /**
+     * Returns conflict groups, which are grouped based on overlap in the upstream nodes of the conflicting lanes.
+     * @param perception perception
+     * @return conflict groups
+     */
+    private static Set<SortedSet<UnderlyingDistance<Conflict>>> findConflictGroups(final LanePerception perception)
+    {
+        IntersectionPerception intersection =
+                Try.assign(() -> perception.getPerceptionCategory(IntersectionPerception.class), "No intersection perception.");
+        Iterator<UnderlyingDistance<Conflict>> conflicts =
+                intersection.getConflicts(RelativeLane.CURRENT).underlyingWithDistance();
+
+        // Find groups of conflicts when their upstream nodes are intersecting sets
+        Map<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>> groups = new LinkedHashMap<>();
+        Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(LOOKAHEAD), "No x0 parameter.");
+        while (conflicts.hasNext())
+        {
+            UnderlyingDistance<Conflict> conflict = conflicts.next();
+            Set<Node> nodes = getUpstreamNodes(conflict.getObject().getOtherConflict(), x0);
+            // find overlap
+            Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>> group = null;
+            Iterator<Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>>> groupIterator = groups.entrySet().iterator();
+            while (groupIterator.hasNext())
+            {
+                Entry<SortedSet<UnderlyingDistance<Conflict>>, Set<Node>> entry = groupIterator.next();
+                if (entry.getValue().stream().anyMatch(nodes::contains))
+                {
+                    // overlap with this entry
+                    if (group == null)
+                    {
+                        entry.getKey().add(conflict);
+                        entry.getValue().addAll(nodes);
+                        group = entry;
+                        // keep looping to also merge other groups if they overlap with the upstream nodes of this conflict
+                    }
+                    else
+                    {
+                        // the nodes overlap with multiple groups that did so far not yet overlap, merge the other group too
+                        group.getKey().addAll(entry.getKey());
+                        group.getValue().addAll(entry.getValue());
+                        groupIterator.remove();
+                    }
+                }
+            }
+            if (group == null)
+            {
+                // no overlap found, make new group
+                // TODO: remove COMPARATOR argument once UnderlyingDistance implements Comparable
+                SortedSet<UnderlyingDistance<Conflict>> key = new TreeSet<>(COMPARATOR);
+                key.add(conflict);
+                groups.put(key, nodes);
+            }
+        }
+        return groups.keySet();
+    }
+
+    /**
      * Finds all nodes within a given distance upstream of a conflict, stopping at any diverge, branging at merges.
      * @param conflict conflict.
      * @param x0 distance to loop upstream.
@@ -268,6 +276,45 @@ public final class ChannelTaskConflict implements ChannelTask
             for (Link upstreamLink : upstreamLinks)
             {
                 appendUpstreamNodes(upstreamLink, nextDistance, x0, nodes);
+            }
+        }
+    }
+
+    /**
+     * Apply car-following task on each split in the group, and remove it from the group.
+     * @param tasks tasks to add any split related task to
+     * @param group group of conflicts
+     * @param channelMental mental module, can be {@code null}
+     */
+    private static void splitCarFollowing(final Set<ChannelTask> tasks, final SortedSet<UnderlyingDistance<Conflict>> group,
+            final ChannelMental channelMental)
+    {
+        Iterator<UnderlyingDistance<Conflict>> iterator = group.iterator();
+        while (iterator.hasNext())
+        {
+            UnderlyingDistance<Conflict> conflict = iterator.next();
+            if (conflict.getObject().getConflictType().isSplit())
+            {
+                iterator.remove();
+                tasks.add(new ChannelTaskCarFollowing((p) ->
+                {
+                    // this provides the first leader on the other split conflict with distance towards perceiving GTU
+                    Conflict otherconflict = conflict.getObject().getOtherConflict();
+                    PerceptionCollectable<HeadwayGtu, LaneBasedGtu> conflictingGtus =
+                            otherconflict.getDownstreamGtus(p.getGtu(), HeadwayGtuType.WRAP, otherconflict.getLength());
+                    if (conflictingGtus.isEmpty())
+                    {
+                        return null;
+                    }
+                    UnderlyingDistance<LaneBasedGtu> leader = conflictingGtus.underlyingWithDistance().next();
+                    return new UnderlyingDistance<LaneBasedGtu>(leader.getObject(),
+                            conflict.getDistance().plus(leader.getDistance()));
+                }));
+                // make sure the channel (key is front) can be found for the split conflict
+                if (channelMental != null)
+                {
+                    channelMental.mapToChannel(conflict.getObject(), FRONT);
+                }
             }
         }
     }

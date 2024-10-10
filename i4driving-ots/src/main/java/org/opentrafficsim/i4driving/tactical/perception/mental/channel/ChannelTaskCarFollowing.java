@@ -32,6 +32,37 @@ public class ChannelTaskCarFollowing implements ChannelTask
     /** Standard supplier that supplies a single instance of the car-following task. */
     public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
 
+    /** Leader supplier. */
+    private final Function<LanePerception, UnderlyingDistance<LaneBasedGtu>> leaderSupplier;
+
+    /**
+     * Constructor that will use the first leader from NeighborsPerception in the current lane.
+     */
+    public ChannelTaskCarFollowing()
+    {
+        this((perception) ->
+        {
+            NeighborsPerception neighbors = Try.assign(() -> perception.getPerceptionCategory(NeighborsPerception.class),
+                    "NeighborsPerception not present.");
+            Iterator<UnderlyingDistance<LaneBasedGtu>> leader =
+                    neighbors.getLeaders(RelativeLane.CURRENT).underlyingWithDistance();
+            if (!leader.hasNext())
+            {
+                return null;
+            }
+            return leader.next();
+        });
+    }
+
+    /**
+     * Constructor that provides a supplier for a leader that follows a non-default logic.
+     * @param leaderSupplier leader supplier
+     */
+    public ChannelTaskCarFollowing(final Function<LanePerception, UnderlyingDistance<LaneBasedGtu>> leaderSupplier)
+    {
+        this.leaderSupplier = leaderSupplier;
+    }
+
     /** {@inheritDoc} */
     @Override
     public String getId()
@@ -50,16 +81,14 @@ public class ChannelTaskCarFollowing implements ChannelTask
     @Override
     public double getDemand(final LanePerception perception)
     {
-        NeighborsPerception neighbors = Try.assign(() -> perception.getPerceptionCategory(NeighborsPerception.class),
-                "NeighborsPerception not present.");
-        Iterator<UnderlyingDistance<LaneBasedGtu>> leader = neighbors.getLeaders(RelativeLane.CURRENT).underlyingWithDistance();
-        if (!leader.hasNext())
+        UnderlyingDistance<LaneBasedGtu> leader = this.leaderSupplier.apply(perception);
+        if (leader == null)
         {
             return 0.0;
         }
         EgoPerception<?, ?> ego =
                 Try.assign(() -> perception.getPerceptionCategory(EgoPerception.class), "EgoPerception not present.");
-        Duration headway = leader.next().getDistance().divide(ego.getSpeed());
+        Duration headway = leader.getDistance().divide(ego.getSpeed());
         Duration h = Try.assign(() -> perception.getGtu().getParameters().getParameter(HEXP), "Parameter h_exp not present.");
         return headway.si <= 0.0 ? 0.999 : Math.exp(-headway.si / h.si);
     }

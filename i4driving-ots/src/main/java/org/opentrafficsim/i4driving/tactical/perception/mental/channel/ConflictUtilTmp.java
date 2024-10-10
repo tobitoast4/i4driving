@@ -65,6 +65,12 @@ import org.opentrafficsim.road.network.speed.SpeedLimitInfo;
  *      Traffic Extension of a Freeway Driver Model for use in the OpenTraffic® Open Source Traffic Simulation”, presented at
  *      TRAIL Congress 2012.</a>
  */
+// TODO: this is a temporary implementation with changes compared to the default implementation in OTS. In particular the
+// consideration of when a conflict can be passed give space downstream traffic leaves. The default implementation does not work
+// for larger spaces of consecutive conflicts, causing GTUs to slow down unreasonably on the intersection. This implementation
+// looks at the first stand-still leader, and assess the space required for ego and all vehicles in between. It reduces
+// conditions for decisions, and deviates quite a bit from the mentioned paper above. This changed behavior is likely to be
+// implemented in OTS itself, after further testing.
 public final class ConflictUtilTmp
 {
 
@@ -134,6 +140,7 @@ public final class ConflictUtilTmp
      * @throws ParameterException if a parameter is not defined or out of bounds
      */
     @SuppressWarnings({"checkstyle:methodlength", "checkstyle:parameternumber"})
+    // @docs/06-behavior/tactical-planner/#modular-utilities (..., final ConflictPlans conflictPlans, ...)
     public static Acceleration approachConflicts(final Parameters parameters, final Iterable<HeadwayConflict> conflicts,
             final PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders, final CarFollowingModel carFollowingModel,
             final Length vehicleLength, final Length vehicleWidth, final Speed speed, final Acceleration acceleration,

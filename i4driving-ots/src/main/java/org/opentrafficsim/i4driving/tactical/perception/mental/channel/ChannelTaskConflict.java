@@ -125,6 +125,10 @@ public final class ChannelTaskConflict implements ChannelTask
         Set<ChannelTask> tasks = new LinkedHashSet<>();
         for (SortedSet<UnderlyingDistance<Conflict>> group : groups.keySet())
         {
+            if (group.stream().anyMatch((u) -> u.getObject().getConflictType().isSplit()))
+            {
+                // TODO: add a car-following-like task to FRONT channel
+            }
             tasks.add(new ChannelTaskConflict(group));
             tasks.add(new ChannelTaskScan(group.first().getObject()));
             // make sure the channel (key is first conflict) can be found for all individual conflicts

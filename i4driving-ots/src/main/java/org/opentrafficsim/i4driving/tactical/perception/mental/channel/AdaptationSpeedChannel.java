@@ -29,8 +29,9 @@ public class AdaptationSpeedChannel implements BehavioralAdaptation
         {
             this.fSpeed0 = parameters.getParameter(ParameterTypes.FSPEED);
         }
+        double ts = parameters.getParameter(Fuller.TS);
         double factor =
-                Math.min(1.0, 1.0 / (1.0 + parameters.getParameter(BETA_V0) * (parameters.getParameter(Fuller.TS) - 1.0)));
+                ts <= 1.0 ? 1.0 : 1.0 / (1.0 + parameters.getParameter(BETA_V0) * (parameters.getParameter(Fuller.TS) - 1.0));
         parameters.setParameter(ParameterTypes.FSPEED, this.fSpeed0 * factor);
     }
 

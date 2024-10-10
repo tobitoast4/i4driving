@@ -336,6 +336,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
         StreamInterface stream = sim.getModel().getStream("generation");
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
         double fractionUnder = 0.8;
+        double error = 0.4;
         parameterFactory.addParameter(Estimation.OVER_EST, new DistContinuous(stream)
         {
             /** */
@@ -345,14 +346,14 @@ public class AttentionDemoUrban extends AbstractSimulationScript
             @Override
             public double getProbabilityDensity(final double x)
             {
-                return x == -0.4 ? fractionUnder : (x == 0.4 ? 0.4 - fractionUnder : 0.4);
+                return x == -error ? fractionUnder : (x == error ? error - fractionUnder : error);
             }
 
             /** {@inheritDoc} */
             @Override
             public double draw()
             {
-                return getStream().nextDouble() <= fractionUnder ? -0.4 : 0.4;
+                return getStream().nextDouble() <= fractionUnder ? -error : error;
             }
         });
         PerceptionFactory perceptionFactory = new ChannelPerceptionFactory();

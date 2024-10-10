@@ -51,7 +51,10 @@ public class ChannelPerceptionFactory implements PerceptionFactory
     }
 
     /** Estimation instance. */
-    private static final Estimation ESTIMATION = new SaturationEstimation(true);
+    private static final Estimation ESTIMATION_STATIC = new SaturationEstimation(true);
+
+    /** Estimation instance. */
+    private static final Estimation ESTIMATION_DYNAMIC = new SaturationEstimation(false);
 
     /** Anticipation instance for conflicts. */
     private static final Anticipation ANTICIPATION_CONFLICTS = new SaturationAnticipation();
@@ -67,10 +70,12 @@ public class ChannelPerceptionFactory implements PerceptionFactory
         LanePerception perception = new CategoricalLanePerception(gtu, mental);
         perception.addPerceptionCategory(new DirectEgoPerception<>(perception));
         perception.addPerceptionCategory(new DirectInfrastructurePerception(perception));
-        perception.addPerceptionCategory(new NeighborsPerceptionChannel(perception, ESTIMATION, Anticipation.CONSTANT_SPEED));
+        perception.addPerceptionCategory(
+                new NeighborsPerceptionChannel(perception, ESTIMATION_DYNAMIC, Anticipation.CONSTANT_SPEED));
         // perception.addPerceptionCategory(new DirectNeighborsPerception(perception, HeadwayGtuType.WRAP));
         perception.addPerceptionCategory(new AnticipationTrafficPerception(perception));
-        perception.addPerceptionCategory(new IntersectionPerceptionChannel(perception, ESTIMATION, ANTICIPATION_CONFLICTS));
+        perception.addPerceptionCategory(
+                new IntersectionPerceptionChannel(perception, ESTIMATION_STATIC, ANTICIPATION_CONFLICTS));
         // perception.addPerceptionCategory(new DirectIntersectionPerception(perception, HeadwayGtuType.WRAP));
         return perception;
     }
@@ -112,9 +117,11 @@ public class ChannelPerceptionFactory implements PerceptionFactory
         public NeighborTriplet estimate(final LaneBasedGtu perceivingGtu, final LaneBasedGtu perceivedGtu,
                 final Length distance, final boolean downstream, final Time when) throws ParameterException
         {
-            double sign = perceivingGtu.getParameters().getParameter(OVER_EST);
+            // When this is ported to OTS, the manner in which to obtain 'factor' should be generalized for AR and Attention
+            // Matrix purposes
+            double lamda = perceivingGtu.getParameters().getParameter(OVER_EST);
             double ts = Math.max(perceivingGtu.getParameters().getParameter(Fuller.TS), 1.0);
-            double factor = sign < 0.0 ? 1.0 / ts : ts;
+            double factor = Math.pow(ts, lamda);
             Length headway = getDelayedHeadway(perceivingGtu, perceivedGtu, distance, downstream, when).times(factor);
             Speed speed =
                     getEgoSpeed(perceivingGtu).plus(getDelayedSpeedDifference(perceivingGtu, perceivedGtu, when).times(factor));
@@ -177,8 +184,8 @@ public class ChannelPerceptionFactory implements PerceptionFactory
         public NeighborTriplet anticipate(final NeighborTriplet neighborTriplet, final Duration duration,
                 final Length traveledDistance, final boolean downstream)
         {
-            return new NeighborTriplet(neighborTriplet.headway().plus(traveledDistance), neighborTriplet.speed(),
-                    neighborTriplet.acceleration());
+            return new NeighborTriplet(neighborTriplet.headway().plus(neighborTriplet.speed().times(duration)),
+                    neighborTriplet.speed(), neighborTriplet.acceleration());
         }
 
         /** {@inheritDoc} */

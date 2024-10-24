@@ -4,6 +4,9 @@ clc
 clear all
 close all force
 delete(gcp('nocreate'));
+cluster = parcluster(parallel.defaultClusterProfile);
+delete(cluster.Jobs);
+clear cluster
 warning('off');
 
 
@@ -13,14 +16,15 @@ warning('off');
 % NGSIM
 % HIGHD
 % ZEN
-datasets={'NGSIM','HIGHD','ZEN'}; % {'NGSIM','HIGHD','ZEN'}
+datasets={'HIGHD'}; % {'NGSIM','HIGHD','ZEN'}
 
 % Models
-% 1) Base models: 4
-%     - [1-160]     IDM (Treiber et al., 2000)
-%     - [161-320]   IDM+ (Schakel et al., 2012, TRR)
-%     - [321-480]   I-IDM (Treiber and Kesting, 2013, book)
-%     - [481-640]   I-IDM+ (Tian et al., 2016, TR-F)
+% 1) Base models: 5
+%     - [1-160]     IDM (idm, Treiber et al., 2000)
+%     - [161-320]   IDM+ (idm+, Schakel et al., 2012, TRR)
+%     - [321-480]   I-IDM (iidm, Treiber and Kesting, 2013, book)
+%     - [481-640]   I-IDM+ (iidm+, Tian et al., 2016, TR-F)
+%     - [641-800]   M-IDM (midm, based on Treiber et al., 2000 and Tian et al., 2016, TR-F)
 % 2) Cognitive model: 4
 %     - [1-40]      none
 %     - [41-80]     TD (Saifuzzaman and Zheng, 2015, TR-B)
@@ -41,14 +45,39 @@ datasets={'NGSIM','HIGHD','ZEN'}; % {'NGSIM','HIGHD','ZEN'}
 % 6) Temporal anticipation model (only with perception delay): 2
 %     - [1]         none
 %     - [2]         fixed HDM (Treiber et al., 2006, Physica A)
-models=[640];
+models=[341:360, 381:400, 421:440, 461:480];
 
-% Model parameter sampling
-% calibration
-% uniform
-% marginal
-% joint (i.e. group)
-parameterSamplingTypes={'calibration'}; % {'calibration','uniform','marginal','joint'}
+% Experiments
+% Each cell contains:
+% - parameters sampling type 
+%   - calibration
+%   - uniform
+%   - empirical_marginal
+%   - empirical_joint
+%   - filtered_marginal
+%   - filtered_joint
+% - trajectory sampling type
+%   - trajFixed
+%   - trajFactor
+% - trajectory-parameters sampling type (only if filtered_* and trajFactor)
+%   - uncorr
+%   - corr
+
+% {{'calibration','trajFixed'}}
+% {{'uniform','trajFixed'}}
+% {{'uniform','trajFactor'}}
+% {{'empirical_marginal','trajFactor'}}
+% {{'empirical_joint','trajFactor'}}
+% {{'filtered_marginal','trajFixed'}}
+% {{'filtered_marginal','trajFactor','uncorr'}}
+% {{'filtered_marginal','trajFactor','corr'}}
+% {{'filtered_joint','trajFixed'}}
+% {{'filtered_joint','trajFactor','uncorr'}}
+% {{'filtered_joint','trajFactor','corr'}}
+
+experiments=[...
+    {{'calibration','trajFixed'}},...
+];
 
 % Labels
 % 'ta','\tau_{a}'...
@@ -102,6 +131,7 @@ setup.textOutputs={...
 
 % Setup analysis
 setup.calibration=1;
+setup.fixing=1;
 setup.propagation=0;
 setup.filtering=0;
 setup.GSA=0;
@@ -110,11 +140,10 @@ setup.GSA=0;
 setup.numReplications=10;
 
 % Design of Experiment
-setup.numIterations=2^6;
+setup.numIterations=2^18;
 
 % Multithreading
-setup.profilePool='Processes'; % Processes, local
-setup.numCPUs=4;
+setup.numCPUs=28;
 
 % Trajectory resampling
 setup.resamplingRate=0.01; % NaN, value
@@ -131,7 +160,7 @@ setup.thresholdMultiplier=1.05;
 
 % GSA
 setup.indexOutputs=[3];
-setup.outputThresholds=ones(length(setup.textOutputs),1)*NaN;
+setup.outputThresholds=ones(length(setup.textOutputs),1)*10000;
 setup.outputThresholdsFigure=ones(length(setup.textOutputs),1)*NaN;
 setup.outputThresholdsFigure(3)=1;
 setup.Sformula='SALTELLI'; % SALTELLI, JANSEN
@@ -145,18 +174,16 @@ mkdir('Results/Figures');
 
 %% Execution
 
-for k = 1 : length(parameterSamplingTypes)
+for k = 1 : length(experiments)
     for i = 1 : length(datasets)
         for j = 1 : length(models)
-            Execution(datasets{i},models(j),parameterSamplingTypes{k},setup);
+            Execution(datasets{i},models(j),experiments{k},setup);
         end
         clear j
-        ManageResults(datasets{i},models,parameterSamplingTypes{k},setup);
+        % ManageResults(datasets{i},models,experiments{k},setup);
     end
     clear i
 end
 clear k
 
 delete(gcp('nocreate'));
-
-zip('Results/results.zip','Results/*.mat');

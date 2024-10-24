@@ -11,12 +11,12 @@ function [outputsReps,dataVehicleReps]=Simulation(parameters,labels,model,dataVe
     % Run replications
     outputsReps=zeros(numReplications,7);
     dataVehicleReps=cell(numReplications,1);
-    tic;
+    % tic;
     for i = 1 : numReplications
         [outputsReps(i,:),dataVehicleReps{i}]=run(parameters,dataVehicle);
     end
     clear i
-    fprintf(' (%.5f seconds)\n',toc);
+    % fprintf(' (%.5f seconds)\n',toc);
     
 end
 
@@ -45,7 +45,7 @@ function [modelParameters]=init(parameters,labels,model,dataVehicle)
     modelParameters.muT_s=0;
     modelParameters.muT_v=0;
     modelParameters.muX_1=1;
-    modelParameters.muX_2=0;
+    modelParameters.muX_2=0.5;
     modelParameters.eps_s=1;
     modelParameters.eps_v=1;
     modelParameters.eps_dv=1;
@@ -83,11 +83,12 @@ function [modelParameters]=init(parameters,labels,model,dataVehicle)
     modelParameters.SAmin=0;
     modelParameters.SAmax=modelParameters.SAmin+modelParameters.deltaSAmax;
     modelParameters.epsTau=round(modelParameters.epsTau/dataVehicle.dt);
-    modelParameters.muX_2=(1-modelParameters.muX_1)*modelParameters.muX_2;
+    modelParameters.muX_2=min(modelParameters.muX_1,(1-modelParameters.muX_1)*modelParameters.muX_2);
+    modelParameters.muX_3=1-modelParameters.muX_1-modelParameters.muX_2;
     modelParameters.muX=[...
         modelParameters.muX_1,...
         modelParameters.muX_2,...
-        1-modelParameters.muX_1-modelParameters.muX_2...
+        modelParameters.muX_3...
     ];
 end
 
@@ -262,14 +263,18 @@ function [outputs,dataVehicle]=run(parameters,dataVehicle)
                 (1-(v/v0)^delta),...
                 (1-(sDesired*TD/s)^2));
         elseif base==3 % iidm
-            if sDesired<=s
+            if sDesired*TD<=s
                 aModel=a*(1-(v/v0)^delta)*(1-(sDesired*TD/s)^(2/(1-(v/v0)^delta)));
             else
                 aModel=a*(1-(sDesired*TD/s)^2);
             end
-        elseif base==4 % iidm+
-            if sDesired<=s
-                aModel=a*(1-(v/v0)^delta-(sDesired*TD/s)^2);
+        elseif base==4 || base==5 % iidm+, midm
+            if sDesired*TD<=s
+                if base==4
+                    aModel=a*(1-(v/v0)^delta)*(1-(sDesired*TD/s)^2);
+                else
+                    aModel=a*(1-(v/v0)^delta-(sDesired*TD/s)^2);
+                end
             else
                 if v<=vCrit
                     aModel=a*(1-(sDesired*TD/s)^2);

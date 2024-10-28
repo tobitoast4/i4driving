@@ -1,7 +1,7 @@
-function Execution(dataset,model,parameterSamplingType,setup)
+function Execution(dataset,model,experiment,setup)
 
     % Create Results folder
-    mkdir(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType]);
+    mkdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1}]);
     
     % Loading data
     dataVehicles=loadingData(dataset,setup.resamplingRate);
@@ -16,60 +16,30 @@ function Execution(dataset,model,parameterSamplingType,setup)
     clear bounds
     
     % Calibration
-    if strcmp(parameterSamplingType,'calibration') && (setup.calibration==1 || exist(['Results/calibrationResults_',dataset,'_model_', num2str(model),'.mat'],'file')==0)
-        [parameters,outputs]=Calibration(dataset,model,setup,dataVehicles,LB(2:end),UB(2:end),labels);
-        save(['Results/calibrationResults_',dataset,'_model_', num2str(model),'.mat'],'parameters','outputs','labels');
-        clear parameters outputs
+    if strcmp(experiment{1},'calibration') && setup.calibration==1
+        Calibration(dataset,model,setup,dataVehicles,LB(2:end),UB(2:end),labels);
     end
     
-    if strcmp(parameterSamplingType,'calibration')
+    if strcmp(experiment{1},'calibration')
         return;
     end
     
     % Uncertainty propagation
-    if setup.propagation==1 || exist(['Results/propagationResults_',dataset,'_model_', num2str(model),'_',parameterSamplingType,'.mat'],'file')==0
-        [inputs,outputs]=Propagation(dataset,model,parameterSamplingType,setup,dataVehicles,LB,UB,labels);
-        save(['Results/propagationResults_',dataset,'_model_', num2str(model),'_',parameterSamplingType,'.mat'],'inputs','outputs','labels','-v7.3');
-    else
-        load(['Results/propagationResults_',dataset,'_model_', num2str(model),'_',parameterSamplingType,'.mat'],'inputs','outputs');
+    if setup.propagation==1
+        Propagation(dataset,model,experiment,setup,dataVehicles,LB,UB,labels);
     end
     
     % Global Sensitivity Analysis
     if setup.GSA==1
-        [indices,bounds,textInputs,indexInputs]=GSA(dataset,model,parameterSamplingType,setup,LB,UB,labels,inputs,outputs.calibration);
-        save(['Results/gsaResults_',dataset,'_model_', num2str(model),'_',parameterSamplingType,'.mat'],'indices','bounds','textInputs','indexInputs');
+        GSA(dataset,model,experiment,setup,LB,UB,labels);
     end
     
 end
 
-function modelBounds=ParseBounds(labels)
-    fid=fopen('Data/Models/bounds.txt');
-    boundsData=textscan(fid,'%s');
-    fclose(fid);
-    clear fid ans
-    for i = 1 : length(boundsData{1})
-        eval(boundsData{1}{i});
-    end
-    clear i
-    clear boundsData
-    fields=fieldnames(bounds);
-    for i = 1 : length(fields)
-        bounds.(fields{i})=bounds.(fields{i})';
-    end
-    clear i
-    clear fields
-    modelBounds=[];
-    for i = 1 : length(labels)
-        modelBounds=[modelBounds,bounds.(labels{i})];
-    end
-    clear i
-end
-
-function [parameters,outputs]=Calibration(dataset,model,setup,dataVehicles,LB,UB,labels)
+function Calibration(dataset,model,setup,dataVehicles,LB,UB,labels)
 
     mkdir(['Results/',dataset,'/model_',num2str(model),'/calibration/vehicles']);
     
-    profilePool=setup.profilePool;
     numCPUs=setup.numCPUs;
     numReplications=setup.numReplications;
     indexGOF=setup.indexGOF.calibration;
@@ -82,9 +52,8 @@ function [parameters,outputs]=Calibration(dataset,model,setup,dataVehicles,LB,UB
         p = p + 1;
     end
 
-    pool=gcp('nocreate');
-    if isempty(pool)
-        pool=parpool(profilePool,numCPUs);
+    if isempty(gcp('nocreate'))
+        parpool(parallel.defaultClusterProfile,numCPUs);
     end
     D = parallel.pool.DataQueue;
     afterEach(D, @UpdateWaitbar);
@@ -94,9 +63,8 @@ function [parameters,outputs]=Calibration(dataset,model,setup,dataVehicles,LB,UB
         processCalibration(D,iteration,dataset,model,dataVehicles{iteration},LB,UB,labels,numReplications,indexGOF,percentileGOF);
     end
     clear i
-%     delete(pool);
     close(h);
-    clear pool h
+    clear h
     
     parametersAll=ones(numVehicles,length(LB))*NaN;
     outputsAll=ones(numVehicles,length(setup.textOutputs))*NaN;
@@ -113,65 +81,242 @@ function [parameters,outputs]=Calibration(dataset,model,setup,dataVehicles,LB,UB
     parameters=parametersAll;
     outputs=outputsAll;
     clear parametersAll outputsAll
+    
+    save(['Results/calibrationResults_',dataset,'_model_',num2str(model),'.mat'],'parameters','outputs','labels');
 
 end
 
-function [inputs,outputs]=Propagation(dataset,model,parameterSamplingType,setup,dataVehicles,LB,UB,labels)
+function Propagation(dataset,model,experiment,setup,dataVehicles,LB,UB,labels)
     
-    mkdir(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/iterations']);
+    if strcmp(experiment{2},'trajFixed')
+        for i = 1 : length(dataVehicles)
+            [inputs,outputs]=processPropagation(dataset,model,experiment,setup,dataVehicles,LB,UB,labels,i);
+            save(['Results/propagationResults_',dataset,'_model_',num2str(model),'_',experiment{1},'_',experiment{2},'_','vehicle_',num2str(i),'.mat'],'inputs','outputs','labels','-v7.3');
+        end
+        clear i
+    else
+        [inputs,outputs]=processPropagation(dataset,model,experiment,setup,dataVehicles,LB,UB,labels,NaN);
+        if strcmp(experiment{1},'filtered_marginal') || strcmp(experiment{1},'filtered_joint')
+            tag=['_',experiment{3}];
+        else
+            tag='';
+        end
+        save(['Results/propagationResults_',dataset,'_model_',num2str(model),'_',experiment{1},'_',experiment{2},tag,'.mat'],'inputs','outputs','labels','-v7.3');
+    end
     
+end
+
+function GSA(dataset,model,experiment,setup,LB,UB,labels)
+    
+    if strcmp(experiment{2},'trajFixed')
+        for i = 1 : length(dataVehicles)
+            load(['Results/propagationResults_',dataset,'_model_', num2str(model),'_',experiment{1},'_',experiment{2},'_','vehicle_',num2str(i),'.mat'],'inputs','outputs');
+            [indices,bounds,textInputs,indexInputs]=processGSA(dataset,model,experiment,setup,LB(2:end),UB(2:end),labels,inputs(:,2:end),outputs.calibration,i);
+            clear inputs outputs
+            save(['Results/gsaResults_',dataset,'_model_',num2str(model),'_',experiment{1},'_','vehicle_',num2str(i),'.mat'],'indices','bounds','textInputs','indexInputs');
+        end
+        clear i
+    else
+        if strcmp(experiment{1},'filtered_marginal') || strcmp(experiment{1},'filtered_joint')
+            tag=['_',experiment{3}];
+        else
+            tag='';
+        end
+        load(['Results/propagationResults_',dataset,'_model_', num2str(model),'_',experiment{1},'_',experiment{2},tag,'.mat'],'inputs','outputs');
+        [indices,bounds,textInputs,indexInputs]=processGSA(dataset,model,experiment,setup,LB,UB,labels,inputs,outputs.calibration,NaN);
+        clear inputs outputs
+        save(['Results/gsaResults_',dataset,'_model_',num2str(model),'_',experiment{1},'_',experiment{2},tag,'.mat'],'indices','bounds','textInputs','indexInputs');
+    end
+    
+end
+
+function processCalibration(D,iteration,dataset,model,dataVehicle,LB,UB,labels,numReplications,indexGOF,percentileGOF)
+    if exist(['Results/',dataset,'/model_',num2str(model),'/calibration/vehicles/vehicle_',num2str(iteration),'.mat'],'file')>0
+        send(D,iteration);
+        return;
+    end
+    parameters=ga(...
+        @(x)getObjFunction(x,labels,model,dataVehicle,numReplications,indexGOF,percentileGOF),...
+        length(LB),...
+        [],[],[],[],...
+        LB,UB,...
+        [],...
+        gaoptimset(...
+            'PopulationSize',1000,... %1000
+            'Generations',10000,... %10000
+            'StallGenLimit',100,...
+            'TolFun',1e-4,...
+            'UseParallel',false,...
+            'display','off')...
+        );
+    [outputsReps,dataVehicleReps]=Simulation(parameters,labels,model,dataVehicle,numReplications);
+    [outputs,dataVehicle]=getBestReplication(outputsReps,dataVehicleReps,indexGOF,percentileGOF);
+    save(['Results/',dataset,'/model_', num2str(model),'/calibration/vehicles/vehicle_',num2str(iteration),'.mat'],'parameters','outputs','dataVehicle');
+    send(D,iteration);
+end
+
+function [inputs,outputs]=processPropagation(dataset,model,experiment,setup,dataVehicles,LB,UB,labels,vehicleIndex)
+
     numIterations=setup.numIterations;
     numReplications=setup.numReplications;
-    profilePool=setup.profilePool;
     numCPUs=setup.numCPUs;
-    numInputs=length(LB);
     numOutputs=length(setup.textOutputs);
+    numInputs=length(LB);
     
-    if strcmp(parameterSamplingType,'marginal') || strcmp(parameterSamplingType,'joint')
-        if exist(['Data/Models/model_',num2str(model),'/filtered_',dataset,'.mat'],'file')==0
-            error('Filtered parameters distribution not found (dataset %s, model %li).\n',dataset,model);
+    if strcmp(experiment{2},'trajFixed')
+        mkdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},'/vehicles/vehicle_',num2str(vehicleIndex),'/iterations']);
+    else
+        if strcmp(experiment{1},'filtered_marginal') || strcmp(experiment{1},'filtered_joint')
+            tag=['_',experiment{3}];
+        else
+            tag='';
         end
-        load(['Data/Models/model_',num2str(model),'/filtered_',dataset,'.mat'],'parameters');
-        if strcmp(parameterSamplingType,'joint')
-            rho=corr(parameters);
-            cholMatrix=cholcov(rho);
+        mkdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/iterations']);
+    end
+    
+    if strcmp(experiment{1},'empirical_marginal') || ...
+            strcmp(experiment{1},'empirical_joint') ||...
+            strcmp(experiment{1},'filtered_marginal') ||...
+            strcmp(experiment{1},'filtered_joint')
+        if strcmp(experiment{1},'empirical_marginal') ||...
+                strcmp(experiment{1},'empirical_joint')
+            if strcmp(experiment{2},'trajFixed')
+                error('Only one parameter sample per trajectory exists (i.e., the calibrated values). Please use experiment{2} equal to ''trajFactor''.');
+            end
+            if exist(['Results/calibrationResults_',dataset,'.mat'],'file')==0
+                error('Empirical parameters distribution from calibration not found (dataset %s).\n',dataset);
+            else
+                load(['Results/calibrationResults_',dataset,'.mat'],'parameters');
+                if isempty(parameters{model})
+                    error('Empirical parameters distribution from calibration not found (dataset %s, model %li).\n',dataset,model);
+                end
+                inputs=[[1:size(parameters{model},1)]',parameters{model}];
+                clear parameters
+            end
+        else
+            if strcmp(experiment{2},'trajFixed')
+                vehicleTag=['_vehicle_',num2str(vehicleIndex)];
+            else
+                vehicleTag='';
+            end
+            if exist(['Results/propagationResultsFiltered_',dataset,'_model_',num2str(model),'_','uniform',vehicleTag,'.mat'],'file')==0
+                error('Filtered parameters distribution from propagation not found (dataset %s, model %li).\n',dataset,model);
+            else
+                load(['Results/propagationResultsFiltered_',dataset,'_model_',num2str(model),'_','uniform',vehicleTag,'.mat'],'inputs');
+            end
+            clear vehicleTag
+        end
+        if strcmp(experiment{1},'empirical_joint') ||...
+                strcmp(experiment{1},'filtered_joint')
+            if strcmp(experiment{1},'empirical_joint') || strcmp(experiment{3},'uncorr')
+                rData=corr(inputs(:,2:end));
+                indexNaN=all(isnan(rData),1);
+                rData(:,indexNaN)=0;
+                rData(indexNaN,:)=0;
+                for i = 1 : size(rData,1)
+                    rData(i,i)=1;
+                end
+                clear i
+                clear indexNaN
+                for threshold = 1: -0.01 : 0.5
+                    r=rData;
+                    [indexRow,indexCol]=find(abs(r)>=threshold);
+                    indexMat=[indexRow,indexCol];
+                    index=find(diff(indexMat,'',2)~=0);
+                    for j = 1 : length(index)
+                        r(indexMat(index(j),1),indexMat(index(j),2))=threshold;
+                    end
+                    clear j
+                    clear index indexMat indexRow indexCol
+                    r=triu(r)+triu(r,1)';
+                    cholMatrix=cholcov(r);
+                    if ~isempty(cholMatrix) && size(cholMatrix,1)==size(cholMatrix,2)
+                        break;
+                    end
+                    r=nearcorr(r);
+                    r=triu(r)+triu(r,1)';
+                    cholMatrix=cholcov(r);
+                    if ~isempty(cholMatrix) && size(cholMatrix,1)==size(cholMatrix,2)
+                        break;
+                    end
+                    clear r
+                end
+                clear rData threshold
+            else
+                trajectoryIDs=unique(inputs(:,1));
+                cholMatrix=cell(length(trajectoryIDs),1);
+                for i = 1 : length(trajectoryIDs)
+                    rData=corr(inputs(inputs(:,1)==trajectoryIDs(i),2:end));
+                    indexNaN=all(isnan(rData),1);
+                    rData(:,indexNaN)=0;
+                    rData(indexNaN,:)=0;
+                    for j = 1 : size(rData,1)
+                        rData(j,j)=1;
+                    end
+                    clear j
+                    clear indexNaN;
+                    cholMatrix=chol(rData);
+                    clear rData
+                end
+                clear i
+                clear trajectoryIDs
+            end
         else
             cholMatrix=[];
         end
-        marginals=zeros(size(parameters));
-        for i = 1 : size(parameters,2)
-            marginals(:,i)=sortrows(parameters(:,i));
+        if strcmp(experiment{1},'empirical_marginal') ||...
+                strcmp(experiment{1},'empirical_joint') ||...
+                strcmp(experiment{1},'filtered_marginal') ||...
+                strcmp(experiment{3},'uncorr')
+            marginals=zeros(size(inputs,1),size(inputs,2)-1);
+            for i = 1 : size(inputs,2)-1
+                marginals(:,i)=sortrows(inputs(:,i+1));
+            end
+            clear i
+        else
+            trajectoryIDs=unique(inputs(:,1));
+            marginals=cell(length(trajectoryIDs),1);
+            for j = 1 : length(trajectoryIDs)
+                inputsLocal=inputs(inputs(:,1)==trajectoryIDs(i),:);
+                marginals{j}=zeros(size(inputsLocal,1),size(inputsLocal,2)-1);
+                for i = 1 : size(inputsLocal,2)
+                    marginals{j}(:,i)=sortrows(inputsLocal(:,i+1));
+                end
+                clear i
+                clear inputsLocal
+            end
+            clear j
+            clear trajectoryIDs
         end
-        clear i
-        clear parameters
+        clear inputs
     else
         marginals=[];
         cholMatrix=[];
     end
     
     function UpdateWaitbar(iteration)
-        fprintf('dataset: %s, model: %li, iteration count %li/%li (iter_%li): completed.\n',dataset,model,p,numIterations,iteration);
+        fprintf('dataset: %s, model: %li, experiment: %s, iteration count %li/%li (iter_%li): completed.\n',dataset,model,[experiment{1},'_',experiment{2},'_',num2str(vehicleIndex)],p,numIterations,iteration);
         waitbar(p/numIterations, h);
         p = p + 1;
     end
 
-    pool=gcp('nocreate');
-    if isempty(pool)
-        pool=parpool(profilePool,numCPUs);
+    if isempty(gcp('nocreate'))
+        parpool(parallel.defaultClusterProfile,numCPUs);
     end
     D = parallel.pool.DataQueue;
     afterEach(D, @UpdateWaitbar);
     h = waitbar(0, 'Processing iterations: please wait...');
     p = 1;
     parfor iteration = 1 : numIterations
-        processIteration(D,iteration,dataset,model,parameterSamplingType,numInputs,numOutputs,dataVehicles,cholMatrix,marginals,LB,UB,labels,numReplications);
+        processIteration(D,iteration,dataset,model,experiment,numInputs,dataVehicles,cholMatrix,marginals,LB,UB,labels,numReplications,vehicleIndex);
     end
     clear i
-    delete(pool);
     close(h);
-    clear h pool
+    clear h
 
-    if strcmp(parameterSamplingType,'uniform') || strcmp(parameterSamplingType,'marginal')
+    if strcmp(experiment{1},'uniform') ||...
+            strcmp(experiment{1},'empirical_marginal') ||...
+            strcmp(experiment{1},'filtered_marginal')
         numInputsRows=numInputs;
     else
         numInputsRows=2;
@@ -181,7 +326,11 @@ function [inputs,outputs]=Propagation(dataset,model,parameterSamplingType,setup,
     outputsAll.calibration=ones(numIterations*(numInputsRows+2),numOutputs)*NaN;
     outputsAll.safety=ones(numIterations*(numInputsRows+2),numOutputs)*NaN;
     for iteration = 1 : numIterations
-        load(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/iterations/iter_',num2str(iteration),'.mat'],'inputs','outputs');
+        if strcmp(experiment{2},'trajFixed')
+            load(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},'/vehicles/vehicle_',num2str(vehicleIndex),'/iterations/iter_',num2str(iteration),'.mat'],'inputs','outputs');
+        else
+            load(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/iterations/iter_',num2str(iteration),'.mat'],'inputs','outputs');
+        end
         inputsAll((iteration-1)*(numInputsRows+2)+1:(iteration-1)*(numInputsRows+2)+numInputsRows+2,:)=inputs;
         count=0;
         for j = (iteration-1)*(numInputsRows+2)+1 : (iteration-1)*(numInputsRows+2)+numInputsRows+2
@@ -195,7 +344,11 @@ function [inputs,outputs]=Propagation(dataset,model,parameterSamplingType,setup,
     end
     clear i
     
-%     rmdir(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/iterations'],'s');
+%     if strcmp(experiment{2},'trajFixed')
+%         rmdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},'/vehicles/vehicle_',num2str(vehicleIndex),'/iterations'],'s');
+%     else
+%         rmdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/iterations'],'s');
+%     end
     
     inputs=inputsAll;
     outputs=outputsAll;
@@ -203,28 +356,129 @@ function [inputs,outputs]=Propagation(dataset,model,parameterSamplingType,setup,
 
 end
 
-function [indices,bounds,textInputs,indexInputs]=GSA(dataset,model,parameterSamplingType,setup,LB,UB,labels,inputs,outputs)
+function processIteration(D,iteration,dataset,model,experiment,numInputs,dataVehicles,cholMatrix,marginals,LB,UB,labels,numReplications,vehicleIndex)
+    if strcmp(experiment{2},'trajFixed')
+        if exist(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},'/vehicles/vehicle_',num2str(vehicleIndex),'/iterations/iter_',num2str(iteration),'.mat'],'file')>0
+            send(D,iteration);
+            return;
+        end
+        numInputs=numInputs-1;
+    else
+        if strcmp(experiment{1},'filtered_marginal') || strcmp(experiment{1},'filtered_joint')
+            tag=['_',experiment{3}];
+        else
+            tag='';
+        end
+        if exist(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/iterations/iter_',num2str(iteration),'.mat'],'file')>0
+            send(D,iteration);
+            return;
+        end
+    end
+    T=sobolseq6144(iteration,2*numInputs);
+    A=T(1:numInputs);
+    B=T(numInputs+1:2*numInputs);
+    inputSet=[A;B];
+    if strcmp(experiment{2},'trajFactor') &&...
+            (strcmp(experiment{1},'empirical_joint') || strcmp(experiment{1},'filtered_joint'))
+        for j = 1 : 2
+            Ab=A;
+            if j==1
+                Ab(1,j)=B(1,j);
+            else
+                Ab(1,2:end)=B(1,2:end);
+            end
+            inputSet=[inputSet;Ab];
+        end
+        clear j
+    else
+        for j = 1 : numInputs
+            Ab=A;
+            Ab(1,j)=B(1,j);
+            inputSet=[inputSet;Ab];
+        end
+        clear j
+    end
+    if strcmp(experiment{2},'trajFixed')
+        inputSet=[ones(size(inputSet,1),1)*(vehicleIndex/(length(dataVehicles)+1)),inputSet];
+    end
+    inputs=zeros(size(inputSet));
+    outputs=cell(size(inputSet,1),1);
+    for j = 1 : size(inputSet,1)
+        inputs(j,1)=round(LB(1)+inputSet(j,1)*(UB(1)-LB(1)));
+        if iscell(marginals)
+            marginalsLocal=marginals{inputs(j,1)};
+        else
+            marginalsLocal=marginals;
+        end
+        if iscell(cholMatrix)
+            cholMatrixLocal=cholMatrix{inputs(j,1)};
+        else
+            cholMatrixLocal=cholMatrix;
+        end
+        if strcmp(experiment{1},'uniform') ||...
+                strcmp(experiment{1},'empirical_marginal') ||...
+                strcmp(experiment{1},'filtered_marginal')
+            for k = 2 : size(inputSet,2)
+                if strcmp(experiment{1},'uniform')
+                    inputs(j,k)=LB(k)+inputSet(j,k)*(UB(k)-LB(k));
+                elseif strcmp(experiment{1},'empirical_marginal') || strcmp(experiment{1},'filtered_marginal')
+                    inputs(j,k)=marginalsLocal(ceil(size(marginalsLocal,1)*inputSet(j,k)),k-1);
+                end
+            end
+            clear k
+        else
+            inputs(j,2:end)=copula(inputSet(j,2:end),marginalsLocal,cholMatrixLocal);
+        end
+        outputs{j}=Simulation(inputs(j,2:end),labels,model,dataVehicles{inputs(j,1)},numReplications);
+        if max(isnan(outputs{j}),[],'all')==1
+            error('Simulation error (propagation iteration=%li, sample=%li).',iteration,j);
+        end
+    end
+    clear j
+    if strcmp(experiment{2},'trajFixed')
+        save(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},'/vehicles/vehicle_',num2str(vehicleIndex),'/iterations/iter_',num2str(iteration),'.mat'],'inputs','outputs');
+    else
+        save(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/iterations/iter_',num2str(iteration),'.mat'],'inputs','outputs');
+    end
+    send(D,iteration);
+end
+
+function [indices,bounds,textInputs,indexInputs]=processGSA(dataset,model,experiment,setup,LB,UB,labels,inputs,outputs,vehicleIndex)
     
-    if strcmp(parameterSamplingType,'uniform') || strcmp(parameterSamplingType,'marginal')
-%         textInputs=cell(1,length(labels)+1);
-%         textInputs{1}=setup.textInputs.trajID;
-%         for i = 1 : length(labels)
-%             textInputs{i+1}=setup.textInputs.(labels{i});
-%         end
-%         clear i
+    if strcmp(experiment{2},'trajFixed')
+        vehicleTag=['vehicle_',num2str(vehicleIndex)];
+        tag=['/vehicles/',vehicleTag];
+    else
+        vehicleTag='';
+        if strcmp(experiment{1},'filtered_marginal') || strcmp(experiment{1},'filtered_joint')
+            tag=['_',experiment{3}];
+        else
+            tag='';
+        end
+    end
+    
+    if strcmp(experiment{1},'uniform') || ...
+            strcmp(experiment{1},'empirical_marginal') ||...
+            strcmp(experiment,'filtered_marginal')
         textInputKeys=fieldnames(setup.textInputs);
         textInputs=cell(length(textInputKeys),1);
         for i = 1 : length(textInputKeys)
             textInputs{i}=setup.textInputs.(textInputKeys{i});
         end
         clear i
-        indexInputs=zeros(length(labels)+1,1);
-        indexInputs(1)=1;
+        if strcmp(experiment{2},'trajFixed')
+            addFactor=[];
+        else
+            addFactor=1;
+        end
+        indexInputs=zeros(length(labels)+(isempty(addFactor)==0),1);
+        indexInputs(addFactor)=1;
         for i = 1 : length(labels)
-            indexInputs(i+1)=find(strcmp(labels{i},textInputKeys)==1);
+            indexInputs(i+(isempty(addFactor)==0))=find(strcmp(labels{i},textInputKeys)==1);
         end
         clear i
         clear textInputKeys
+        clear addFactor
     else
         textInputs=[setup.textInputs(1),{'parameters'}];
         indexInputs=[1,2];
@@ -245,10 +499,10 @@ function [indices,bounds,textInputs,indexInputs]=GSA(dataset,model,parameterSamp
     numBootstrapReplicas=100;
     
     for j = 1 : numOutputsAnalysis
-        mkdir(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/',textOutputs{indexOutputs(j)}]);
-%         mkdir(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/',textOutputs{indexOutputs(j)},'/FIG']);
-%         mkdir(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/',textOutputs{indexOutputs(j)},'/JPEG']);
-%         mkdir(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/',textOutputs{indexOutputs(j)},'/EMF']);
+        mkdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/',textOutputs{indexOutputs(j)}]);
+%         mkdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/',textOutputs{indexOutputs(j)},'/FIG']);
+%         mkdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/',textOutputs{indexOutputs(j)},'/JPEG']);
+%         mkdir(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/',textOutputs{indexOutputs(j)},'/EMF']);
     end
     clear j
     
@@ -333,14 +587,14 @@ function [indices,bounds,textInputs,indexInputs]=GSA(dataset,model,parameterSamp
         S=zeros(N_local,numInputs);
         ST=zeros(N_local,numInputs);
         if strcmp(Sformula,'SALTELLI')==1
-            S=(cumsum(Ji)./[1:N_local])/Vtot;
+            S=(cumsum(Ji)./[1:N_local]')/Vtot;
         elseif strcmp(Sformula,'JANSEN')==1
             S=1-0.5*(cumsum(Ji)./[1:N_local])/Vtot;
         end
         if strcmp(STformula,'SALTELLI')==1
             ST=(cumsum(JTi)./[1:N_local])/Vtot;
         elseif strcmp(STformula,'JANSEN')==1
-            ST=0.5*(cumsum(JTi)./[1:N_local])/Vtot;
+            ST=0.5*(cumsum(JTi)./[1:N_local]')/Vtot;
         end
         
         numBlocks=min(N_local,numBlocks);
@@ -402,41 +656,41 @@ function [indices,bounds,textInputs,indexInputs]=GSA(dataset,model,parameterSamp
         % S_LB_Figure=max(0,S_LB(end,:))';
         % S_UB_Figure=max(0,S_UB(end,:))';
         % 
-        % Figure=figure('InvertHardcopy','off','Color',[1 1 1],'Units','centimeters','Position',[3 8 35 12],'paperposition',[0 0 35 12]);
-        % h=bar(ST_Figure);
-        % set(h(1),'EdgeColor','r','FaceColor','none')
-        % hold on
-        % h=bar(S_Figure);
-        % set(h(1),'EdgeColor','b','FaceColor','none')
-        % h=highlow(ST_Figure,ST_UB_Figure,ST_LB_Figure,ST_Figure);
-        % set(h(1),'LineStyle','-','LineWidth',1.2,'Color','r')
-        % set(h(1),'Marker','s')
-        % set(h(1),'MarkerSize',2.5)
-        % set(h(1),'MarkerFaceColor','r')
-        % h=highlow(S_Figure,S_UB_Figure,S_LB_Figure,S_Figure);
-        % set(h(1),'LineStyle','-','LineWidth',1.2,'Color','b')
-        % set(h(1),'Marker','s')
-        % set(h(1),'MarkerSize',2.5)
-        % set(h(1),'MarkerFaceColor','b')
-        % set(gca,'XTickLabel',textInputs);
-        % title(sprintf('First-order and Total Sensitivity Indices - %s',textOutputs{indexOutputs(j)}),'FontWeight','bold')
-        % legend('Total Sensitivity Index (ST)','First Order Sensitivity Index (S)','ST: 90% confidence interval','S: 90% confidence interval')
-        % axis([0 numInputs+1 0 1.5])
-        % clear Title
-        % DestinationFolder=['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/',textOutputs{indexOutputs(j)}];
-        % saveas(Figure,[DestinationFolder,'/FIG/Indices.fig']);
-        % saveas(Figure,[DestinationFolder,'/JPEG/Indices.jpeg']);
-        % saveas(Figure,[DestinationFolder,'/EMF/Indices.emf']);
-        % close(Figure);
-        % clear Figure DestinationFolder
-        % clear S_Figure S_LB_Figure S_UB_Figure
-        % clear ST_Figure ST_LB_Figure ST_UB_Figure
-        % clear h
-        % clear N_local N_localBlock
-        % clear S S_LB S_UB
-        % clear ST ST_LB ST_UB
+%         Figure=figure('InvertHardcopy','off','Color',[1 1 1],'Units','centimeters','Position',[3 8 35 12],'paperposition',[0 0 35 12]);
+%         h=bar(ST_Figure);
+%         set(h(1),'EdgeColor','r','FaceColor','none')
+%         hold on
+%         h=bar(S_Figure);
+%         set(h(1),'EdgeColor','b','FaceColor','none')
+%         h=highlow(ST_Figure,ST_UB_Figure,ST_LB_Figure,ST_Figure);
+%         set(h(1),'LineStyle','-','LineWidth',1.2,'Color','r')
+%         set(h(1),'Marker','s')
+%         set(h(1),'MarkerSize',2.5)
+%         set(h(1),'MarkerFaceColor','r')
+%         h=highlow(S_Figure,S_UB_Figure,S_LB_Figure,S_Figure);
+%         set(h(1),'LineStyle','-','LineWidth',1.2,'Color','b')
+%         set(h(1),'Marker','s')
+%         set(h(1),'MarkerSize',2.5)
+%         set(h(1),'MarkerFaceColor','b')
+%         set(gca,'XTickLabel',textInputs);
+%         title(sprintf('First-order and Total Sensitivity Indices - %s',textOutputs{indexOutputs(j)}),'FontWeight','bold')
+%         legend('Total Sensitivity Index (ST)','First Order Sensitivity Index (S)','ST: 90% confidence interval','S: 90% confidence interval')
+%         axis([0 numInputs+1 0 1.5])
+%         clear Title
+%         DestinationFolder=['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/',textOutputs{indexOutputs(j)}];
+%         saveas(Figure,[DestinationFolder,'/FIG/Indices.fig']);
+%         saveas(Figure,[DestinationFolder,'/JPEG/Indices.jpeg']);
+%         saveas(Figure,[DestinationFolder,'/EMF/Indices.emf']);
+%         close(Figure);
+%         clear Figure DestinationFolder
+%         clear S_Figure S_LB_Figure S_UB_Figure
+%         clear ST_Figure ST_LB_Figure ST_UB_Figure
+%         clear h
+%         clear N_local N_localBlock
+%         clear S S_LB S_UB
+%         clear ST ST_LB ST_UB
         % 
-        save(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/',textOutputs{indexOutputs(j)},'/GSA.mat'],...
+        save(['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/',textOutputs{indexOutputs(j)},'/GSA.mat'],...
             'StableS','StableST',...
             'StableS_bounds','StableST_bounds',...
             'Sformula','STformula');
@@ -448,7 +702,7 @@ function [indices,bounds,textInputs,indexInputs]=GSA(dataset,model,parameterSamp
     clear j
     clear Y_A Y_B Y_Ab
 
-    if strcmp(parameterSamplingType,'joint')
+    if strcmp(experiment{1},'empirical_joint') || strcmp(experiment{1},'filtered_joint')
         return;
     end
 
@@ -478,95 +732,76 @@ function [indices,bounds,textInputs,indexInputs]=GSA(dataset,model,parameterSamp
 %     elseif numInputs>16
 %         return;
 %     end
-    numRows=5;
-    numColumns=6;
-    
-    for j = 1 : numOutputs
-        if isnan(outputThresholds(j))==0
-           outputsModified(outputsModified(:,j)>outputThresholds(j),j)=NaN;
-        end
-    end
-    clear j
-    stepSize=50;
-    for j = 1 : numOutputsAnalysis
-        if isnan(outputThresholdsFigure(indexOutputs(j)))==0
-            maxY=outputThresholdsFigure(indexOutputs(j));
-        else
-            maxY=Inf;
-        end
-        inputs(:,1)=round(inputs(:,1));
-        for i = 1 : numInputs
-            X=inputs(:,i);
-            Y=outputsModified(:,indexOutputs(j));
-            Xbin=X(find(isnan(Y)==0));
-            Ybin=Y(find(isnan(Y)==0));
-            par=i;
-            meanBin=[];
-            bins=[LB(par):((UB(par)-LB(par))/stepSize):UB(par)];
-            for k=1:length(bins)-1
-                binY=Ybin(find(Xbin>=bins(k) & Xbin<=bins(k+1) ));
-                binX=Xbin(find(Xbin>=bins(k) & Xbin<=bins(k+1) ));
-                meanBin(k,:)=[mean(binX) mean(binY)];
-            end
-            clear k Xbin Ybin
-        
-            if i==1
-                Subplot=figure('InvertHardcopy','off','Color',[1 1 1],'Units','normalized','Position',[0.05 0.05 0.9 0.85],'PaperUnits','centimeters','PaperPosition',[0 0 40 30]);
-            end 
-            subplot(numRows,numColumns,indexInputs(i));
-            plot(X,Y,'.','MarkerSize',1);
-            xlim([LB(i) UB(i)]);
-            ylim([min(Y) min(maxY,max(Y))]);
-            hold on
-            plot(meanBin(:,1), meanBin(:,2),'.r','MarkerSize',5)
-            hold off
-%             Title=sprintf('%s against %s',textOutputs{indexOutputs(j)},textInputs{indexInputs(i)});
-%             title(Title,'FontWeight','bold','FontSize',10);
-            xlabel(textInputs{indexInputs(i)},'FontWeight','bold','FontSize',10);
-            ylabel(textOutputs{indexOutputs(j)},'FontWeight','bold','FontSize',10);
-            clear Title
-        end
-        clear i
-        clear X Y
-%         DestinationFolder=['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/',textOutputs{indexOutputs(j)}];
-%         saveas(Subplot,[DestinationFolder,'/FIG/Scatters.fig']);
-%         saveas(Subplot,[DestinationFolder,'/JPEG/Scatters.jpeg']);
-%         saveas(Subplot,[DestinationFolder,'/EMF/Scatters.emf']);
-        saveas(Subplot,['Results/Figures/scatterPlots_',dataset,'_model_',num2str(model),'_',parameterSamplingType,'_',textOutputs{indexOutputs(j)},'.jpeg']);
-        close(Subplot);
-        clear Subplot DestinationFolder
-        clear maxY
-    end
+    % numRows=5;
+    % numColumns=6;
+    % 
+    % for j = 1 : numOutputs
+    %     if isnan(outputThresholds(j))==0
+    %        outputsModified(outputsModified(:,j)>outputThresholds(j),j)=NaN;
+    %     end
+    % end
+    % clear j
+    % stepSize=50;
+%     for j = 1 : numOutputsAnalysis
+%         if isnan(outputThresholdsFigure(indexOutputs(j)))==0
+%             maxY=outputThresholdsFigure(indexOutputs(j));
+%         else
+%             maxY=Inf;
+%         end
+%         inputs(:,1)=round(inputs(:,1));
+%         for i = 1 : numInputs
+%             X=inputs(:,i);
+%             Y=outputsModified(:,indexOutputs(j));
+%             Xbin=X(find(isnan(Y)==0));
+%             Ybin=Y(find(isnan(Y)==0));
+%             par=i;
+%             meanBin=[];
+%             bins=[LB(par):((UB(par)-LB(par))/stepSize):UB(par)];
+%             for k=1:length(bins)-1
+%                 binY=Ybin(find(Xbin>=bins(k) & Xbin<=bins(k+1) ));
+%                 binX=Xbin(find(Xbin>=bins(k) & Xbin<=bins(k+1) ));
+%                 meanBin(k,:)=[mean(binX) mean(binY)];
+%             end
+%             clear k Xbin Ybin
+% 
+%             if i==1
+%                 Subplot=figure('InvertHardcopy','off','Color',[1 1 1],'Units','normalized','Position',[0.05 0.05 0.9 0.85],'PaperUnits','centimeters','PaperPosition',[0 0 40 30]);
+%             end 
+%             subplot(numRows,numColumns,indexInputs(i));
+%             plot(X,Y,'.','MarkerSize',1);
+%             xlim([LB(i) UB(i)]);
+%             ylim([min(Y) min(maxY,max(Y))]);
+%             hold on
+%             plot(meanBin(:,1), meanBin(:,2),'.r','MarkerSize',5)
+%             hold off
+% %             Title=sprintf('%s against %s',textOutputs{indexOutputs(j)},textInputs{indexInputs(i)});
+% %             title(Title,'FontWeight','bold','FontSize',10);
+%             xlabel(textInputs{indexInputs(i)},'FontWeight','bold','FontSize',10);
+%             ylabel(textOutputs{indexOutputs(j)},'FontWeight','bold','FontSize',10);
+%             clear Title
+%         end
+%         clear i
+%         clear X Y
+% %         DestinationFolder=['Results/',dataset,'/model_',num2str(model),'/',experiment{1},tag,'/',textOutputs{indexOutputs(j)}];
+% %         saveas(Subplot,[DestinationFolder,'/FIG/Scatters.fig']);
+% %         saveas(Subplot,[DestinationFolder,'/JPEG/Scatters.jpeg']);
+% %         saveas(Subplot,[DestinationFolder,'/EMF/Scatters.emf']);
+%         if strcmp(experiment{2},'trajFixed')
+%             localTag=['_',vehicleTag];
+%         else
+%             localTag=tag;
+%         end
+%         saveas(Subplot,['Results/Figures/scatterPlots_',dataset,'_model_',num2str(model),'_',experiment{1},localTag,'_',textOutputs{indexOutputs(j)},'.jpeg']);
+%         clear localTag
+%         close(Subplot);
+%         clear Subplot DestinationFolder
+%         clear maxY
+%     end
     clear j
     clear stepSize
     clear outputsModified
     clear IndexThreshold
     
-end
-
-function processCalibration(D,iteration,dataset,model,dataVehicle,LB,UB,labels,numReplications,indexGOF,percentileGOF)
-    if exist(['Results/',dataset,'/model_',num2str(model),'/calibration/vehicles/vehicle_',num2str(iteration),'.mat'],'file')>0
-        send(D,iteration);
-        return;
-    end
-    parameters=ga(...
-        @(x)getObjFunction(x,labels,model,dataVehicle,numReplications,indexGOF,percentileGOF),...
-        length(LB),...
-        [],[],[],[],...
-        LB,UB,...
-        [],...
-        gaoptimset(...
-            'PopulationSize',1000,... %1000
-            'Generations',10000,... %10000
-            'StallGenLimit',100,...
-            'TolFun',1e-4,...
-            'UseParallel',false,...
-            'display','off')...
-        );
-    [outputsReps,dataVehicleReps]=Simulation(parameters,labels,model,dataVehicle,numReplications);
-    [outputs,dataVehicle]=getBestReplication(outputsReps,dataVehicleReps,indexGOF,percentileGOF);
-    save(['Results/',dataset,'/model_', num2str(model),'/calibration/vehicles/vehicle_',num2str(iteration),'.mat'],'parameters','outputs','dataVehicle');
-    send(D,iteration);
 end
 
 function value=getObjFunction(x,labels,model,dataVehicle,numReplications,indexGOF,percentileGOF)
@@ -590,61 +825,6 @@ function [outputs,dataVehicle]=getBestReplication(outputsReps,dataVehicleReps,in
     clear values index
 end
 
-function processIteration(D,iteration,dataset,model,parameterSamplingType,numInputs,numOutputs,dataVehicles,cholMatrix,marginals,LB,UB,labels,numReplications)
-    if exist(['Results/',dataset,'/model_',num2str(model),'/',parameterSamplingType,'/iterations/iter_',num2str(iteration),'.mat'],'file')>0
-        send(D,iteration);
-        return;
-    end
-    T=sobolseq6144(iteration,2*numInputs);
-    A=T(1:numInputs);
-    B=T(numInputs+1:2*numInputs);
-    inputSet=[A;B];
-    if strcmp(parameterSamplingType,'uniform') || strcmp(parameterSamplingType,'marginal')
-        for j = 1 : numInputs
-            Ab=A;
-            Ab(1,j)=B(1,j);
-            inputSet=[inputSet;Ab];
-        end
-        clear j
-    else
-        for j = 1 : 2
-            Ab=A;
-            if j==1
-                Ab(1,j)=B(1,j);
-            else
-                Ab(1,2:end)=B(1,2:end);
-            end
-            inputSet=[inputSet;Ab];
-        end
-        clear j
-    end
-    inputs=zeros(size(inputSet));
-    outputs=cell(size(inputSet,1),1);
-    for j = 1 : size(inputSet,1)
-        inputs(j,1)=LB(1)+inputSet(j,1)*(UB(1)-LB(1));
-        if strcmp(parameterSamplingType,'uniform') || strcmp(parameterSamplingType,'marginal')
-            for k = 2 : size(inputSet,2)
-                if strcmp(parameterSamplingType,'uniform')
-                    inputs(j,k)=LB(k)+inputSet(j,k)*(UB(k)-LB(k));
-                elseif strcmp(parameterSamplingType,'marginal')
-                    inputs(j,k)=marginals(ceil(size(marginals,1)*inputSet(j,k)),k-1);
-                end
-            end
-            clear k
-        else
-            inputs(j,2:end)=copula(inputSet(j,2:end),marginals,cholMatrix);
-        end
-        values=inputs(j,:);
-        outputs{j}=Simulation(values(2:end),labels,model,dataVehicles{round(values(1))},numReplications);
-        if max(isnan(outputs{j}),[],'all')==1
-            error('Simulation error (propagation iteration=%li, sample=%li).',iteration,j);
-        end
-    end
-    clear j
-    save(['Results/',dataset,'/model_', num2str(model),'/',parameterSamplingType,'/iterations/iter_',num2str(iteration),'.mat'],'inputs','outputs');
-    send(D,iteration);
-end
-
 function sample=copula(T,marginals,cholMatrix)
     numInputs=size(marginals,2);
     p=normcdf(norminv(T,0,1)*cholMatrix,0,1);
@@ -654,6 +834,29 @@ function sample=copula(T,marginals,cholMatrix)
     end
     clear j
     clear p
+end
+
+function modelBounds=ParseBounds(labels)
+    fid=fopen('Data/Models/bounds.txt');
+    boundsData=textscan(fid,'%s');
+    fclose(fid);
+    clear fid ans
+    for i = 1 : length(boundsData{1})
+        eval(boundsData{1}{i});
+    end
+    clear i
+    clear boundsData
+    fields=fieldnames(bounds);
+    for i = 1 : length(fields)
+        bounds.(fields{i})=bounds.(fields{i})';
+    end
+    clear i
+    clear fields
+    modelBounds=[];
+    for i = 1 : length(labels)
+        modelBounds=[modelBounds,bounds.(labels{i})];
+    end
+    clear i
 end
 
 function dataVehicles=loadingData(dataset,resamplingRate)

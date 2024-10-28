@@ -27,7 +27,7 @@ function [...
     clear baseIndex cognitiveIndex spatialIndex perceptionErrorIndex perceptionDelayIndex
 
     labels={'a','b','s0','T','deltaV0','delta'};
-    if baseID==4
+    if baseID==4 || baseID==5
         labels=[labels,'vCritPerc'];
     end
     

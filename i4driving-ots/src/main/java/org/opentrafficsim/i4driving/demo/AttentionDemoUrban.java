@@ -39,14 +39,12 @@ import org.opentrafficsim.core.geometry.ContinuousStraight;
 import org.opentrafficsim.core.geometry.Flattener;
 import org.opentrafficsim.core.geometry.Flattener.NumSegments;
 import org.opentrafficsim.core.geometry.FractionalLengthData;
-import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine2d;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
-import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
@@ -95,7 +93,6 @@ import org.opentrafficsim.road.network.lane.CrossSectionLink.Priority;
 import org.opentrafficsim.road.network.lane.CrossSectionSlice;
 import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LaneGeometryUtil;
-import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.road.network.lane.LaneType;
 import org.opentrafficsim.road.network.lane.Shoulder;
 import org.opentrafficsim.road.network.lane.Stripe;
@@ -122,6 +119,7 @@ import nl.tudelft.simulation.jstats.streams.StreamInterface;
  * Demo of attention in an urban setting.
  * @author wjschakel
  */
+// TODO add sampler and distribution of TTC as plot
 public class AttentionDemoUrban extends AbstractSimulationScript
 {
 
@@ -143,6 +141,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
     protected AttentionDemoUrban()
     {
         super("Attention urban", "Demo of attention in an urban setting.");
+        @SuppressWarnings("deprecation")
         GtuColorer colorer = new SwitchableGtuColorer(0, new FixedColor(Color.BLUE, "Blue"),
                 new SpeedGtuColorer(new Speed(60.0, SpeedUnit.KM_PER_HOUR)),
                 new AccelerationGtuColorer(Acceleration.instantiateSI(-6.0), Acceleration.instantiateSI(2.0)),
@@ -169,7 +168,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
     {
         RoadNetwork network = new RoadNetwork("urban demo", sim);
 
-        // Eastern this.intersection
+        // Eastern intersection
         OrientedPoint2d pointNin2 = new OrientedPoint2d(this.linkLength / 2.0 + this.intersection / 3.0,
                 this.linkLength + this.intersection / 2.0, Math.PI * 1.5);
         OrientedPoint2d pointNout2 = new OrientedPoint2d(this.linkLength / 2.0 + 2.0 * this.intersection / 3.0,
@@ -212,7 +211,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
         Node nodeCEin = new Node(network, "CEin", pointCEin);
         Node nodeCEout = new Node(network, "CEout", pointCEout);
 
-        // Western this.intersection
+        // Western intersection
         double dx = -this.linkLength - this.intersection;
         OrientedPoint2d pointNin1 = new OrientedPoint2d(dx + this.linkLength / 2.0 + this.intersection / 3.0,
                 this.linkLength + this.intersection / 2.0, Math.PI * 1.5);
@@ -498,152 +497,6 @@ public class AttentionDemoUrban extends AbstractSimulationScript
                 Duration.instantiateSI(32.0), yellow));
         new FixedTimeController("controller", network.getSimulator(), network, Duration.instantiateSI(90.0), Duration.ZERO,
                 groups);
-    }
-
-    // TODO: remove this class when updated SplitColorer is published in OTS
-    private static final class SplitColorer implements GtuColorer
-    {
-
-        /** Left color. */
-        static final Color LEFT = Color.GREEN;
-
-        /** Other color. */
-        static final Color OTHER = Color.BLUE;
-
-        /** Right color. */
-        static final Color RIGHT = Color.RED;
-
-        /** Unknown color. */
-        static final Color UNKNOWN = Color.WHITE;
-
-        /** The legend. */
-        private static final List<LegendEntry> LEGEND;
-
-        static
-        {
-            LEGEND = new ArrayList<>(4);
-            LEGEND.add(new LegendEntry(LEFT, "Left", "Left"));
-            LEGEND.add(new LegendEntry(RIGHT, "Right", "Right"));
-            LEGEND.add(new LegendEntry(OTHER, "Other", "Other"));
-            LEGEND.add(new LegendEntry(UNKNOWN, "Unknown", "Unknown"));
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public Color getColor(final Gtu gtu)
-        {
-            if (!(gtu instanceof LaneBasedGtu))
-            {
-                return UNKNOWN;
-            }
-            LaneBasedGtu laneGtu = (LaneBasedGtu) gtu;
-            LanePosition refPos;
-            try
-            {
-                refPos = laneGtu.getReferencePosition();
-            }
-            catch (GtuException exception)
-            {
-                return UNKNOWN;
-            }
-            Link link = refPos.lane().getLink();
-            Route route = laneGtu.getStrategicalPlanner().getRoute();
-            if (route == null)
-            {
-                return UNKNOWN;
-            }
-
-            // get all links we can go in to
-            Set<Link> nextLinks;
-            Link preLink;
-            do
-            {
-                try
-                {
-                    preLink = link;
-                    nextLinks = link.getEndNode().nextLinks(gtu.getType(), link);
-                    if (!nextLinks.isEmpty())
-                    {
-                        link = laneGtu.getStrategicalPlanner().nextLink(preLink, gtu.getType());
-                    }
-                }
-                catch (NetworkException exception)
-                {
-                    return UNKNOWN;
-                }
-            }
-            while (nextLinks.size() == 1);
-
-            // dead end
-            if (nextLinks.isEmpty())
-            {
-                return UNKNOWN;
-            }
-
-            // split
-            try
-            {
-                double preAngle = preLink.getDesignLine().getLocationFraction(1.0).getDirZ();
-                double angleLeft = 0.0;
-                double angleRight = 0.0;
-                Link linkLeft = null;
-                Link linkRight = null;
-                for (Link nextLink : nextLinks)
-                {
-                    double angle = nextLink.getStartNode().equals(link.getStartNode())
-                            ? nextLink.getDesignLine().getLocationFraction(0.0).getDirZ()
-                            : nextLink.getDesignLine().getLocationFraction(1.0).getDirZ() + Math.PI;
-                    angle -= preAngle; // difference with from
-                    while (angle < -Math.PI)
-                    {
-                        angle += Math.PI * 2;
-                    }
-                    while (angle > Math.PI)
-                    {
-                        angle -= Math.PI * 2;
-                    }
-                    if (angle < angleRight)
-                    {
-                        angleRight = angle;
-                        linkRight = nextLink;
-                    }
-                    else if (angle > angleLeft)
-                    {
-                        angleLeft = angle;
-                        linkLeft = nextLink;
-                    }
-                }
-                if (link.equals(linkRight))
-                {
-                    return RIGHT;
-                }
-                else if (link.equals(linkLeft))
-                {
-                    return LEFT;
-                }
-                return OTHER;
-            }
-            catch (OtsGeometryException exception)
-            {
-                // should not happen as the fractions are 0.0 and 1.0
-                throw new RuntimeException("Angle could not be calculated.", exception);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public List<LegendEntry> getLegend()
-        {
-            return LEGEND;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "Split";
-        }
-
     }
 
     /**

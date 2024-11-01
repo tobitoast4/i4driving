@@ -69,7 +69,7 @@ public class InjectionsDemo extends AbstractSimulationScript
      * @param args command line arguments. See AbstractSimulationScript for available arguments.
      * @throws Exception when an exception occurs.
      */
-    public static void main(String[] args) throws Exception
+    public static void main(final String[] args) throws Exception
     {
         InjectionsDemo demo = new InjectionsDemo();
         CliUtil.execute(demo, args);

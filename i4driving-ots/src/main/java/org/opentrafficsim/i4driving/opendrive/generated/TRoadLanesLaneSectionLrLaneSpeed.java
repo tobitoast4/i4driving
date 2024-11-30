@@ -5,6 +5,9 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import org.djunits.unit.SpeedUnit;
+import org.opentrafficsim.i4driving.opendrive.bindings.SpeedUnitAdapter;
 
 
 /**
@@ -41,7 +44,8 @@ import javax.xml.bind.annotation.XmlType;
     @XmlAttribute(name = "max", required = true)
     protected double max;
     @XmlAttribute(name = "unit")
-    protected EUnitSpeed unit;
+    @XmlJavaTypeAdapter(SpeedUnitAdapter.class)
+    protected SpeedUnit unit;
 
     /**
      * Gets the value of the sOffset property.
@@ -80,10 +84,10 @@ import javax.xml.bind.annotation.XmlType;
      * 
      * @return
      *     possible object is
-     *     {@link EUnitSpeed }
+     *     {@link String }
      *     
      */
-    public EUnitSpeed getUnit() {
+    public SpeedUnit getUnit() {
         return unit;
     }
 
@@ -92,10 +96,10 @@ import javax.xml.bind.annotation.XmlType;
      * 
      * @param value
      *     allowed object is
-     *     {@link EUnitSpeed }
+     *     {@link String }
      *     
      */
-    public void setUnit(EUnitSpeed value) {
+    public void setUnit(SpeedUnit value) {
         this.unit = value;
     }
 

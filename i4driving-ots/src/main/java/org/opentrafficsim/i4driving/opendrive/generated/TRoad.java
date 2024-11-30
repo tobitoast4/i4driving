@@ -9,6 +9,11 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import org.djunits.value.vdouble.scalar.Length;
+import org.opentrafficsim.i4driving.opendrive.bindings.LaneKeepingPolicyAdapter;
+import org.opentrafficsim.i4driving.opendrive.bindings.LengthAdapter;
+import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 
 
 /**
@@ -87,13 +92,15 @@ import javax.xml.bind.annotation.XmlType;
     @XmlAttribute(name = "name")
     protected String name;
     @XmlAttribute(name = "length", required = true)
-    protected String length;
+    @XmlJavaTypeAdapter(LengthAdapter.class)
+    protected Length length;
     @XmlAttribute(name = "id", required = true)
     protected String id;
     @XmlAttribute(name = "junction", required = true)
     protected String junction;
     @XmlAttribute(name = "rule")
-    protected ETrafficRule rule;
+    @XmlJavaTypeAdapter(LaneKeepingPolicyAdapter.class)
+    protected LaneKeepingPolicy rule;
 
     /**
      * Gets the value of the link property.
@@ -403,7 +410,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public String getLength() {
+    public Length getLength() {
         return length;
     }
 
@@ -415,7 +422,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public void setLength(String value) {
+    public void setLength(Length value) {
         this.length = value;
     }
 
@@ -472,10 +479,10 @@ import javax.xml.bind.annotation.XmlType;
      * 
      * @return
      *     possible object is
-     *     {@link ETrafficRule }
+     *     {@link String }
      *     
      */
-    public ETrafficRule getRule() {
+    public LaneKeepingPolicy getRule() {
         return rule;
     }
 
@@ -484,10 +491,10 @@ import javax.xml.bind.annotation.XmlType;
      * 
      * @param value
      *     allowed object is
-     *     {@link ETrafficRule }
+     *     {@link String }
      *     
      */
-    public void setRule(ETrafficRule value) {
+    public void setRule(LaneKeepingPolicy value) {
         this.rule = value;
     }
 

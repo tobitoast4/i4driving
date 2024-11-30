@@ -5,6 +5,9 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import org.opentrafficsim.i4driving.opendrive.bindings.ContactPointAdapter;
+import org.opentrafficsim.i4driving.opendrive.bindings.RoadLinkTypeAdapter;
 
 
 /**
@@ -41,9 +44,11 @@ import javax.xml.bind.annotation.XmlType;
     @XmlAttribute(name = "elementId", required = true)
     protected String elementId;
     @XmlAttribute(name = "elementType")
-    protected String elementType;
+    @XmlJavaTypeAdapter(RoadLinkTypeAdapter.class)
+    protected ERoadLinkElementType elementType;
     @XmlAttribute(name = "contactPoint")
-    protected String contactPoint;
+    @XmlJavaTypeAdapter(ContactPointAdapter.class)
+    protected EContactPoint contactPoint;
     @XmlAttribute(name = "elementS")
     protected Double elementS;
     @XmlAttribute(name = "elementDir")
@@ -81,7 +86,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public String getElementType() {
+    public ERoadLinkElementType getElementType() {
         return elementType;
     }
 
@@ -93,7 +98,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public void setElementType(String value) {
+    public void setElementType(ERoadLinkElementType value) {
         this.elementType = value;
     }
 
@@ -105,7 +110,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public String getContactPoint() {
+    public EContactPoint getContactPoint() {
         return contactPoint;
     }
 
@@ -117,7 +122,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public void setContactPoint(String value) {
+    public void setContactPoint(EContactPoint value) {
         this.contactPoint = value;
     }
 

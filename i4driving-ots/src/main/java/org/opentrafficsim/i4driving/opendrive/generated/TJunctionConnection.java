@@ -7,6 +7,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import org.opentrafficsim.i4driving.opendrive.bindings.ContactPointAdapter;
 
 
 /**
@@ -59,7 +61,8 @@ import javax.xml.bind.annotation.XmlType;
     @XmlAttribute(name = "connectingRoad")
     protected String connectingRoad;
     @XmlAttribute(name = "contactPoint")
-    protected String contactPoint;
+    @XmlJavaTypeAdapter(ContactPointAdapter.class)
+    protected EContactPoint contactPoint;
 
     /**
      * Gets the value of the predecessor property.
@@ -242,7 +245,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public String getContactPoint() {
+    public EContactPoint getContactPoint() {
         return contactPoint;
     }
 
@@ -254,7 +257,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public void setContactPoint(String value) {
+    public void setContactPoint(EContactPoint value) {
         this.contactPoint = value;
     }
 

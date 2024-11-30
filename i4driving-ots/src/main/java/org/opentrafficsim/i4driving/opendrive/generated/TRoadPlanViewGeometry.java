@@ -9,6 +9,9 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import org.djunits.value.vdouble.scalar.Length;
+import org.opentrafficsim.i4driving.opendrive.bindings.LengthAdapter;
 
 
 /**
@@ -73,7 +76,8 @@ import javax.xml.bind.annotation.XmlType;
     @XmlAttribute(name = "hdg", required = true)
     protected double hdg;
     @XmlAttribute(name = "length", required = true)
-    protected String length;
+    @XmlJavaTypeAdapter(LengthAdapter.class)
+    protected Length length;
 
     /**
      * Gets the value of the line property.
@@ -298,7 +302,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public String getLength() {
+    public Length getLength() {
         return length;
     }
 
@@ -310,7 +314,7 @@ import javax.xml.bind.annotation.XmlType;
      *     {@link String }
      *     
      */
-    public void setLength(String value) {
+    public void setLength(Length value) {
         this.length = value;
     }
 

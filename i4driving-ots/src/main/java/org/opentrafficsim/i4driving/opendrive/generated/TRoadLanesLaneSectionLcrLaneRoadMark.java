@@ -9,6 +9,9 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import org.opentrafficsim.i4driving.opendrive.bindings.StripeTypeAdapter;
+import org.opentrafficsim.road.network.lane.Stripe.Type;
 
 
 /**
@@ -66,7 +69,8 @@ import javax.xml.bind.annotation.XmlType;
     @XmlAttribute(name = "sOffset", required = true)
     protected double sOffset;
     @XmlAttribute(name = "type", required = true)
-    protected ERoadMarkType roadMarkType;
+    @XmlJavaTypeAdapter(StripeTypeAdapter.class)
+    protected Type roadMarkType;
     @XmlAttribute(name = "weight")
     protected ERoadMarkWeight weight;
     @XmlAttribute(name = "color", required = true)
@@ -209,10 +213,10 @@ import javax.xml.bind.annotation.XmlType;
      * 
      * @return
      *     possible object is
-     *     {@link ERoadMarkType }
+     *     {@link String }
      *     
      */
-    public ERoadMarkType getRoadMarkType() {
+    public Type getRoadMarkType() {
         return roadMarkType;
     }
 
@@ -221,10 +225,10 @@ import javax.xml.bind.annotation.XmlType;
      * 
      * @param value
      *     allowed object is
-     *     {@link ERoadMarkType }
+     *     {@link String }
      *     
      */
-    public void setRoadMarkType(ERoadMarkType value) {
+    public void setRoadMarkType(Type value) {
         this.roadMarkType = value;
     }
 

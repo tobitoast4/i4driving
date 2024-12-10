@@ -2,15 +2,18 @@ package org.opentrafficsim.i4driving.demo;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.djunits.unit.FrequencyUnit;
 import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
+import org.djunits.value.vdouble.scalar.Frequency;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.vector.FrequencyVector;
@@ -49,10 +52,20 @@ import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
+import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.draw.ColorInterpolator;
+import org.opentrafficsim.draw.graphs.ContourDataSource;
+import org.opentrafficsim.draw.graphs.GraphPath;
+import org.opentrafficsim.draw.graphs.GraphPath.Section;
+import org.opentrafficsim.i4driving.demo.plots.ContourPlotExtendedData;
+import org.opentrafficsim.i4driving.demo.plots.DistributionPlotExtendedData;
+import org.opentrafficsim.i4driving.sampling.TaskSaturationData;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelFuller;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelPerceptionFactory;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ConflictUtilTmp;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ConflictUtilTmp.ConflictPlans;
+import org.opentrafficsim.kpi.sampling.data.ExtendedDataNumber;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
@@ -98,9 +111,14 @@ import org.opentrafficsim.road.network.lane.Shoulder;
 import org.opentrafficsim.road.network.lane.Stripe;
 import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
+import org.opentrafficsim.road.network.lane.conflict.Conflict;
 import org.opentrafficsim.road.network.lane.conflict.ConflictBuilder;
 import org.opentrafficsim.road.network.lane.conflict.ConflictBuilder.RelativeWidthGenerator;
 import org.opentrafficsim.road.network.lane.object.trafficlight.TrafficLight;
+import org.opentrafficsim.road.network.sampling.GtuDataRoad;
+import org.opentrafficsim.road.network.sampling.LaneDataRoad;
+import org.opentrafficsim.road.network.sampling.RoadSampler;
+import org.opentrafficsim.road.network.sampling.data.TimeToCollision;
 import org.opentrafficsim.road.network.speed.SpeedLimitInfo;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
@@ -108,10 +126,14 @@ import org.opentrafficsim.road.od.Interpolation;
 import org.opentrafficsim.road.od.OdApplier;
 import org.opentrafficsim.road.od.OdMatrix;
 import org.opentrafficsim.road.od.OdOptions;
+import org.opentrafficsim.swing.graphs.SwingContourPlot;
+import org.opentrafficsim.swing.graphs.SwingPlot;
+import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.opentrafficsim.swing.script.AbstractSimulationScript;
 import org.opentrafficsim.trafficcontrol.FixedTimeController;
 import org.opentrafficsim.trafficcontrol.FixedTimeController.SignalGroup;
 
+import nl.tudelft.simulation.dsol.swing.gui.TablePanel;
 import nl.tudelft.simulation.jstats.distributions.DistContinuous;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 
@@ -119,7 +141,6 @@ import nl.tudelft.simulation.jstats.streams.StreamInterface;
  * Demo of attention in an urban setting.
  * @author wjschakel
  */
-// TODO add sampler and distribution of TTC as plot
 public class AttentionDemoUrban extends AbstractSimulationScript
 {
 
@@ -128,6 +149,20 @@ public class AttentionDemoUrban extends AbstractSimulationScript
 
     /** Shoulder lane type. */
     private static final LaneType SHOULDER = new LaneType("Shoulder");
+
+    /** Front attention data type. */
+    private static final DataTypeAttention DATA_ATT_FRONT =
+            new DataTypeAttention(ChannelTask.FRONT.toString(), (c) -> ChannelTask.FRONT.equals(c));
+
+    /** Conflicts attention data type. */
+    private static final DataTypeAttention DATA_ATT_CONFLICTS =
+            new DataTypeAttention("conflicts", (c) -> c instanceof Conflict);
+
+    /** Task saturation data type. */
+    private static final TaskSaturationData DATA_SATURATION = new TaskSaturationData();
+
+    /** Time-to-collision data type. */
+    private static final TimeToCollision DATA_TTC = new TimeToCollision();
 
     /** Link length. */
     private final double linkLength = 100.0;
@@ -167,6 +202,8 @@ public class AttentionDemoUrban extends AbstractSimulationScript
     protected final RoadNetwork setupSimulation(final OtsSimulatorInterface sim) throws Exception
     {
         RoadNetwork network = new RoadNetwork("urban demo", sim);
+        sim.getReplication()
+                .setHistoryManager(new HistoryManagerDevs(sim, Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
 
         // Eastern intersection
         OrientedPoint2d pointNin2 = new OrientedPoint2d(this.linkLength / 2.0 + this.intersection / 3.0,
@@ -408,8 +445,14 @@ public class AttentionDemoUrban extends AbstractSimulationScript
         return network;
     }
 
-    private void makeLink(final RoadNetwork network, final Node from, final Node to)
-            throws IllegalArgumentException, NetworkException
+    /**
+     * Make link.
+     * @param network network
+     * @param from from node
+     * @param to to node
+     * @throws NetworkException when cross-section element input is not correct
+     */
+    private void makeLink(final RoadNetwork network, final Node from, final Node to) throws NetworkException
     {
         ContinuousLine line;
         double distance = from.getPoint().distance(to.getPoint());
@@ -474,6 +517,11 @@ public class AttentionDemoUrban extends AbstractSimulationScript
         }
     }
 
+    /**
+     * Add traffic lights.
+     * @param network network
+     * @throws NetworkException when traffic light input is not correct
+     */
     private void addTrafficLights(final RoadNetwork network) throws NetworkException
     {
         Lane north = ((CrossSectionLink) network.getLink("Nin1_PNin1")).getLanes().get(0);
@@ -499,8 +547,120 @@ public class AttentionDemoUrban extends AbstractSimulationScript
                 groups);
     }
 
+    @Override
+    protected void addTabs(final OtsSimulatorInterface sim, final OtsSimulationApplication<?> animation)
+    {
+
+        RoadSampler sampler = new RoadSampler(Set.of(DATA_ATT_FRONT, DATA_ATT_CONFLICTS, DATA_SATURATION, DATA_TTC),
+                Collections.emptySet(), getNetwork(), Frequency.instantiateSI(2.0));
+        addPlots("West-East", List.of("Win", "PWin", "CWin", "CEout", "PEout", "Eout"), 0, sim, animation, sampler);
+        addPlots("East-West", List.of("Ein", "PEin", "CEin", "CWout", "PWout", "Wout"), 0, sim, animation, sampler);
+        addPlots("North-South (West)", List.of("Nin1", "PNin1", "PSout1", "Sout1"), 0, sim, animation, sampler);
+        addPlots("South-North (West)", List.of("Sin1", "PSin1", "PNout1", "Nout1"), 0, sim, animation, sampler);
+        addPlots("North-South (East)", List.of("Nin2", "PNin2", "PSout2", "Sout2"), 0, sim, animation, sampler);
+        addPlots("South-North (East)", List.of("Sin2", "PSin2", "PNout2", "Nout2"), 0, sim, animation, sampler);
+    }
+
     /**
-     * Same as AccelerationConflicts.
+     * Adds plots for a single path, defined by a list of nodes, and lane number on the links.
+     * @param tabName tab name
+     * @param nodes list of nodes
+     * @param laneNum lane number on link
+     * @param sim simulator
+     * @param animation animation
+     * @param sampler sampler
+     */
+    private void addPlots(final String tabName, final List<String> nodes, final int laneNum, final OtsSimulatorInterface sim,
+            final OtsSimulationApplication<?> animation, final RoadSampler sampler)
+    {
+        GraphPath<LaneDataRoad> graphPath = new GraphPath<>(tabName, getSections(nodes, laneNum));
+        GraphPath.initRecording(sampler, graphPath);
+        TablePanel charts = new TablePanel(2, 2);
+        ContourDataSource source = new ContourDataSource(sampler.getSamplerData(), graphPath);
+        ContourPlotExtendedData front =
+                new ContourPlotExtendedData("Attention front", sim, source, DATA_ATT_FRONT, 0.0, 1.0, 0.2);
+        charts.setCell(new SwingContourPlot(front).getContentPane(), 0, 0);
+        ContourPlotExtendedData conflicts =
+                new ContourPlotExtendedData("Attention conflicts (sum)", sim, source, DATA_ATT_CONFLICTS, 0.0, 1.0, 0.2);
+        charts.setCell(new SwingContourPlot(conflicts).getContentPane(), 1, 0);
+        ContourPlotExtendedData saturation =
+                new ContourPlotExtendedData("Task saturation", sim, source, DATA_SATURATION, 0.0, 3.0, 0.5);
+        charts.setCell(new SwingContourPlot(saturation).getContentPane(), 0, 1);
+        DistributionPlotExtendedData ttc = new DistributionPlotExtendedData(sampler.getSamplerData(), graphPath, DATA_TTC,
+                "Time-to-collision", "Time-to-collision [s]", sim, 0.0, 0.5, 8.0);
+        charts.setCell(new SwingPlot(ttc).getContentPane(), 1, 1);
+        animation.getAnimationPanel().getTabbedPane().addTab(animation.getAnimationPanel().getTabbedPane().getTabCount(),
+                tabName, charts);
+    }
+
+    /**
+     * Get list of graph path sections.
+     * @param nodes link names
+     * @param laneNum lane number
+     * @return list of graph path sections
+     */
+    private List<Section<LaneDataRoad>> getSections(final List<String> nodes, final int laneNum)
+    {
+        List<Section<LaneDataRoad>> out = new ArrayList<>();
+        for (int i = 0; i < nodes.size() - 1; i++)
+        {
+            String linkId = nodes.get(i) + "_" + nodes.get(i + 1);
+            Lane lane = ((CrossSectionLink) getNetwork().getLink(linkId)).getLanes().get(laneNum);
+            Speed speedLimit = Speed.ZERO;
+            try
+            {
+                speedLimit = lane.getLowestSpeedLimit();
+            }
+            catch (NetworkException ex)
+            {
+                //
+            }
+            out.add(new Section<>(lane.getLength(), speedLimit, List.of(new LaneDataRoad(lane))));
+        }
+        return out;
+    }
+
+    /**
+     * Extended data type for attention.
+     */
+    public static class DataTypeAttention extends ExtendedDataNumber<GtuDataRoad>
+    {
+        /** Channel predicate. */
+        private final Predicate<Object> predicate;
+
+        /**
+         * Constructor.
+         * @param id id
+         * @param predicate channel predicate
+         */
+        DataTypeAttention(final String id, final Predicate<Object> predicate)
+        {
+            super(id, "attention " + id);
+            this.predicate = predicate;
+        }
+
+        @Override
+        public Float getValue(final GtuDataRoad gtu)
+        {
+            if (gtu.getGtu().getStrategicalPlanner() != null)
+            {
+                ChannelFuller fuller = (ChannelFuller) gtu.getGtu().getTacticalPlanner().getPerception().getMental();
+                float result = 0.0f;
+                for (Object channel : fuller.getChannels())
+                {
+                    if (this.predicate.test(channel))
+                    {
+                        result += (float) fuller.getAttention(channel);
+                    }
+                }
+                return result;
+            }
+            return Float.NaN;
+        }
+    }
+
+    /**
+     * Same as AccelerationConflicts, except uses ConflictUtilTmp.
      */
     public class AccelerationConflictsTmp implements AccelerationIncentive, Blockable
     {
@@ -560,6 +720,9 @@ public class AttentionDemoUrban extends AbstractSimulationScript
 
     }
 
+    /**
+     * Task saturation colorer.
+     */
     public static class TaskSaturationChannelColorer implements GtuColorer
     {
 

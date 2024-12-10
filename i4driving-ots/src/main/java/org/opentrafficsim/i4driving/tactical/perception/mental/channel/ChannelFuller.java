@@ -137,15 +137,17 @@ public class ChannelFuller implements ChannelMental
         Parameters parameters = perception.getGtu().getParameters();
         Duration tauMin = parameters.getParameter(TAU_MIN);
         Duration tauMax = parameters.getParameter(TAU_MAX);
+        double tc = parameters.getParameter(TC);
         for (Entry<Object, Integer> entry : channelIndex.entrySet())
         {
             index = entry.getValue();
-            this.perceptionDelay.put(entry.getKey(), Duration.interpolate(tauMin, tauMax, matrix.getDeterioration(index)));
+            this.perceptionDelay.put(entry.getKey(),
+                    Duration.interpolate(tauMin, tauMax, matrix.getDeterioration(index)).divide(tc));
             this.attention.put(entry.getKey(), matrix.getAttention(index));
         }
 
         // Calculate task saturation and apply behavioral adaptations
-        double taskSaturation = sumTaskDemand / parameters.getParameter(TC);
+        double taskSaturation = sumTaskDemand / tc;
         parameters.setParameter(TS, taskSaturation);
         for (BehavioralAdaptation behavioralAdapatation : this.behavioralAdapatations)
         {
@@ -188,6 +190,15 @@ public class ChannelFuller implements ChannelMental
         }
         Throw.when(!this.perceptionDelay.containsKey(obj), IllegalArgumentException.class, "Channel %s is not present.", obj);
         return obj;
+    }
+    
+    /**
+     * Returns the current channels.
+     * @return set of channels
+     */
+    public Set<Object> getChannels()
+    {
+        return new LinkedHashSet<>(this.attention.keySet());
     }
 
 }

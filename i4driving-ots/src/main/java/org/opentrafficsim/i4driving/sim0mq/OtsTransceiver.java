@@ -56,12 +56,15 @@ import org.zeromq.ZMQ;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.language.DsolException;
+import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 /**
  * OTS co-simulation server.
  * @author wjschakel
  */
+@Command(description = "OTS Transceiver for co-simulation", name = "OTS", mixinStandardHelpOptions = true,
+        showDefaultValues = true, version = "20250219")
 public class OtsTransceiver
 {
 
@@ -78,7 +81,7 @@ public class OtsTransceiver
     private String client;
 
     /** Endianness. */
-    @Option(names = "--bigEndian", description = "Big-endianness", defaultValue = "false")
+    @Option(names = "--bigEndian", description = "Big-endianness", defaultValue = "false", negatable = true)
     private Boolean bigEndian;
 
     /** Port number. */
@@ -86,7 +89,7 @@ public class OtsTransceiver
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "true")
+    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "true", negatable = true)
     private boolean showGui;
 
     /**

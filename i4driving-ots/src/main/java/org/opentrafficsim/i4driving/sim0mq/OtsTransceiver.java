@@ -86,7 +86,7 @@ public class OtsTransceiver
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "false")
+    @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "true")
     private boolean showGui;
 
     /**

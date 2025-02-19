@@ -32,6 +32,18 @@ public class Commands
     private List<Command> commands;
 
     /**
+     * Creates commands for external control through a CommandsHandler. This contains no actual commands, these need to be given
+     * through the CommandsHandler.
+     * @param gtuId GTU id
+     * @param generationInfo generation info
+     */
+    public Commands(final String gtuId, final GenerationInfo generationInfo)
+    {
+        this.gtuId = gtuId;
+        this.generationInfo = generationInfo;
+    }
+
+    /**
      * Returns the GTU id.
      * @return GTU id.
      */
@@ -299,7 +311,7 @@ public class Commands
          * Constructor.
          * @param printValue print value for in JSON file.
          */
-        private CommandType(final String printValue)
+        CommandType(final String printValue)
         {
             this.printValue = printValue;
         }

@@ -108,6 +108,12 @@
       <version>${ots.version}</version>
     </dependency>
     
+    <dependency>
+      <groupId>org.opentrafficsim</groupId>
+      <artifactId>ots-sim0mq</artifactId>
+      <version>${ots.version}</version>
+    </dependency>
+    
   	<dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

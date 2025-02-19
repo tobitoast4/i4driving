@@ -1,72 +1,35 @@
 package org.opentrafficsim.i4driving.tactical;
 
-import java.lang.reflect.Field;
-import java.util.NoSuchElementException;
-
 import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
-import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
-import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
-import org.djutils.immutablecollections.ImmutableMap.ImmutableEntry;
-import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.base.parameters.ParameterType;
-import org.opentrafficsim.core.definitions.Defaults;
-import org.opentrafficsim.core.geometry.OtsGeometryException;
-import org.opentrafficsim.core.gtu.GtuCharacteristics;
-import org.opentrafficsim.core.gtu.GtuException;
-import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.LateralDirectionality;
-import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.i4driving.messages.Commands;
 import org.opentrafficsim.i4driving.messages.Commands.Command;
-import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
-import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlanner;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.road.network.lane.CrossSectionLink;
-import org.opentrafficsim.road.network.lane.Lane;
-import org.opentrafficsim.road.network.lane.LanePosition;
-
-import nl.tudelft.simulation.dsol.SimRuntimeException;
-import nl.tudelft.simulation.jstats.streams.StreamInterface;
 
 /**
  * This class is responsible for handling the commands that should be given to a GTU. One handler should be generated per GTU
  * that should receive commands.
  * @author wjschakel
  */
-public class CommandsHandler
+public class CommandsHandler extends ScenarioGtuSpawner
 {
 
-    /** Network. */
-    private final RoadNetwork network;
-
-    /** Commands. */
-    private final Commands commands;
-
-    /** Strategical factory. */
-    private final LaneBasedStrategicalRoutePlannerFactory strategicalFactory;
-
-    /** GTU. */
-    private LaneBasedGtu gtu;
-
     /**
-     * Constructor.
+     * Constructor using commands.
      * @param network network.
      * @param commands commands for a specific GTU.
-     * @param strategicalFactory strategical planner, may be {@code null} if no
-     *            generation info is provided in the {@code Commands}.
+     * @param strategicalFactory strategical planner, may be {@code null} if no generation info is provided in the
+     *            {@code Commands}.
      */
     public CommandsHandler(final RoadNetwork network, final Commands commands,
             final LaneBasedStrategicalRoutePlannerFactory strategicalFactory)
     {
-        this.network = network;
-        this.commands = commands;
-        this.strategicalFactory = strategicalFactory;
+        super(network, commands.getGtuId(), commands.getGenerationInfo(), strategicalFactory);
         if (commands.getGenerationInfo() != null)
         {
             for (Command command : commands.getCommands())
@@ -74,9 +37,6 @@ public class CommandsHandler
                 Throw.when(command.getTime().lt(commands.getGenerationInfo().getTime()), IllegalArgumentException.class,
                         "Command scheduled before GTU %s is generated.", commands.getGtuId());
             }
-            network.getSimulator().scheduleEventAbsTime(commands.getGenerationInfo().getTime(), this, "generateGtu",
-                    new Object[0]);
-            Throw.whenNull(strategicalFactory, "Strategical factory may not be null when generation info is provided.");
         }
         for (Command command : commands.getCommands())
         {
@@ -85,106 +45,10 @@ public class CommandsHandler
     }
 
     /**
-     * Generates the GTU.
-     * @throws GtuException
-     * @throws OtsGeometryException
-     * @throws NetworkException
-     * @throws SimRuntimeException
-     * @throws ClassNotFoundException
-     * @throws SecurityException
-     * @throws NoSuchFieldException
-     * @throws ParameterException
-     * @throws IllegalAccessException
-     * @throws IllegalArgumentException
-     */
-    @SuppressWarnings({"unused", "unchecked"}) // scheduled
-    private void generateGtu()
-            throws GtuException, SimRuntimeException, NetworkException, OtsGeometryException, ClassNotFoundException,
-            NoSuchFieldException, SecurityException, ParameterException, IllegalArgumentException, IllegalAccessException
-    {
-        // GTU type and characteristics
-        GtuType gtuType = Defaults.getByName(GtuType.class, "NL." + this.commands.getGenerationInfo().getGtuType());
-        StreamInterface randomStream = this.network.getSimulator().getModel().getStream("generation");
-        GtuCharacteristics gtuCharacteristics = GtuType.defaultCharacteristics(gtuType, this.network, randomStream);
-        LaneBasedGtu gtu = new LaneBasedGtu(this.commands.getGtuId(), gtuType, gtuCharacteristics.getLength(),
-                gtuCharacteristics.getWidth(), gtuCharacteristics.getMaximumSpeed(), gtuCharacteristics.getFront(),
-                this.network);
-        gtu.setMaximumAcceleration(gtuCharacteristics.getMaximumAcceleration());
-        gtu.setMaximumDeceleration(gtuCharacteristics.getMaximumDeceleration());
-        gtu.setNoLaneChangeDistance(Length.instantiateSI(1.0));
-
-        // position
-        String linkId = this.commands.getGenerationInfo().getInitialPosition().getLink();
-        String laneId = this.commands.getGenerationInfo().getInitialPosition().getLane();
-        Length x = this.commands.getGenerationInfo().getInitialPosition().getX();
-        CrossSectionLink link = (CrossSectionLink) this.network.getLink(linkId);
-        Lane lane = null;
-        for (Lane laneIter : link.getLanes())
-        {
-            if (laneIter.getId().equals(laneId))
-            {
-                lane = laneIter;
-                break;
-            }
-        }
-        Throw.when(lane == null, NoSuchElementException.class, "Lane %s is not present in link %s.", laneId, linkId);
-        LanePosition position = new LanePosition(lane, x);
-
-        // strategical planner (also sets default parameters)
-        Node destination = this.network.getNode(this.commands.getGenerationInfo().getDestination());
-        LaneBasedStrategicalRoutePlanner strategicalPlanner = this.strategicalFactory.create(gtu, null, null, destination);
-
-        // parameters
-        for (ImmutableEntry<String, String> paramEntry : this.commands.getGenerationInfo().getParameters().entrySet())
-        {
-            int dot = paramEntry.getKey().lastIndexOf(".");
-            String paramClass = paramEntry.getKey().substring(0, dot);
-            String paramField = paramEntry.getKey().substring(dot + 1);
-            Class<?> clazz = Class.forName(paramClass);
-            Field field = clazz.getDeclaredField(paramField);
-            ParameterType<?> parameterType = (ParameterType<?>) field.get(null);
-            if (parameterType.getValueClass().equals(Acceleration.class))
-            {
-                gtu.getParameters().setParameter((ParameterType<Acceleration>) parameterType,
-                        Acceleration.valueOf(paramEntry.getValue()));
-            }
-            else if (parameterType.getValueClass().equals(Duration.class))
-            {
-                gtu.getParameters().setParameter((ParameterType<Duration>) parameterType,
-                        Duration.valueOf(paramEntry.getValue()));
-            }
-            else if (parameterType.getValueClass().equals(Length.class))
-            {
-                gtu.getParameters().setParameter((ParameterType<Length>) parameterType, Length.valueOf(paramEntry.getValue()));
-            }
-            else if (parameterType.getValueClass().equals(Speed.class))
-            {
-                gtu.getParameters().setParameter((ParameterType<Speed>) parameterType, Speed.valueOf(paramEntry.getValue()));
-            }
-            else if (parameterType.getValueClass().equals(Time.class))
-            {
-                gtu.getParameters().setParameter((ParameterType<Time>) parameterType, Time.valueOf(paramEntry.getValue()));
-            }
-            else if (parameterType.getValueClass().equals(Double.class))
-            {
-                gtu.getParameters().setParameter((ParameterType<Double>) parameterType, Double.valueOf(paramEntry.getValue()));
-            }
-            else
-            {
-                throw new RuntimeException("Unable to process parameter with type " + parameterType.getValueClass());
-            }
-        }
-
-        gtu.init(strategicalPlanner, position, this.commands.getGenerationInfo().getInitialSpeed());
-
-    }
-
-    /**
      * Executes a command.
      * @param command command.
      */
-    @SuppressWarnings("unused") // scheduled
-    private void executeCommand(final Command command)
+    public void executeCommand(final Command command)
     {
         switch (command.getType())
         {
@@ -229,31 +93,15 @@ public class CommandsHandler
                         Duration.valueOf(Try.assign(() -> command.getData("duration"), "Field 'duration' not found."));
                 ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).setIndicator(indicator, duration);
                 break;
+            default:
+                throw new RuntimeException("Unknown command type " + command.getType());
         }
     }
 
-    /**
-     * Retrieves the GTU from the network and remembers it for later use.
-     * @return GTU.
-     */
-    private LaneBasedGtu getGtu()
+    @Override
+    public String toString()
     {
-        if (this.gtu == null)
-        {
-            this.gtu = (LaneBasedGtu) this.network.getGTU(this.commands.getGtuId());
-        }
-        Throw.when(this.gtu == null, IllegalStateException.class, "GTU %s could not be found to give command.",
-                this.commands.getGtuId());
-        return this.gtu;
+        return "CommandsHandler [gtuId=" + getGtuId() + "]";
     }
-
-    /**
-     * Returns the GTU id.
-     * @return GTU id.
-     */
-    public String getGtuId()
-    {
-        return this.commands.getGtuId();
-    }
-
+    
 }

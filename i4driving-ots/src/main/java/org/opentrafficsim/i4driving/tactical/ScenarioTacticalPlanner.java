@@ -10,18 +10,22 @@ import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.draw.point.OrientedPoint2d;
+import org.djutils.draw.point.Point2d;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterType;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.Parameters;
+import org.opentrafficsim.core.geometry.OtsLine2d;
+import org.opentrafficsim.core.geometry.OtsLine2d.FractionalFallback;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.TurnIndicatorIntent;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlan;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
+import org.opentrafficsim.core.gtu.plan.operational.Segments;
 import org.opentrafficsim.core.network.LateralDirectionality;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
@@ -49,6 +53,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsUtil;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
+import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.speed.SpeedLimitInfo;
 import org.opentrafficsim.road.network.speed.SpeedLimitProspect;
 
@@ -65,6 +70,12 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     /**  */
     private static final long serialVersionUID = 20230426L;
 
+    /** Time between execution of model during dead reckoning. */
+    private static final Duration DEAD_RECKONING_MODEL_STEP = Duration.instantiateSI(0.5);
+
+    /** Duration to extrapolate dead reckoning. */
+    private static final Duration DEAD_RECKONING_HORIZON = Duration.instantiateSI(2.0);
+
     /** Lane change status. */
     private final LaneChange laneChange;
 
@@ -79,6 +90,15 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /** Overruled lane change ability. */
     private boolean laneChangesEnabled = true;
+
+    /** Applies dead-reckoning to follow an external source of vehicle movement. */
+    private boolean deadReckoning;
+
+    /** Speed for dead-reckoning. */
+    private Speed deadReckoningSpeed;
+
+    /** Time of last model execution to set model parameters for surrounding vehicle while dead reckoning. */
+    private Time lastDeadReckoningModelExecution;
 
     /** Desired speed model for when the model should be reset. */
     private DesiredSpeedModel desiredSpeedModel;
@@ -110,121 +130,184 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public final OperationalPlan generateOperationalPlan(final Time startTime, final OrientedPoint2d locationAtStartTime)
             throws OperationalPlanException, GtuException, NetworkException, ParameterException
     {
-        // obtain objects to get info
-        SpeedLimitProspect slp = getPerception().getPerceptionCategory(InfrastructurePerception.class)
-                .getSpeedLimitProspect(RelativeLane.CURRENT);
-        SpeedLimitInfo sli = slp.getSpeedLimitInfo(Length.ZERO);
-        Parameters params = getGtu().getParameters();
+        if (!this.deadReckoning || this.lastDeadReckoningModelExecution == null
+                || startTime.minus(this.lastDeadReckoningModelExecution).si >= DEAD_RECKONING_MODEL_STEP.si)
+        {
+            this.lastDeadReckoningModelExecution = startTime;
 
-        // LMRS
-        SimpleOperationalPlan simplePlan = LmrsUtil.determinePlan(getGtu(), startTime, getCarFollowingModel(), this.laneChange,
-                this.lmrsData, getPerception(), getMandatoryIncentives(), getVoluntaryIncentives());
+            // obtain objects to get info
+            SpeedLimitProspect slp = getPerception().getPerceptionCategory(InfrastructurePerception.class)
+                    .getSpeedLimitProspect(RelativeLane.CURRENT);
+            SpeedLimitInfo sli = slp.getSpeedLimitInfo(Length.ZERO);
+            Parameters params = getGtu().getParameters();
 
-        // Lower acceleration from additional sources, consider adjacent lane when changing lane or synchronizing
-        Speed speed = getPerception().getPerceptionCategory(EgoPerception.class).getSpeed();
-        RelativeLane[] lanes;
-        double dLeft = params.getParameterOrNull(LmrsParameters.DLEFT);
-        double dRight = params.getParameterOrNull(LmrsParameters.DRIGHT);
-        double dSync = params.getParameterOrNull(LmrsParameters.DSYNC);
-        if (this.laneChange.isChangingLane())
-        {
-            lanes = new RelativeLane[] {RelativeLane.CURRENT, this.laneChange.getSecondLane(getGtu())};
-        }
-        else if (dLeft >= dSync && dLeft >= dRight)
-        {
-            lanes = new RelativeLane[] {RelativeLane.CURRENT, RelativeLane.LEFT};
-        }
-        else if (dRight >= dSync)
-        {
-            lanes = new RelativeLane[] {RelativeLane.CURRENT, RelativeLane.RIGHT};
-        }
-        else
-        {
-            lanes = new RelativeLane[] {RelativeLane.CURRENT};
-        }
-        for (RelativeLane lane : lanes)
-        {
-            // On the current lane, consider all incentives. On adjacent lanes only consider incentives beyond the distance over
-            // which a lane change is not yet possible, i.e. the merge distance.
-            // TODO: consider route in incentives (only if not on current lane?)
-            Length mergeDistance = lane.isCurrent() ? Length.ZERO
-                    : Synchronization.getMergeDistance(getPerception(), lane.getLateralDirectionality());
-            for (AccelerationIncentive incentive : getAccelerationIncentives())
+            // LMRS
+            SimpleOperationalPlan simplePlan = LmrsUtil.determinePlan(getGtu(), startTime, getCarFollowingModel(),
+                    this.laneChange, this.lmrsData, getPerception(), getMandatoryIncentives(), getVoluntaryIncentives());
+
+            // Lower acceleration from additional sources, consider adjacent lane when changing lane or synchronizing
+            Speed speed = getPerception().getPerceptionCategory(EgoPerception.class).getSpeed();
+            RelativeLane[] lanes;
+            double dLeft = params.getParameterOrNull(LmrsParameters.DLEFT);
+            double dRight = params.getParameterOrNull(LmrsParameters.DRIGHT);
+            double dSync = params.getParameterOrNull(LmrsParameters.DSYNC);
+            if (this.laneChange.isChangingLane())
             {
-                incentive.accelerate(simplePlan, lane, mergeDistance, getGtu(), getPerception(), getCarFollowingModel(), speed,
-                        params, sli);
+                lanes = new RelativeLane[] {RelativeLane.CURRENT, this.laneChange.getSecondLane(getGtu())};
             }
-        }
-
-        if (simplePlan.isLaneChange())
-        {
-            this.laneChange.setDesiredLaneChangeDuration(params.getParameter(ParameterTypes.LCDUR));
-            // adjust lane based data in perception
-        }
-
-        // check overrules
-        if (this.acceleration != null)
-        {
-            simplePlan.setAcceleration(acceleration);
-        }
-        if (!this.laneChangesEnabled)
-        {
-            try
+            else if (dLeft >= dSync && dLeft >= dRight)
             {
-                Field field = SimpleOperationalPlan.class.getDeclaredField("indicatorIntent");
-                field.setAccessible(true);
-                field.set(simplePlan, TurnIndicatorIntent.NONE);
+                lanes = new RelativeLane[] {RelativeLane.CURRENT, RelativeLane.LEFT};
             }
-            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+            else if (dRight >= dSync)
             {
-                throw new RuntimeException(e);
-            }
-        }
-        if (this.indicator != null && !this.indicator.isNone())
-        {
-            if (this.indicator.isLeft())
-            {
-                simplePlan.setIndicatorIntentLeft(Length.ZERO);
+                lanes = new RelativeLane[] {RelativeLane.CURRENT, RelativeLane.RIGHT};
             }
             else
             {
-                simplePlan.setIndicatorIntentRight(Length.ZERO);
+                lanes = new RelativeLane[] {RelativeLane.CURRENT};
             }
-        }
-        if (!this.laneChangesEnabled && simplePlan.isLaneChange() && !this.laneChange.isChangingLane())
-        {
-            try
+            for (RelativeLane lane : lanes)
             {
-                Field field = SimpleOperationalPlan.class.getDeclaredField("laneChangeDirection");
-                field.setAccessible(true);
-                field.set(simplePlan, LateralDirectionality.NONE);
+                // On the current lane, consider all incentives. On adjacent lanes only consider incentives beyond the distance
+                // over
+                // which a lane change is not yet possible, i.e. the merge distance.
+                // TODO: consider route in incentives (only if not on current lane?)
+                Length mergeDistance = lane.isCurrent() ? Length.ZERO
+                        : Synchronization.getMergeDistance(getPerception(), lane.getLateralDirectionality());
+                for (AccelerationIncentive incentive : getAccelerationIncentives())
+                {
+                    incentive.accelerate(simplePlan, lane, mergeDistance, getGtu(), getPerception(), getCarFollowingModel(),
+                            speed, params, sli);
+                }
             }
-            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+
+            if (simplePlan.isLaneChange())
             {
-                throw new RuntimeException(e);
+                this.laneChange.setDesiredLaneChangeDuration(params.getParameter(ParameterTypes.LCDUR));
+                // adjust lane based data in perception
             }
-        }
-        if (this.laneChangeDirection != null) // this overrules 'this.laneChangesEnabled == false'
-        {
-            try
+
+            // check overrules
+            if (this.acceleration != null)
             {
-                Field field = SimpleOperationalPlan.class.getDeclaredField("laneChangeDirection");
-                field.setAccessible(true);
-                field.set(simplePlan, this.laneChangeDirection);
+                simplePlan.setAcceleration(acceleration);
             }
-            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+            if (!this.laneChangesEnabled)
             {
-                throw new RuntimeException(e);
+                try
+                {
+                    Field field = SimpleOperationalPlan.class.getDeclaredField("indicatorIntent");
+                    field.setAccessible(true);
+                    field.set(simplePlan, TurnIndicatorIntent.NONE);
+                }
+                catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+                {
+                    throw new RuntimeException(e);
+                }
             }
-            this.laneChangeDirection = null; // trigger, not a state
-            this.laneChange.setDesiredLaneChangeDuration(getGtu().getParameters().getParameter(ParameterTypes.LCDUR));
+            if (this.indicator != null && !this.indicator.isNone())
+            {
+                if (this.indicator.isLeft())
+                {
+                    simplePlan.setIndicatorIntentLeft(Length.ZERO);
+                }
+                else
+                {
+                    simplePlan.setIndicatorIntentRight(Length.ZERO);
+                }
+            }
+            if (!this.laneChangesEnabled && simplePlan.isLaneChange() && !this.laneChange.isChangingLane())
+            {
+                try
+                {
+                    Field field = SimpleOperationalPlan.class.getDeclaredField("laneChangeDirection");
+                    field.setAccessible(true);
+                    field.set(simplePlan, LateralDirectionality.NONE);
+                }
+                catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (this.laneChangeDirection != null) // this overrules 'this.laneChangesEnabled == false'
+            {
+                try
+                {
+                    Field field = SimpleOperationalPlan.class.getDeclaredField("laneChangeDirection");
+                    field.setAccessible(true);
+                    field.set(simplePlan, this.laneChangeDirection);
+                }
+                catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+                {
+                    throw new RuntimeException(e);
+                }
+                this.laneChangeDirection = null; // trigger, not a state
+                this.laneChange.setDesiredLaneChangeDuration(getGtu().getParameters().getParameter(ParameterTypes.LCDUR));
+            }
+
+            // set turn indicator
+            simplePlan.setTurnIndicator(getGtu());
+
+            if (!this.deadReckoning)
+            {
+                // create plan
+                return LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
+            }
         }
 
-        // set turn indicator
-        simplePlan.setTurnIndicator(getGtu());
+        // dead reckoning, create operational plan from current position
+        changeLaneOnDeadReckoning(locationAtStartTime);
+        boolean toStandStill =
+                this.acceleration.lt0() && this.deadReckoningSpeed.si / -this.acceleration.si < DEAD_RECKONING_HORIZON.si;
+        double t = toStandStill ? this.deadReckoningSpeed.si / -this.acceleration.si : DEAD_RECKONING_HORIZON.si;
+        double distance = this.deadReckoningSpeed.si * t + .5 * this.acceleration.si * t * t;
+        double x = locationAtStartTime.x + Math.sin(locationAtStartTime.dirZ) * distance;
+        double y = locationAtStartTime.y + Math.cos(locationAtStartTime.dirZ) * distance;
+        OtsLine2d path = new OtsLine2d(locationAtStartTime, new Point2d(x, y));
+        return new OperationalPlan(getGtu(), path, startTime,
+                Segments.off(this.deadReckoningSpeed, DEAD_RECKONING_HORIZON, this.acceleration)); // takes care of standstill
+    }
 
-        // create plan
-        return LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
+    /**
+     * Change lane when needed as the new location is closer to an adjacent lane.
+     * @param location location
+     * @throws GtuException exception
+     */
+    private void changeLaneOnDeadReckoning(final OrientedPoint2d location) throws GtuException
+    {
+        Lane refLane = getGtu().getReferencePosition().lane();
+        double minDistance = distance(refLane, location);
+        LateralDirectionality lc = null;
+        for (LateralDirectionality lat : new LateralDirectionality[] {LateralDirectionality.LEFT, LateralDirectionality.RIGHT})
+        {
+            for (Lane adjLane : refLane.accessibleAdjacentLanesPhysical(lat, getGtu().getType()))
+            {
+                double distance = distance(adjLane, location);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    lc = lat;
+                }
+            }
+        }
+        if (lc != null)
+        {
+            getGtu().changeLaneInstantaneously(lc);
+        }
+    }
+
+    /**
+     * Returns distance from the location to the lane.
+     * @param lane lane
+     * @param location location
+     * @return distance from the location to the lane
+     */
+    private double distance(final Lane lane, final OrientedPoint2d location)
+    {
+        double frac = lane.getCenterLine().projectFractional(lane.getLink().getStartNode().getHeading(),
+                lane.getLink().getEndNode().getHeading(), location.x, location.y, FractionalFallback.ENDPOINT);
+        return lane.getCenterLine().getLocationFractionExtended(frac).distance(location);
     }
 
     /** {@inheritDoc} */
@@ -262,7 +345,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void setAcceleration(final Acceleration acceleration)
     {
         this.acceleration = acceleration;
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -271,7 +354,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void resetAcceleration()
     {
         this.acceleration = null;
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -283,7 +366,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     {
         this.indicator = indicator;
         getGtu().getSimulator().scheduleEventRel(duration, this, "resetIndicator", new Object[0]);
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -293,7 +376,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     private void resetIndicator()
     {
         this.indicator = null;
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -302,7 +385,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void disableLaneChanges()
     {
         this.laneChangesEnabled = false;
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -311,7 +394,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void enableLaneChanges()
     {
         this.laneChangesEnabled = true;
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -340,7 +423,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
                 return speed;
             }
         });
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -352,7 +435,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
                 "Attempting to reset desired speed, but no desired speed was ever set.");
         clearCache();
         setDesiredSpeedModel(this.desiredSpeedModel);
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
@@ -403,7 +486,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      * @throws ParameterException when the parameter value does not comply to the type.
      */
     @SuppressWarnings("unchecked")
-    public void setParameter(String parameter, String value) throws ParameterException
+    public void setParameter(final String parameter, final String value) throws ParameterException
     {
         ParameterType<?> parameterType;
         try
@@ -454,14 +537,15 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     public void changeLane(final LateralDirectionality direction)
     {
         this.laneChangeDirection = direction;
-        interruptMove();
+        interruptMove(getGtu().getLocation());
     }
 
     /**
      * Invokes {@code interruptMove} on the GTU through reflection. This will cancel the scheduled move event, and trigger a new
      * move now.
+     * @param location location
      */
-    private void interruptMove()
+    private void interruptMove(final OrientedPoint2d location)
     {
         try
         {
@@ -474,13 +558,27 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
             Method move = Gtu.class.getDeclaredMethod("move", OrientedPoint2d.class);
             move.setAccessible(true);
-            move.invoke(getGtu(), getGtu().getLocation());
+            move.invoke(getGtu(), location);
         }
         catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
                 | InvocationTargetException | NoSuchFieldException e)
         {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Sets location, speed and acceleration for dead reckoning.
+     * @param location location
+     * @param speed speed
+     * @param accel acceleration
+     */
+    public void deadReckoning(final OrientedPoint2d location, final Speed speed, final Acceleration accel)
+    {
+        this.deadReckoning = true;
+        this.deadReckoningSpeed = speed;
+        this.acceleration = accel;
+        interruptMove(location);
     }
 
     /** {@inheritDoc} */

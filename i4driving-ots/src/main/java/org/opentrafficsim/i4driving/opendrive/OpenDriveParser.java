@@ -411,7 +411,8 @@ public final class OpenDriveParser
                 String roadTypeId = roadType.getCountry() == null ? roadType.getType().name()
                         : roadType.getCountry() + "." + roadType.getType().name();
                 LinkType linkType = linkTypeFunction.apply(roadTypeId);
-                Speed roadSpeed = getSpeed(roadType.getSpeed().getMax(), roadType.getSpeed().getUnit());
+                Speed roadSpeed = roadType.getSpeed() == null ? null
+                        : getSpeed(roadType.getSpeed().getMax(), roadType.getSpeed().getUnit());
 
                 // subtract geometry from road
                 Double sTo = discontinuities.higher(sFrom);
@@ -589,8 +590,8 @@ public final class OpenDriveParser
                 getLaneProperty(linkData.laneSection, lane, linkData.sFrom, lane.getAccess(), (ac) -> ac.getSOffset());
         TRoadLanesLaneSectionLrLaneSpeed speed =
                 getLaneProperty(linkData.laneSection, lane, linkData.sFrom, lane.getSpeed(), (sp) -> sp.getSOffset());
-        Speed laneSpeed = new Speed(speed.getMax(), speed.getUnit());
-        Speed roadSpeed = linkData.roadSpeed;
+        // Speed laneSpeed = new Speed(speed.getMax(), speed.getUnit());
+        // Speed roadSpeed = linkData.roadSpeed;
 
         PolyLine2d nextEdge = id.startsWith("-") ? linkData.linkDesignLine.flattenOffset(nextEdgeOffset, FLATTENER)
                 : linkData.linkDesignLine.flattenOffset(nextEdgeOffset, FLATTENER).reverse(); // negative id's are forward

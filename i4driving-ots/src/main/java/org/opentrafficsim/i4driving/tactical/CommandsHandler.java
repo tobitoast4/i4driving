@@ -5,6 +5,8 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
+import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
+import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.network.LateralDirectionality;
 import org.opentrafficsim.i4driving.messages.Commands;
 import org.opentrafficsim.i4driving.messages.Commands.Command;
@@ -19,6 +21,9 @@ import org.opentrafficsim.road.network.RoadNetwork;
 public class CommandsHandler extends ScenarioGtuSpawner
 {
 
+    /** Simulator. */
+    private final OtsSimulatorInterface simulator;
+
     /**
      * Constructor using commands.
      * @param network network.
@@ -30,72 +35,99 @@ public class CommandsHandler extends ScenarioGtuSpawner
             final LaneBasedStrategicalRoutePlannerFactory strategicalFactory)
     {
         super(network, commands.getGtuId(), commands.getGenerationInfo(), strategicalFactory);
+        this.simulator = network.getSimulator();
         if (commands.getGenerationInfo() != null)
         {
             for (Command command : commands.getCommands())
             {
-                Throw.when(command.getTime().lt(commands.getGenerationInfo().getTime()), IllegalArgumentException.class,
+                Throw.when(command.time().lt(commands.getGenerationInfo().getTime()), IllegalArgumentException.class,
                         "Command scheduled before GTU %s is generated.", commands.getGtuId());
             }
         }
         for (Command command : commands.getCommands())
         {
-            network.getSimulator().scheduleEventAbsTime(command.getTime(), this, "executeCommand", new Object[] {command});
+            scheduleCommand(command);
         }
     }
 
     /**
-     * Executes a command.
-     * @param command command.
+     * Schedules the command. If the time is in the past or now, the command is executed immediately.
+     * @param command command
+     */
+    public void scheduleCommand(final Command command)
+    {
+        if (command.time().le(this.simulator.getSimulatorAbsTime()))
+        {
+            executeCommand(command);
+        }
+        else
+        {
+            this.simulator.scheduleEventAbsTime(command.time(), this, "executeCommand", new Object[] {command});
+        }
+    }
+
+    /**
+     * Executes a command immediately.
+     * @param command command
      */
     public void executeCommand(final Command command)
     {
-        switch (command.getType())
+        switch (command.type())
         {
             case SET_PARAMETER:
                 String parameter =
                         Try.assign(() -> command.getData("parameter"), "Field 'parameter' not found for setParameter command.");
                 String value = Try.assign(() -> command.getData("value"), "Field 'value' not found for setParameter command.");
-                Try.execute(() -> ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).setParameter(parameter, value),
+                Try.execute(() -> getTacticalPlanner(getGtu()).setParameter(parameter, value),
                         "Parameter value %s for parameter %s is not valid.", value, parameter);
                 break;
             case SET_DESIRED_SPEED:
                 Speed speed = Speed.valueOf(
                         Try.assign(() -> command.getData("speed"), "Field 'speed' not found for setDesiredSpeed command."));
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).setDesiredSpeed(speed);
+                getTacticalPlanner(getGtu()).setDesiredSpeed(speed);
                 break;
             case RESET_DESIRED_SPEED:
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).resetDesiredSpeed();
+                getTacticalPlanner(getGtu()).resetDesiredSpeed();
                 break;
             case SET_ACCELERATION:
                 Acceleration acceleration = Acceleration.valueOf(Try.assign(() -> command.getData("acceleration"),
                         "Field 'acceleration' not found for setAcceleration command."));
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).setAcceleration(acceleration);
+                getTacticalPlanner(getGtu()).setAcceleration(acceleration);
                 break;
             case RESET_ACCELERATION:
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).resetAcceleration();
+                getTacticalPlanner(getGtu()).resetAcceleration();
                 break;
             case DISABLE_LANE_CHANGES:
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).disableLaneChanges();
+                getTacticalPlanner(getGtu()).disableLaneChanges();
                 break;
             case ENABLE_LANE_CHANGES:
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).enableLaneChanges();
+                getTacticalPlanner(getGtu()).enableLaneChanges();
                 break;
             case CHANGE_LANE:
                 LateralDirectionality laneChangeDirection = LateralDirectionality.valueOf(
                         Try.assign(() -> command.getData("direction"), "Field 'direction' not found for changeLane command."));
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).changeLane(laneChangeDirection);
+                getTacticalPlanner(getGtu()).changeLane(laneChangeDirection);
                 break;
             case SET_INDICATOR:
                 LateralDirectionality indicator = LateralDirectionality.valueOf(Try.assign(() -> command.getData("direction"),
                         "Field 'direction' not found for setIndicator command."));
                 Duration duration =
                         Duration.valueOf(Try.assign(() -> command.getData("duration"), "Field 'duration' not found."));
-                ((ScenarioTacticalPlanner) getGtu().getTacticalPlanner()).setIndicator(indicator, duration);
+                getTacticalPlanner(getGtu()).setIndicator(indicator, duration);
                 break;
             default:
-                throw new RuntimeException("Unknown command type " + command.getType());
+                throw new RuntimeException("Unknown command type " + command.type());
         }
+    }
+
+    /**
+     * Returns the scenario based tactical planner of the GTU.
+     * @param gtu GTU
+     * @return scenario based tactical planner of the GTU
+     */
+    private ScenarioTacticalPlanner getTacticalPlanner(final Gtu gtu)
+    {
+        return (ScenarioTacticalPlanner) gtu.getTacticalPlanner();
     }
 
     @Override
@@ -103,5 +135,5 @@ public class CommandsHandler extends ScenarioGtuSpawner
     {
         return "CommandsHandler [gtuId=" + getGtuId() + "]";
     }
-    
+
 }

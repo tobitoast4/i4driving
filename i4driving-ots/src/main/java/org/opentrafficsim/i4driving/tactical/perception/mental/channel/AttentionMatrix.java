@@ -157,13 +157,13 @@ public class AttentionMatrix
      * desired level of attention for channel <i>i</i>. This value is an indication of perception delay and update time for the
      * channel.
      * <p>
-     * If demand for the channel is 0, this method returns 0.
+     * If demand for the channel is 0, this method returns 1.
      * @param i index of channel.
      * @return fraction of anticipation reliance over desired attention for channel <i>i</i>.
      */
     public double getDeterioration(final int i)
     {
-        return this.demand[i] == 0.0 ? 0.0 : this.anticipationReliance[i] / this.demand[i];
+        return this.demand[i] == 0.0 ? 1.0 : this.anticipationReliance[i] / this.demand[i];
     }
 
 }

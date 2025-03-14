@@ -258,7 +258,6 @@ public final class ChannelTaskConflict implements ChannelTask
         if (nextDistance.le(x0))
         {
             Node start = link.getStartNode();
-            nodes.add(start);
             ImmutableSet<Link> links = start.getLinks();
             Set<Link> upstreamLinks = new LinkedHashSet<>();
             for (Link next : links)
@@ -273,6 +272,7 @@ public final class ChannelTaskConflict implements ChannelTask
                     upstreamLinks.add(next);
                 }
             }
+            nodes.add(start);
             for (Link upstreamLink : upstreamLinks)
             {
                 appendUpstreamNodes(upstreamLink, nextDistance, x0, nodes);

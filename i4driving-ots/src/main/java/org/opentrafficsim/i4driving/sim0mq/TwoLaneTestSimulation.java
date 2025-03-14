@@ -63,7 +63,6 @@ import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusMulti;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSocioSpeed;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.SocioDesiredSpeed;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.GapAcceptance;
@@ -355,7 +354,10 @@ public final class TwoLaneTestSimulation
                         lanePerception.addPerceptionCategory(new AnticipationTrafficPerception(lanePerception));
                         lanePerception.addPerceptionCategory(new DirectInfrastructurePerception(lanePerception));
                         Estimation estimation = Estimation.FACTOR_ESTIMATION;
-                        HeadwayGtuType headwayGtuType = new PerceivedHeadwayGtuType(estimation, Anticipation.CONSTANT_SPEED);
+                        HeadwayGtuType headwayGtuType =
+                                (TwoLaneTestSimulation.this.fullFuller || TwoLaneTestSimulation.this.fuller)
+                                        ? new PerceivedHeadwayGtuType(estimation, Anticipation.CONSTANT_SPEED)
+                                        : HeadwayGtuType.WRAP;
                         lanePerception.addPerceptionCategory(new DirectNeighborsPerception(lanePerception, headwayGtuType));
                         Tailgating tail = (TwoLaneTestSimulation.this.fullSocio
                                 || (TwoLaneTestSimulation.this.socio && TwoLaneTestSimulation.this.tailgating))
@@ -363,7 +365,7 @@ public final class TwoLaneTestSimulation
                         ScenarioTacticalPlanner tacticalPlanner = new ScenarioTacticalPlanner(idm, gtu, lanePerception,
                                 Synchronization.PASSIVE, Cooperation.PASSIVE, GapAcceptance.INFORMED, tail);
                         tacticalPlanner.addMandatoryIncentive(new IncentiveRoute());
-                        tacticalPlanner.addVoluntaryIncentive(new IncentiveSpeedWithCourtesy());
+                        //tacticalPlanner.addVoluntaryIncentive(new IncentiveSpeedWithCourtesy());
                         tacticalPlanner.addVoluntaryIncentive(new IncentiveKeep());
                         if (TwoLaneTestSimulation.this.fullSocio
                                 || (TwoLaneTestSimulation.this.socio && TwoLaneTestSimulation.this.socioLaneChangeIncentive))

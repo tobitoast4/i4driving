@@ -83,13 +83,19 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     private final LmrsData lmrsData;
 
     /** Overruled acceleration. */
-    private Acceleration acceleration;
+    private Acceleration accelerationCommand;
 
     /** Overruled indicator. */
-    private LateralDirectionality indicator;
+    private LateralDirectionality indicatorCommand;
 
     /** Overruled lane change ability. */
-    private boolean laneChangesEnabled = true;
+    private boolean laneChangesEnabledCommand = true;
+
+    /** Lane change command, this overrules laneChangesEnabledCommand. */
+    private LateralDirectionality laneChangeCommand;
+    
+    /** Operational plan to sent to external. */
+    private OperationalPlan lastIntendedPlan = null;
 
     /** Applies dead-reckoning to follow an external source of vehicle movement. */
     private boolean deadReckoning;
@@ -103,8 +109,8 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     /** Desired speed model for when the model should be reset. */
     private DesiredSpeedModel desiredSpeedModel;
 
-    /** Lane change direction. */
-    private LateralDirectionality laneChangeDirection;
+    /** Synchronization state. */
+    private Synchronizable.State syncState = Synchronizable.State.NONE;
 
     /**
      * Constructor setting the car-following model.
@@ -189,11 +195,11 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             }
 
             // check overrules
-            if (this.acceleration != null)
+            if (this.accelerationCommand != null)
             {
-                simplePlan.setAcceleration(acceleration);
+                simplePlan.setAcceleration(accelerationCommand);
             }
-            if (!this.laneChangesEnabled)
+            if (!this.laneChangesEnabledCommand)
             {
                 try
                 {
@@ -206,9 +212,9 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
                     throw new RuntimeException(e);
                 }
             }
-            if (this.indicator != null && !this.indicator.isNone())
+            if (this.indicatorCommand != null && !this.indicatorCommand.isNone())
             {
-                if (this.indicator.isLeft())
+                if (this.indicatorCommand.isLeft())
                 {
                     simplePlan.setIndicatorIntentLeft(Length.ZERO);
                 }
@@ -217,7 +223,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
                     simplePlan.setIndicatorIntentRight(Length.ZERO);
                 }
             }
-            if (!this.laneChangesEnabled && simplePlan.isLaneChange() && !this.laneChange.isChangingLane())
+            if (!this.laneChangesEnabledCommand && simplePlan.isLaneChange() && !this.laneChange.isChangingLane())
             {
                 try
                 {
@@ -230,43 +236,69 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
                     throw new RuntimeException(e);
                 }
             }
-            if (this.laneChangeDirection != null) // this overrules 'this.laneChangesEnabled == false'
+            if (this.laneChangeCommand != null) // this overrules 'this.laneChangesEnabled == false'
             {
                 try
                 {
                     Field field = SimpleOperationalPlan.class.getDeclaredField("laneChangeDirection");
                     field.setAccessible(true);
-                    field.set(simplePlan, this.laneChangeDirection);
+                    field.set(simplePlan, this.laneChangeCommand);
                 }
                 catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
                 {
                     throw new RuntimeException(e);
                 }
-                this.laneChangeDirection = null; // trigger, not a state
+                this.laneChangeCommand = null; // trigger, not a state
                 this.laneChange.setDesiredLaneChangeDuration(getGtu().getParameters().getParameter(ParameterTypes.LCDUR));
             }
 
             // set turn indicator
             simplePlan.setTurnIndicator(getGtu());
 
+            // create plan
+            OperationalPlan operationalPlan =
+                    LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
+            this.lastIntendedPlan = operationalPlan;
+            this.syncState = this.lmrsData.getSynchronizationState();
             if (!this.deadReckoning)
             {
-                // create plan
-                return LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
+                return operationalPlan;
             }
         }
 
-        // dead reckoning, create operational plan from current position
+        // Dead reckoning, limit lane change desire
+        Parameters params = getGtu().getParameters();
+        double dLeft = params.getParameter(LmrsParameters.DLEFT);
+        double dRight = params.getParameter(LmrsParameters.DRIGHT);
+        double dCoop = params.getParameter(LmrsParameters.DCOOP);
+        if (this.indicatorCommand != null && !this.indicatorCommand.isNone())
+        {
+            // Indicator, keep lane change desire above (or equal to) dCoop so others cooperate
+            params.setParameter(LmrsParameters.DLEFT, Math.max(dLeft, dCoop));
+            params.setParameter(LmrsParameters.DRIGHT, Math.max(dRight, dCoop));
+            this.syncState = Synchronizable.State.INDICATING;
+        }
+        else
+        {
+            // No indicator, keep lane change desire below dCoop so others do not cooperate
+            double dSync = params.getParameter(LmrsParameters.DSYNC);
+            params.setParameter(LmrsParameters.DLEFT, Math.min(dLeft, .5 * (dSync + dCoop)));
+            params.setParameter(LmrsParameters.DRIGHT, Math.min(dRight, .5 * (dSync + dCoop)));
+            this.syncState = Synchronizable.State.NONE;
+            // Note: State.SYNCHRONIZING has no meaning with dead reckoning
+        }
+        
+        // Create operational plan from current position
         changeLaneOnDeadReckoning(locationAtStartTime);
         boolean toStandStill =
-                this.acceleration.lt0() && this.deadReckoningSpeed.si / -this.acceleration.si < DEAD_RECKONING_HORIZON.si;
-        double t = toStandStill ? this.deadReckoningSpeed.si / -this.acceleration.si : DEAD_RECKONING_HORIZON.si;
-        double distance = this.deadReckoningSpeed.si * t + .5 * this.acceleration.si * t * t;
-        double x = locationAtStartTime.x + Math.sin(locationAtStartTime.dirZ) * distance;
-        double y = locationAtStartTime.y + Math.cos(locationAtStartTime.dirZ) * distance;
+                this.accelerationCommand.lt0() && this.deadReckoningSpeed.si / -this.accelerationCommand.si < DEAD_RECKONING_HORIZON.si;
+        double t = toStandStill ? this.deadReckoningSpeed.si / -this.accelerationCommand.si : DEAD_RECKONING_HORIZON.si;
+        double distance = this.deadReckoningSpeed.si * t + .5 * this.accelerationCommand.si * t * t;
+        double x = locationAtStartTime.x + Math.cos(locationAtStartTime.dirZ) * distance;
+        double y = locationAtStartTime.y - Math.sin(locationAtStartTime.dirZ) * distance;
         OtsLine2d path = new OtsLine2d(locationAtStartTime, new Point2d(x, y));
         return new OperationalPlan(getGtu(), path, startTime,
-                Segments.off(this.deadReckoningSpeed, DEAD_RECKONING_HORIZON, this.acceleration)); // takes care of standstill
+                Segments.off(this.deadReckoningSpeed, DEAD_RECKONING_HORIZON, this.accelerationCommand)); // takes care of standstill
     }
 
     /**
@@ -321,7 +353,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     @Override
     public Synchronizable.State getSynchronizationState()
     {
-        return this.lmrsData.getSynchronizationState();
+        return this.syncState;
     }
 
     /** {@inheritDoc} */
@@ -344,7 +376,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void setAcceleration(final Acceleration acceleration)
     {
-        this.acceleration = acceleration;
+        this.accelerationCommand = acceleration;
         interruptMove(getGtu().getLocation());
     }
 
@@ -353,18 +385,18 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void resetAcceleration()
     {
-        this.acceleration = null;
+        this.accelerationCommand = null;
         interruptMove(getGtu().getLocation());
     }
 
     /**
      * Sets the indicator.
-     * @param indicator indicator.
-     * @param duration duration;
+     * @param indicator indicator
+     * @param duration duration
      */
     public void setIndicator(final LateralDirectionality indicator, final Duration duration)
     {
-        this.indicator = indicator;
+        this.indicatorCommand = indicator;
         getGtu().getSimulator().scheduleEventRel(duration, this, "resetIndicator", new Object[0]);
         interruptMove(getGtu().getLocation());
     }
@@ -375,7 +407,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     @SuppressWarnings("unused") // scheduled
     private void resetIndicator()
     {
-        this.indicator = null;
+        this.indicatorCommand = null;
         interruptMove(getGtu().getLocation());
     }
 
@@ -384,7 +416,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void disableLaneChanges()
     {
-        this.laneChangesEnabled = false;
+        this.laneChangesEnabledCommand = false;
         interruptMove(getGtu().getLocation());
     }
 
@@ -393,7 +425,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void enableLaneChanges()
     {
-        this.laneChangesEnabled = true;
+        this.laneChangesEnabledCommand = true;
         interruptMove(getGtu().getLocation());
     }
 
@@ -536,8 +568,20 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void changeLane(final LateralDirectionality direction)
     {
-        this.laneChangeDirection = direction;
+        this.laneChangeCommand = direction;
         interruptMove(getGtu().getLocation());
+    }
+
+    /**
+     * Returns the last intended operational plan, and internally sets it to null. Next calls will return null until the
+     * behavioural model has run again.
+     * @return last intended operational plan
+     */
+    public OperationalPlan pullLastIntendedPlan()
+    {
+        OperationalPlan plan = this.lastIntendedPlan;
+        this.lastIntendedPlan = null;
+        return plan;
     }
 
     /**
@@ -568,6 +612,14 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     }
 
     /**
+     * Starts dead reckoning.
+     */
+    public void startDeadReckoning()
+    {
+        deadReckoning(getGtu().getLocation(), getGtu().getSpeed(), getGtu().getAcceleration());
+    }
+
+    /**
      * Sets location, speed and acceleration for dead reckoning.
      * @param location location
      * @param speed speed
@@ -577,8 +629,17 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
     {
         this.deadReckoning = true;
         this.deadReckoningSpeed = speed;
-        this.acceleration = accel;
+        this.accelerationCommand = accel;
         interruptMove(location);
+    }
+
+    /**
+     * Stops dead reckoning and recalculates a plan.
+     */
+    public void stopDeadReckoning()
+    {
+        this.deadReckoning = false;
+        interruptMove(getGtu().getLocation());
     }
 
     /** {@inheritDoc} */

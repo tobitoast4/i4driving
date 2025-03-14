@@ -94,7 +94,7 @@ public class ChannelTaskAcceleration implements ChannelTask
             }
             Speed vLead = leader.getObject().getSpeed();
             Length s = leader.getDistance();
-            td = Math.max(td, (vLead.si - v.si) * (1.0 - s.si / x0.si) / vCong.si);
+            td = Math.max(td, Math.max(Math.min((vLead.si - v.si) / vCong.si, 1.0), 0.0) * (1.0 - s.si / x0.si));
         }
         return td >= 1.0 ? 0.999 : td;
     }

@@ -220,37 +220,13 @@ public class Commands
 
     /**
      * Class containing information of a command.
+     * @param time time the command should be given
+     * @param type type of the command
+     * @param data data for the command
      * @author wjschakel
      */
-    public class Command
+    public record Command(Time time, CommandType type, Map<String, String> data)
     {
-        /** Time the command should be given. */
-        private Time time;
-
-        /** Type of the command. */
-        private CommandType type;
-
-        /** Data for the command. */
-        private Map<String, String> data;
-
-        /**
-         * Returns the time for the command.
-         * @return time for the command.
-         */
-        public Time getTime()
-        {
-            return this.time;
-        }
-
-        /**
-         * Returns the command type.
-         * @return command type.
-         */
-        public CommandType getType()
-        {
-            return this.type;
-        }
-
         /**
          * Returns the data under the name of the given field.
          * @param field name of the data field.
@@ -261,13 +237,6 @@ public class Commands
         {
             Throw.when(this.data == null || !this.data.containsKey(field), NoSuchFieldException.class, "No field %s.", field);
             return this.data.get(field);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "Command [time=" + this.time + ", type=" + this.type + ", data=" + this.data + "]";
         }
     }
 

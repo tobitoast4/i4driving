@@ -93,7 +93,7 @@ public final class ExternalSimEmulator
         public void run()
         {
             this.context = new ZContext(1);
-            this.responder = this.context.createSocket(SocketType.CHANNEL);
+            this.responder = this.context.createSocket(SocketType.PAIR);
             this.responder.connect("tcp://*:" + PORT);
             CategoryLogger.setAllLogLevel(Level.DEBUG);
             CategoryLogger.setAllLogMessageFormat("[{date: YYYY-MM-dd HH:mm:ss.SSS}] {level}: {message}");

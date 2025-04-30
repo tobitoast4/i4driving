@@ -1,8 +1,10 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
 import java.awt.Dimension;
+import java.lang.reflect.Field;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,7 +32,10 @@ import org.djutils.event.EventListener;
 import org.djutils.event.EventType;
 import org.djutils.immutablecollections.ImmutableList;
 import org.djutils.logger.CategoryLogger;
+import org.djutils.serialization.EndianUtil;
 import org.djutils.serialization.SerializationException;
+import org.djutils.serialization.TypedMessage;
+import org.djutils.serialization.serializers.Serializer;
 import org.opentrafficsim.animation.colorer.SynchronizationColorer;
 import org.opentrafficsim.animation.gtu.colorer.AccelerationGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
@@ -83,7 +88,7 @@ import picocli.CommandLine.Option;
  * @author wjschakel
  */
 @Command(description = "OTS Transceiver for co-simulation", name = "OTS", mixinStandardHelpOptions = true,
-        showDefaultValues = true, version = "20250219")
+        showDefaultValues = true, version = "20250406")
 public class OtsTransceiver
 {
 
@@ -108,7 +113,7 @@ public class OtsTransceiver
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "true", negatable = true)
+    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true)
     private boolean showGui;
 
     /**
@@ -198,7 +203,7 @@ public class OtsTransceiver
         public void run()
         {
             this.context = new ZContext(1);
-            this.responder = this.context.createSocket(SocketType.CHANNEL);
+            this.responder = this.context.createSocket(SocketType.PAIR);
             this.responder.bind("tcp://*:" + port);
             CategoryLogger.setAllLogLevel(Level.DEBUG);
             CategoryLogger.setAllLogMessageFormat("[{date: YYYY-MM-dd HH:mm:ss.SSS}] {level}: {message}");
@@ -225,7 +230,9 @@ public class OtsTransceiver
                         }
                         request = this.responder.recv(ZMQ.DONTWAIT);
                     }
-                    Sim0MQMessage message = Sim0MQMessage.decode(request);
+                    // Sim0MQMessage message = Sim0MQMessage.decode(request);
+                    Object[] array = TypedMessage.decode(request, OBJECT_DECODERS, EndianUtil.LITTLE_ENDIAN);
+                    Sim0MQMessage message = new Sim0MQMessage(array, array.length - 8, array[5]);
                     if ("EXTERNAL".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = message.createObjectArray();
@@ -781,6 +788,29 @@ public class OtsTransceiver
             {
                 ex.printStackTrace();
             }
+        }
+    }
+
+    /** All the converters that decode into arrays and matrices of Objects, keyed by prefix. */
+    private static final Map<Byte, Serializer<?>> OBJECT_DECODERS = new HashMap<>();
+
+    static
+    {
+        try
+        {
+            Field field = TypedMessage.class.getDeclaredField("OBJECT_DECODERS");
+            field.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<Byte, Serializer<?>> map = (Map<Byte, Serializer<?>>) field.get(TypedMessage.class);
+            map.forEach((b, s) ->
+            {
+                OBJECT_DECODERS.put(b, s);
+                OBJECT_DECODERS.put((byte) (b - 128), s);
+            });
+        }
+        catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+        {
+            e.printStackTrace();
         }
     }
 

@@ -1,0 +1,9 @@
+{
+    "demand": [
+        {
+            "origin": "0",
+            "destination": "0",
+            "frequency": "1200/h"
+        }
+    ]
+}

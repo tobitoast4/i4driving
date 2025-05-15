@@ -18,9 +18,9 @@ public class JsonTest
     {
         Locale.setDefault(Locale.US);
 
-        Gson gson = DefaultGsonBuilder.get();
+        Gson gson = DefaultGson.GSON;
         Commands commands =
-                gson.fromJson(Files.readString(Path.of("./src/main/resources/vehicle1.json")), DefaultGsonBuilder.COMMANDS);
+                gson.fromJson(Files.readString(Path.of("./src/main/resources/vehicle1.json")), DefaultGson.COMMANDS);
         System.out.println(gson.toJson(commands));
 
     }

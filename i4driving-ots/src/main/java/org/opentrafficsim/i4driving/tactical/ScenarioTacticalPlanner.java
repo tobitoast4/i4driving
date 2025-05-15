@@ -93,7 +93,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
 
     /** Lane change command, this overrules laneChangesEnabledCommand. */
     private LateralDirectionality laneChangeCommand;
-    
+
     /** Operational plan to sent to external. */
     private OperationalPlan lastIntendedPlan = null;
 
@@ -197,7 +197,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             // check overrules
             if (this.accelerationCommand != null)
             {
-                simplePlan.setAcceleration(accelerationCommand);
+                simplePlan.setAcceleration(this.accelerationCommand);
             }
             if (!this.laneChangesEnabledCommand)
             {
@@ -287,18 +287,19 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             this.syncState = Synchronizable.State.NONE;
             // Note: State.SYNCHRONIZING has no meaning with dead reckoning
         }
-        
+
         // Create operational plan from current position
         changeLaneOnDeadReckoning(locationAtStartTime);
-        boolean toStandStill =
-                this.accelerationCommand.lt0() && this.deadReckoningSpeed.si / -this.accelerationCommand.si < DEAD_RECKONING_HORIZON.si;
+        boolean toStandStill = this.accelerationCommand.lt0()
+                && this.deadReckoningSpeed.si / -this.accelerationCommand.si < DEAD_RECKONING_HORIZON.si;
         double t = toStandStill ? this.deadReckoningSpeed.si / -this.accelerationCommand.si : DEAD_RECKONING_HORIZON.si;
         double distance = this.deadReckoningSpeed.si * t + .5 * this.accelerationCommand.si * t * t;
         double x = locationAtStartTime.x + Math.cos(locationAtStartTime.dirZ) * distance;
         double y = locationAtStartTime.y - Math.sin(locationAtStartTime.dirZ) * distance;
         OtsLine2d path = new OtsLine2d(locationAtStartTime, new Point2d(x, y));
         return new OperationalPlan(getGtu(), path, startTime,
-                Segments.off(this.deadReckoningSpeed, DEAD_RECKONING_HORIZON, this.accelerationCommand)); // takes care of standstill
+                Segments.off(this.deadReckoningSpeed, DEAD_RECKONING_HORIZON, this.accelerationCommand)); // takes care of
+                                                                                                          // standstill
     }
 
     /**
@@ -376,6 +377,10 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void setAcceleration(final Acceleration acceleration)
     {
+        if (getGtu().getId().contains("Florian"))
+        {
+            System.out.println("hmmm?");
+        }
         this.accelerationCommand = acceleration;
         interruptMove(getGtu().getLocation());
     }
@@ -616,7 +621,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
      */
     public void startDeadReckoning()
     {
-        deadReckoning(getGtu().getLocation(), getGtu().getSpeed(), getGtu().getAcceleration());
+        deadReckoning(getGtu().getLocation(), getGtu().getSpeed(), Acceleration.ZERO);
     }
 
     /**

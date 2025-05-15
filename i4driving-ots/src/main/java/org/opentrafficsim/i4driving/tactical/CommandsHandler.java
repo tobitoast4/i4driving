@@ -51,12 +51,12 @@ public class CommandsHandler extends ScenarioGtuSpawner
     }
 
     /**
-     * Schedules the command. If the time is in the past or now, the command is executed immediately.
+     * Schedules the command. If the time is in the past or now (except at time=0), the command is executed immediately.
      * @param command command
      */
     public void scheduleCommand(final Command command)
     {
-        if (command.time().le(this.simulator.getSimulatorAbsTime()))
+        if (command.time().le(this.simulator.getSimulatorAbsTime()) && !command.time().eq0())
         {
             executeCommand(command);
         }

@@ -46,6 +46,7 @@ import org.opentrafficsim.core.geometry.Flattener.MaxDeviation;
 import org.opentrafficsim.core.geometry.FractionalLengthData;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine2d;
+import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.LinkType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
@@ -78,6 +79,7 @@ import org.opentrafficsim.road.network.lane.LaneGeometryUtil;
 import org.opentrafficsim.road.network.lane.LaneType;
 import org.opentrafficsim.road.network.lane.Shoulder;
 import org.opentrafficsim.road.network.lane.Stripe;
+import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -346,7 +348,7 @@ public final class OpenDriveParser
             Supplier<String> id;
             if (road.getId() != null && !road.getId().isBlank())
             {
-                id = discontinuities.size() > 1 || (forward && backward) ? new AlphabeticIdGenerator(road.getId())
+                id = discontinuities.size() > 1 || (forward && backward) ? new AlphabeticIdGenerator(road.getId() + "_")
                         : () -> road.getId(); // just '1', or '1A', '1B', etc. when multiple links from this road
             }
             else
@@ -378,7 +380,7 @@ public final class OpenDriveParser
                 OrientedPoint2d p = startPointForward; // effectively final
                 startNodeForward = this.nodeMap.computeIfAbsent(startConnectionForward,
                         (c) -> createNode(this.net, this.nodeIdGenerator.get(), p));
-                if (road.getLink().getPredecessor() == null)
+                if (road.getLink() == null || road.getLink().getPredecessor() == null)
                 {
                     this.origins.put(road.getId(), startNodeForward);
                 }
@@ -390,7 +392,7 @@ public final class OpenDriveParser
                 OrientedPoint2d p = startPointBackward; // effectively final
                 startNodeBackward = this.nodeMap.computeIfAbsent(startConnectionBackward,
                         (c) -> createNode(this.net, this.nodeIdGenerator.get(), p));
-                if (road.getLink().getPredecessor() == null)
+                if (road.getLink() == null || road.getLink().getPredecessor() == null)
                 {
                     this.destinations.put(road.getId(), startNodeBackward);
                 }
@@ -440,11 +442,11 @@ public final class OpenDriveParser
                         sTo, sEndLaneSection, laneSection);
                 if (forward)
                 {
-                    endNodeForward = makeLink(linkData, startNodeForward, endPointForward, true, last);
+                    endNodeForward = makeLink(linkData, startNodeForward, endPointForward, true);
                 }
                 if (backward)
                 {
-                    endNodeBackward = makeLink(linkData, startNodeBackward, endPointBackward, false, last);
+                    endNodeBackward = makeLink(linkData, startNodeBackward, endPointBackward, false);
                 }
                 startPointForward = endPointForward;
                 startPointBackward = endPointBackward;
@@ -452,19 +454,39 @@ public final class OpenDriveParser
                 startNodeBackward = endNodeBackward;
             }
 
-            if (forward && road.getLink().getSuccessor() == null)
+            if (forward && (road.getLink() == null || road.getLink().getSuccessor() == null))
             {
                 this.destinations.put(road.getId(), endNodeForward);
+                for (Link link : endNodeForward.getLinks())
+                {
+                    if (link.getEndNode().equals(endNodeForward) && link instanceof CrossSectionLink cLink)
+                    {
+                        for (Lane lane : cLink.getLanes())
+                        {
+                            Length pos = Length.max(Length.ZERO, lane.getLength().minus(Length.instantiateSI(20.0)));
+                            new SinkDetector(lane, pos, link.getSimulator(), DefaultsRoadNl.ROAD_USERS);
+                        }
+                    }
+                }
             }
-            if (backward && road.getLink().getSuccessor() == null)
+            if (backward && (road.getLink() == null || road.getLink().getSuccessor() == null))
             {
                 this.origins.put(road.getId(), endNodeBackward);
             }
         }
     }
 
-    private Node makeLink(final LinkData linkData, final Node startNode, final OrientedPoint2d endPoint, final boolean forward,
-            final boolean last) throws NetworkException
+    /**
+     * Create link.
+     * @param linkData relevant data for the link
+     * @param startNode start node
+     * @param endPoint end point
+     * @param forward whether the link is in the forward direction
+     * @return node used or created at the end of the link
+     * @throws NetworkException network exception
+     */
+    private Node makeLink(final LinkData linkData, final Node startNode, final OrientedPoint2d endPoint, final boolean forward)
+            throws NetworkException
     {
         // end node
         Node endNode;
@@ -474,7 +496,7 @@ public final class OpenDriveParser
         }
         else
         {
-            boolean ownEnd = linkData.road.getLink().getSuccessor() == null
+            boolean ownEnd = linkData.road.getLink() == null || linkData.road.getLink().getSuccessor() == null
                     || linkData.road.getLink().getSuccessor().getElementType().equals(ERoadLinkElementType.JUNCTION)
                     || (linkData.road.getLink().getSuccessor().getContactPoint().equals(EContactPoint.END)
                             && linkData.road.getLink().getSuccessor().getElementId().compareTo(linkData.road.getId()) > 0);
@@ -590,8 +612,12 @@ public final class OpenDriveParser
                 getLaneProperty(linkData.laneSection, lane, linkData.sFrom, lane.getAccess(), (ac) -> ac.getSOffset());
         TRoadLanesLaneSectionLrLaneSpeed speed =
                 getLaneProperty(linkData.laneSection, lane, linkData.sFrom, lane.getSpeed(), (sp) -> sp.getSOffset());
-        // Speed laneSpeed = new Speed(speed.getMax(), speed.getUnit());
-        // Speed roadSpeed = linkData.roadSpeed;
+
+        ELaneType laneType = lane.getType();
+        String roadTypeId = linkData.roadTypeId(); // ERoadType with possible country before it
+
+        Speed laneSpeed = new Speed(speed.getMax(), speed.getUnit());
+        Speed roadSpeed = linkData.roadSpeed;
 
         PolyLine2d nextEdge = id.startsWith("-") ? linkData.linkDesignLine.flattenOffset(nextEdgeOffset, FLATTENER)
                 : linkData.linkDesignLine.flattenOffset(nextEdgeOffset, FLATTENER).reverse(); // negative id's are forward
@@ -611,7 +637,7 @@ public final class OpenDriveParser
                 // TODO Use mapper from linkData.roadTypeId & lane.getType() to lane type
                 // TODO In case of restriction, create child lane type following standard name addition: FREEWAY_DENY_BUS
                 new Lane(link, id, new OtsLine2d(laneCenterLine), contour, slices, DefaultsRoadNl.FREEWAY,
-                        Collections.emptyMap());
+                        Map.of(DefaultsNl.ROAD_USER, laneSpeed));
             }
         }
         return nextEdge;
@@ -969,7 +995,6 @@ public final class OpenDriveParser
                 fPrev = entry.getKey();
             }
         }
-        Length a = null;
         remove.forEach((f) -> map.remove(f));
     }
 

@@ -22,6 +22,9 @@ import org.djutils.immutablecollections.ImmutableMap;
 public class Commands
 {
 
+    // TODO: This needs restructuring to also deal better with commands in co-simulation.
+    // TODO: Not all commands are relevant in all co-simulation control modes.
+    
     /** GTU id. */
     private String gtuId;
 

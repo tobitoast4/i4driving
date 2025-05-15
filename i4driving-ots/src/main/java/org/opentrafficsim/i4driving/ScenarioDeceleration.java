@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URISyntaxException;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -39,68 +38,23 @@ import org.opentrafficsim.animation.gtu.colorer.AccelerationGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.SpeedGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.SwitchableGtuColorer;
 import org.opentrafficsim.base.Resource;
-import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.base.parameters.ParameterSet;
-import org.opentrafficsim.base.parameters.ParameterTypes;
-import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
-import org.opentrafficsim.core.gtu.Gtu;
-import org.opentrafficsim.core.gtu.GtuErrorHandler;
-import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
-import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
 import org.opentrafficsim.core.network.LinkWeight;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactoryDefault;
-import org.opentrafficsim.i4driving.messages.DefaultGsonBuilder;
+import org.opentrafficsim.i4driving.messages.DefaultGson;
 import org.opentrafficsim.i4driving.sampling.GapData;
 import org.opentrafficsim.i4driving.sampling.SpeedDifferenceData;
+import org.opentrafficsim.i4driving.sim0mq.MixinModel;
 import org.opentrafficsim.i4driving.tactical.CommandsHandler;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
-import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
-import org.opentrafficsim.i4driving.tactical.perception.mental.LaneChangeTask;
-import org.opentrafficsim.i4driving.tactical.perception.mental.TaskManagerAr;
 import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.lane.CollisionDetector;
-import org.opentrafficsim.road.gtu.lane.CollisionException;
-import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
-import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
-import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
-import org.opentrafficsim.road.gtu.lane.perception.categories.AnticipationTrafficPerception;
-import org.opentrafficsim.road.gtu.lane.perception.categories.DirectInfrastructurePerception;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Anticipation;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.DirectNeighborsPerception;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType.PerceivedHeadwayGtuType;
-import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
-import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
-import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
-import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
-import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller.BehavioralAdaptation;
-import org.opentrafficsim.road.gtu.lane.perception.mental.Task;
-import org.opentrafficsim.road.gtu.lane.perception.mental.TaskManager;
-import org.opentrafficsim.road.gtu.lane.perception.mental.TaskManager.SummativeTaskManager;
 import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory;
-import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
-import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModel;
-import org.opentrafficsim.road.gtu.lane.tactical.following.DesiredSpeedModel;
-import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
-import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusMulti;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSocioSpeed;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.SocioDesiredSpeed;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.GapAcceptance;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsUtil;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
@@ -115,6 +69,7 @@ import org.opentrafficsim.swing.script.AbstractSimulationScript;
 import com.google.gson.Gson;
 
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 /**
@@ -181,72 +136,9 @@ public class ScenarioDeceleration extends AbstractSimulationScript
     @Option(names = {"--outputValuesFile"}, description = "Trajectory output file", defaultValue = "outputValues.csv")
     private String outputValuesFile;
 
-    /** Apply full Fuller and overwrite all other mental settings. */
-    @Option(names = {"--fullFuller"}, description = "Apply full Fuller", negatable = true, defaultValue = "true")
-    private boolean fullFuller = true;
-
-    /** Apply Fuller. */
-    @Option(names = {"--fuller"}, description = "Apply Fuller", negatable = true, defaultValue = "true")
-    private boolean fuller = true;
-
-    /** Include car-following task demand in Fuller. */
-    @Option(names = {"--carFollowingTask"}, description = "Include car-following task.", negatable = true,
-            defaultValue = "true")
-    private boolean carFollowingTask = true;
-
-    /** Include lane change task demand in Fuller. */
-    @Option(names = {"--laneChangeTask"}, description = "Include lane change task.", negatable = true, defaultValue = "true")
-    private boolean laneChangeTask = true;
-
-    /** Set lane change task as primary in Fuller. */
-    @Option(names = {"--laneChangeIsPrimary"}, description = "Set lane change task as primary.", negatable = true,
-            defaultValue = "true")
-    private boolean laneChangeIsPrimary = true;
-
-    /** Apply anticipation reliance in Fuller. */
-    @Option(names = {"--anticipationReliance"}, description = "Apply anticipation reliance in Fuller.", negatable = true,
-            defaultValue = "true")
-    private boolean anticipationReliance = true;
-
-    /** Adapt headway in Fuller. */
-    @Option(names = {"--adaptHeadway"}, description = "Adapt headway in Fuller.", negatable = true, defaultValue = "true")
-    private boolean adaptHeadway = true;
-
-    /** Adapt speed in Fuller. */
-    @Option(names = {"--adaptSpeed"}, description = "Adapt speed in Fuller.", negatable = true, defaultValue = "true")
-    private boolean adaptSpeed = true;
-
-    /** Anticipate multiple leaders in car-following. */
-    @Option(names = {"--multiAnticipation"}, description = "Anticipate multiple leaders in car-following.", negatable = true,
-            defaultValue = "true")
-    private boolean multiAnticipation = true;
-
-    /** Apply full social interactions and overwrite all other social settings. */
-    @Option(names = {"--fullSocio"}, description = "Apply full social model.", negatable = true, defaultValue = "true")
-    private boolean fullSocio = true;
-
-    /** Apply social interactions. */
-    @Option(names = {"--socio"}, description = "Apply social model.", negatable = true, defaultValue = "true")
-    private boolean socio = true;
-
-    /** Apply tailgating in social interactions. */
-    @Option(names = {"--tailgating"}, description = "Apply tailgating.", negatable = true, defaultValue = "true")
-    private boolean tailgating = true;
-
-    /** Apply lane change incentive in social interactions. */
-    @Option(names = {"--socioLaneChangeIncentive"}, description = "Apply social lane change incentive.", negatable = true,
-            defaultValue = "true")
-    private boolean socioLaneChangeIncentive = true;
-
-    /** Apply desired speed in social interactions. */
-    @Option(names = {"--socioDesiredSpeed"}, description = "Apply social desired speed.", negatable = true,
-            defaultValue = "true")
-    private boolean socioDesiredSpeed = true;
-
-    /** Fraction of drivers with over estimation. */
-    @Option(names = {"--fractionOverEstimation"}, description = "Fraction of drivers with over estimation.",
-            defaultValue = "1.0")
-    private double fractionOverEstimation = 1.0;
+    /** Mixed in model settings. */
+    @Mixin
+    private MixinModel mixinModel;
 
     /** Sampler. */
     private RoadSampler sampler;
@@ -285,18 +177,18 @@ public class ScenarioDeceleration extends AbstractSimulationScript
             CliUtil.changeOptionDefault(demo, "simulationTime", "60s");
             CliUtil.execute(demo, args);
 
-            Gson gson = DefaultGsonBuilder.get();
+            Gson gson = DefaultGson.GSON;
             Settings settings;
             try
             {
-                settings = gson.fromJson(getReader("settings.json"), DefaultGsonBuilder.SETTINGS);
+                settings = gson.fromJson(getReader("settings.json"), DefaultGson.SETTINGS);
                 System.out.println("Reading settings from \"settings.json\"");
             }
             catch (RuntimeException exception)
             {
                 try
                 {
-                    settings = gson.fromJson(getReader(demo.settings), DefaultGsonBuilder.SETTINGS);
+                    settings = gson.fromJson(getReader(demo.settings), DefaultGson.SETTINGS);
                     System.out.println("Reading settings from \"" + demo.settings + "\"");
                 }
                 catch (RuntimeException exceptionInner)
@@ -336,217 +228,71 @@ public class ScenarioDeceleration extends AbstractSimulationScript
         // Model
         StreamInterface randomStream = sim.getModel().getStream("generation");
         LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner> tacticalFactory =
-                new LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner>()
-                {
-                    /** GTU error handler for collisions. */
-                    private GtuErrorHandler errorHandler = new GtuErrorHandler()
-                    {
-                        /** {@inheritDoc} */
-                        @Override
-                        public void handle(final Gtu gtu, final Exception ex) throws Exception
-                        {
-                            if (ex.getCause() instanceof CollisionException)
-                            {
-                                ScenarioDeceleration.this.collision = ex.getCause().getMessage();
-                                System.out.println(ex.getCause().getMessage());
-                                gtu.getSimulator().endReplication();
-                                onSimulationEnd();
-                                System.exit(0);
-                            }
-                            else
-                            {
-                                throw ex;
-                            }
-                        }
-                    };
-
-                    /** {@inheritDoc} */
-                    @Override
-                    public Parameters getParameters() throws ParameterException
-                    {
-                        ParameterSet parameters = new ParameterSet();
-                        parameters.setDefaultParameters(LmrsUtil.class);
-                        parameters.setDefaultParameters(LmrsParameters.class);
-                        parameters.setDefaultParameters(AbstractIdm.class);
-                        parameters.setDefaultParameter(ParameterTypes.PERCEPTION);
-                        parameters.setDefaultParameter(ParameterTypes.LOOKBACK);
-                        parameters.setDefaultParameter(ParameterTypes.LOOKAHEAD);
-                        parameters.setDefaultParameter(ParameterTypes.VCONG);
-                        parameters.setDefaultParameter(ParameterTypes.LCDUR);
-                        if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.fuller)
-                        {
-                            parameters.setDefaultParameter(Fuller.TC);
-                            parameters.setDefaultParameter(Fuller.TS);
-                            parameters.setDefaultParameter(Fuller.TS_CRIT);
-                            parameters.setDefaultParameter(Fuller.TS_MAX);
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.carFollowingTask)
-                            {
-                                parameters.setDefaultParameter(CarFollowingTask.HEXP);
-                            }
-                            parameters.setDefaultParameter(AdaptationSituationalAwareness.SA);
-                            parameters.setDefaultParameter(AdaptationSituationalAwareness.SA_MIN);
-                            parameters.setDefaultParameter(AdaptationSituationalAwareness.SA_MAX);
-                            parameters.setDefaultParameter(AdaptationSituationalAwareness.TR_MAX);
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.adaptHeadway)
-                            {
-                                parameters.setDefaultParameter(AdaptationHeadway.BETA_T);
-                            }
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.adaptSpeed)
-                            {
-                                parameters.setDefaultParameter(AdaptationSpeed.BETA_V0);
-                            }
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.multiAnticipation)
-                            {
-                                parameters.setDefaultParameter(IdmPlusMulti.NLEADERS);
-                            }
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.anticipationReliance)
-                            {
-                                parameters.setDefaultParameter(TaskManagerAr.ALPHA);
-                                parameters.setDefaultParameter(TaskManagerAr.BETA);
-                            }
-                        }
-                        if (ScenarioDeceleration.this.fullSocio || ScenarioDeceleration.this.socio)
-                        {
-                            parameters.setDefaultParameter(Tailgating.RHO);
-                            parameters.setDefaultParameter(LmrsParameters.SOCIO);
-                        }
-                        parameters.setParameter(Estimation.OVER_EST,
-                                randomStream.nextDouble() <= ScenarioDeceleration.this.fractionOverEstimation ? 1.0 : -1.0);
-                        return parameters;
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override
-                    public ScenarioTacticalPlanner create(final LaneBasedGtu gtu) throws GtuException
-                    {
-                        gtu.setErrorHandler(this.errorHandler);
-
-                        DesiredSpeedModel desiredSpeedModel = (ScenarioDeceleration.this.fullSocio
-                                || (ScenarioDeceleration.this.socio && ScenarioDeceleration.this.socioDesiredSpeed))
-                                        ? new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED) : AbstractIdm.DESIRED_SPEED;
-
-                        CarFollowingModel idm = ScenarioDeceleration.this.multiAnticipation
-                                ? new IdmPlusMulti(AbstractIdm.HEADWAY, desiredSpeedModel)
-                                : new IdmPlus(AbstractIdm.HEADWAY, desiredSpeedModel);
-
-                        Fuller mental = null;
-                        if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.fuller)
-                        {
-                            Set<Task> tasks = new LinkedHashSet<>();
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.carFollowingTask)
-                            {
-                                tasks.add(new CarFollowingTask());
-                            }
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.laneChangeTask)
-                            {
-                                tasks.add(new LaneChangeTask());
-                            }
-                            Set<BehavioralAdaptation> behavioralAdapatations = new LinkedHashSet<>();
-                            behavioralAdapatations.add(new AdaptationSituationalAwareness());
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.adaptHeadway)
-                            {
-                                behavioralAdapatations.add(new AdaptationHeadway());
-                            }
-                            if (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.adaptSpeed)
-                            {
-                                behavioralAdapatations.add(new AdaptationSpeed());
-                            }
-                            String primaryTask =
-                                    ScenarioDeceleration.this.laneChangeIsPrimary ? "lane-changing" : "car-following";
-                            TaskManager taskManager =
-                                    (ScenarioDeceleration.this.fullFuller || ScenarioDeceleration.this.anticipationReliance)
-                                            ? new TaskManagerAr(primaryTask) : new SummativeTaskManager();
-                            mental = new Fuller(tasks, behavioralAdapatations, taskManager);
-                        }
-
-                        LanePerception lanePerception = new CategoricalLanePerception(gtu, mental);
-                        lanePerception.addPerceptionCategory(new DirectEgoPerception<>(lanePerception));
-                        lanePerception.addPerceptionCategory(new AnticipationTrafficPerception(lanePerception));
-                        lanePerception.addPerceptionCategory(new DirectInfrastructurePerception(lanePerception));
-                        Estimation estimation = Estimation.FACTOR_ESTIMATION;
-                        HeadwayGtuType headwayGtuType = new PerceivedHeadwayGtuType(estimation, Anticipation.CONSTANT_SPEED);
-                        lanePerception.addPerceptionCategory(new DirectNeighborsPerception(lanePerception, headwayGtuType));
-                        Tailgating tail = (ScenarioDeceleration.this.fullSocio
-                                || (ScenarioDeceleration.this.socio && ScenarioDeceleration.this.tailgating))
-                                        ? Tailgating.PRESSURE : Tailgating.NONE;
-                        ScenarioTacticalPlanner tacticalPlanner = new ScenarioTacticalPlanner(idm, gtu, lanePerception,
-                                Synchronization.PASSIVE, Cooperation.PASSIVE, GapAcceptance.INFORMED, tail);
-                        tacticalPlanner.addMandatoryIncentive(new IncentiveRoute());
-                        tacticalPlanner.addVoluntaryIncentive(new IncentiveSpeedWithCourtesy());
-                        tacticalPlanner.addVoluntaryIncentive(new IncentiveKeep());
-                        if (ScenarioDeceleration.this.fullSocio
-                                || (ScenarioDeceleration.this.socio && ScenarioDeceleration.this.socioLaneChangeIncentive))
-                        {
-                            tacticalPlanner.addVoluntaryIncentive(new IncentiveSocioSpeed());
-                        }
-                        return tacticalPlanner;
-                    }
-                };
-
+                this.mixinModel.getTacticalPlanner(randomStream);
         RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(randomStream, LinkWeight.LENGTH_NO_CONNECTORS);
         LaneBasedStrategicalRoutePlannerFactory strategicalFactory =
                 new LaneBasedStrategicalRoutePlannerFactory(tacticalFactory, new ParameterFactoryDefault(), routeGenerator);
 
         // Vehicle commands
-        Gson gson = DefaultGsonBuilder.get();
+        Gson gson = DefaultGson.GSON;
         if (this.inputVehicle1 != null && !this.inputVehicle1.isBlank())
         {
             CommandsHandler handler1 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle1), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle1), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler1.getGtuId();
         }
         if (this.inputVehicle2 != null && !this.inputVehicle2.isBlank())
         {
             CommandsHandler handler2 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle2), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle2), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler2.getGtuId();
         }
         if (this.inputVehicle3 != null && !this.inputVehicle3.isBlank())
         {
             CommandsHandler handler3 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle3), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle3), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler3.getGtuId();
         }
         if (this.inputVehicle4 != null && !this.inputVehicle4.isBlank())
         {
             CommandsHandler handler4 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle4), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle4), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler4.getGtuId();
         }
         if (this.inputVehicle5 != null && !this.inputVehicle5.isBlank())
         {
             CommandsHandler handler5 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle5), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle5), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler5.getGtuId();
         }
         if (this.inputVehicle6 != null && !this.inputVehicle6.isBlank())
         {
             CommandsHandler handler6 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle6), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle6), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler6.getGtuId();
         }
         if (this.inputVehicle7 != null && !this.inputVehicle7.isBlank())
         {
             CommandsHandler handler7 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle7), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle7), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler7.getGtuId();
         }
         if (this.inputVehicle8 != null && !this.inputVehicle8.isBlank())
         {
             CommandsHandler handler8 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle8), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle8), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler8.getGtuId();
         }
         if (this.inputVehicle9 != null && !this.inputVehicle9.isBlank())
         {
             CommandsHandler handler9 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle9), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle9), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler9.getGtuId();
         }
         if (this.inputVehicle10 != null && !this.inputVehicle10.isBlank())
         {
             CommandsHandler handler10 = new CommandsHandler(network,
-                    gson.fromJson(getReader(this.inputVehicle10), DefaultGsonBuilder.COMMANDS), strategicalFactory);
+                    gson.fromJson(getReader(this.inputVehicle10), DefaultGson.COMMANDS), strategicalFactory);
             this.egoVehicle = handler10.getGtuId();
         }
 

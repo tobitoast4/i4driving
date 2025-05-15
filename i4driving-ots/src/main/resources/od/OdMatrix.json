@@ -1,0 +1,33 @@
+{
+    "categorization": [
+        "GTU_TYPE",
+        "ROUTE"
+    ],
+    "globalTime": [
+        "0s",
+        "1500s",
+        "3600s"
+    ],
+    "globalInterpolation": "STEPWISE",
+    "demand": [
+        {
+            "origin": "A",
+            "destination": "B",
+            "category": [
+                "NL.CAR",
+                "A-B"
+            ],
+            "time": [
+                "0s",
+                "1800s",
+                "3600s"
+            ],
+            "frequency": [
+                "1200/h",
+                "1900/h",
+                "500/h"
+            ],
+            "interpolation": "LINEAR"
+        }
+    ]
+}

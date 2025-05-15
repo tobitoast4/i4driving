@@ -1,5 +1,9 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -46,6 +50,9 @@ public final class ExternalSimEmulator
 
     /** Trajectory update frequecy. */
     private static final Frequency EXTERNAL_FREQUENCY = Frequency.instantiateSI(30);
+
+    /** Whether to emulate demo network (or OpenDRIVE network). */
+    private static final boolean DEMO_NETWORK = false;
 
     /**
      * Constructor.
@@ -101,11 +108,29 @@ public final class ExternalSimEmulator
 
             try
             {
+                byte[] encodedMessage;
+
+                String odFile = DEMO_NETWORK ? "/od/OdMatrix.json" : "/od/OdMatrixOpenDrive.json";
+                String jsonOd = Files.readString(Paths.get(getClass().getResource(odFile).toURI()));
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ODMATRIX",
+                        this.messageId++, new Object[] {jsonOd});
+                this.responder.send(encodedMessage, ZMQ.DONTWAIT);
+                CategoryLogger.always().debug("ExternalSim sent ODMATRIX message");
+
+                String routesFile = DEMO_NETWORK ? "/route/Routes.json" : "/route/RoutesOpenDrive.json";
+                String jsonRoutes = Files.readString(Paths.get(getClass().getResource(routesFile).toURI()));
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ROUTES", this.messageId++,
+                        new Object[] {jsonRoutes});
+                this.responder.send(encodedMessage, ZMQ.DONTWAIT);
+                CategoryLogger.always().debug("ExternalSim sent ROUTES message");
+
                 Set<Integer> awaiting = new LinkedHashSet<>();
                 int msgId = this.messageId++;
                 awaiting.add(msgId);
-                byte[] encodedMessage =
-                        Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "NETWORK", msgId, new Object[] {});
+                Object[] networkPayload = DEMO_NETWORK ? new Object[] {} : new Object[] {Files.readString(Paths
+                        .get(getClass().getResource("/opendrive/examples/i4Driving_scenario01_urban-straight.xodr").toURI()))};
+                encodedMessage =
+                        Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "NETWORK", msgId, networkPayload);
                 this.responder.send(encodedMessage, ZMQ.DONTWAIT);
                 CategoryLogger.always().debug("ExternalSim sent NETWORK message");
 
@@ -117,7 +142,7 @@ public final class ExternalSimEmulator
                 setupVehicles(awaiting, gtuSpeed, startX1, startY1, startX2, startY2);
 
                 Long start = null;
-                long[] events = new long[] {30000, 40000, 45000, 10000};
+                long[] events = new long[] {30000, 40000, 45000, 10000, 2};
                 while (!Thread.currentThread().isInterrupted())
                 {
                     // Wait for next message from the server
@@ -194,7 +219,7 @@ public final class ExternalSimEmulator
                     }
                 }
             }
-            catch (Sim0MQException | SerializationException e)
+            catch (Sim0MQException | SerializationException | URISyntaxException | IOException e)
             {
                 e.printStackTrace();
             }
@@ -265,6 +290,17 @@ public final class ExternalSimEmulator
                 events[3] = Long.MAX_VALUE;
                 CategoryLogger.always().debug("ExternalSim sent COMMAND message");
             }
+            if (start != null && now - start > events[4])
+            {
+                // Vehicle after Start
+                Object[] payload = new Object[] {"Florian", "Hybrid", Length.instantiateSI(0.152921),
+                        Length.instantiateSI(1.75338), Direction.instantiateSI(-0.0399514), Speed.instantiateSI(5.0), "CAR",
+                        Length.instantiateSI(4.74), Length.instantiateSI(1.75), Length.instantiateSI(0.89), 0, "A-B"};
+                this.responder.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, OTS, EXTERNAL_SIM, "VEHICLE",
+                        this.messageId++, payload), ZMQ.DONTWAIT);
+                events[4] = Long.MAX_VALUE;
+                CategoryLogger.always().debug("ExternalSim sent VEHICLE message TEST FLORIAN");
+            }
             return terminate;
         }
 
@@ -293,8 +329,13 @@ public final class ExternalSimEmulator
             {
                 int msgId;
                 // Fellow
+                // TODO set custom parameters
+                Length length = Length.instantiateSI(4.0);
+                Length width = Length.instantiateSI(1.9);
+                Length refToNose = Length.instantiateSI(3.0);
                 Object[] payload = new Object[] {"Fellow 1", "Ots", Length.instantiateSI(20.0), Length.instantiateSI(1.75),
-                        Direction.ZERO, gtuSpeed, "CAR", Length.instantiateSI(4.0), Length.instantiateSI(3.0), 0, "Route..."};
+                        Direction.ZERO, gtuSpeed, "CAR", length, width, refToNose, 0, "A-B"};
+
                 msgId = this.messageId++;
                 awaiting.add(msgId);
                 Worker.this.responder.send(
@@ -302,7 +343,7 @@ public final class ExternalSimEmulator
                         ZMQ.DONTWAIT);
                 CategoryLogger.always().debug("ExternalSim sent VEHICLE message for Fellow 1");
                 payload = new Object[] {"Fellow 2", "Ots", Length.instantiateSI(10.0), Length.instantiateSI(1.75),
-                        Direction.ZERO, gtuSpeed, "CAR", Length.instantiateSI(4.0), Length.instantiateSI(3.0), 0, "Route..."};
+                        Direction.ZERO, gtuSpeed, "CAR", length, width, refToNose, 0, "A-B"};
                 msgId = this.messageId++;
                 awaiting.add(msgId);
                 Worker.this.responder.send(
@@ -311,16 +352,16 @@ public final class ExternalSimEmulator
                 CategoryLogger.always().debug("ExternalSim sent VEHICLE message for Fellow 2");
 
                 // Ego
-                payload = new Object[] {"Ego 1", "Hybrid", startX1, startY1, Direction.ZERO, gtuSpeed, "CAR",
-                        Length.instantiateSI(4.0), Length.instantiateSI(3.0), 0, "Route..."};
+                payload = new Object[] {"Ego 1", "Hybrid", startX1, startY1, Direction.ZERO, gtuSpeed, "CAR", length, width,
+                        refToNose, 0, "A-B"};
                 msgId = this.messageId++;
                 awaiting.add(msgId);
                 Worker.this.responder.send(
                         Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, OTS, EXTERNAL_SIM, "VEHICLE", msgId, payload),
                         ZMQ.DONTWAIT);
                 CategoryLogger.always().debug("ExternalSim sent VEHICLE message for Ego 1");
-                payload = new Object[] {"Ego 2", "Hybrid", startX2, startY2, Direction.ZERO, gtuSpeed, "CAR",
-                        Length.instantiateSI(4.0), Length.instantiateSI(3.0), 0, "Route..."};
+                payload = new Object[] {"Ego 2", "Hybrid", startX2, startY2, Direction.ZERO, gtuSpeed, "CAR", length, width,
+                        refToNose, 0, "A-B"};
                 msgId = this.messageId++;
                 awaiting.add(msgId);
                 Worker.this.responder.send(

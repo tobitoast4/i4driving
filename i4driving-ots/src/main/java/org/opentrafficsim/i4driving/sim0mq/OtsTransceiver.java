@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.lang.reflect.Field;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -13,6 +14,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import javax.naming.NamingException;
+import javax.xml.bind.JAXBException;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Acceleration;
@@ -26,7 +29,6 @@ import org.djunits.value.vfloat.vector.FloatDurationVector;
 import org.djunits.value.vfloat.vector.FloatLengthVector;
 import org.djutils.cli.CliUtil;
 import org.djutils.draw.point.OrientedPoint2d;
-import org.djutils.draw.point.Point2d;
 import org.djutils.event.Event;
 import org.djutils.event.EventListener;
 import org.djutils.event.EventType;
@@ -42,36 +44,41 @@ import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.IdGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.SpeedGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.SwitchableGtuColorer;
+import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.base.parameters.ParameterType;
+import org.opentrafficsim.core.definitions.Defaults;
+import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.AbstractOtsModel;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine2d;
-import org.opentrafficsim.core.geometry.OtsLine2d.FractionalFallback;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
+import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlan;
 import org.opentrafficsim.core.gtu.plan.operational.Segment;
-import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
+import org.opentrafficsim.core.network.route.Route;
 import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.i4driving.messages.Commands;
-import org.opentrafficsim.i4driving.messages.DefaultGsonBuilder;
+import org.opentrafficsim.i4driving.messages.DefaultGson;
 import org.opentrafficsim.i4driving.tactical.CommandsHandler;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
-import org.opentrafficsim.road.gtu.generator.GtuSpawner;
-import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
+import org.opentrafficsim.road.definitions.DefaultsRoadNl;
+import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.road.network.lane.CrossSectionLink;
-import org.opentrafficsim.road.network.lane.Lane;
-import org.opentrafficsim.road.network.lane.LanePosition;
+import org.opentrafficsim.road.od.OdApplier;
+import org.opentrafficsim.road.od.OdMatrix;
+import org.opentrafficsim.road.od.OdOptions;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.pmw.tinylog.Level;
 import org.sim0mq.Sim0MQException;
 import org.sim0mq.message.Sim0MQMessage;
+import org.xml.sax.SAXException;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
@@ -81,6 +88,7 @@ import com.google.gson.Gson;
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.language.DsolException;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 
 /**
@@ -113,8 +121,12 @@ public class OtsTransceiver
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true)
+    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "true", negatable = true) // false=default
     private boolean showGui;
+
+    /** Mixed in model arguments. */
+    @Mixin
+    private MixinModel mixinModel = new MixinModel();
 
     /**
      * Constructor.
@@ -168,14 +180,26 @@ public class OtsTransceiver
         /** Next message id. */
         private int messageId = 0;
 
+        /** Last OD matrix sent. */
+        private OdMatrixJson lastOdJson;
+
+        /** Last routes sent. */
+        private RoutesJson lastRoutesJson;
+
         /** Last network message. */
         private Sim0MQMessage lastNetworkMessage;
 
         /** List of vehicle message payloads before simulation start. */
         private List<Object[]> preStartVehiclePayloads = new ArrayList<>();
 
-        /** GTU characteristics. */
-        private LaneBasedGtuCharacteristics gtuCharacteristics;
+        /** GTU characteristics generator. */
+        private LaneBasedGtuCharacteristicsGeneratorOd characteristicsGeneratorOd;
+
+        /** Parameter factory. */
+        private ParameterFactorySim0mq parameterFactory;
+
+        /** GTU spawner. */
+        private GtuSpawnerOd gtuSpawner;
 
         /** Simulator. */
         private OtsAnimator simulator;
@@ -196,7 +220,7 @@ public class OtsTransceiver
         private Map<String, CommandsHandler> commandHandlers = new LinkedHashMap<>();
 
         /** GSON builder to parser JSON strings. */
-        private Gson gson = DefaultGsonBuilder.get();
+        private Gson gson = DefaultGson.GSON;
 
         /** {@inheritDoc} */
         @Override
@@ -278,6 +302,18 @@ public class OtsTransceiver
                         CategoryLogger.always().debug("Ots received DELETE message for GTU " + id);
                         this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {id});
                     }
+                    else if ("ROUTES".equals(message.getMessageTypeId()))
+                    {
+                        CategoryLogger.always().debug("Ots received ROUTES message");
+                        Object[] payload = message.createObjectArray();
+                        this.lastRoutesJson = DefaultGson.GSON.fromJson((String) payload[8], RoutesJson.class);
+                    }
+                    else if ("ODMATRIX".equals(message.getMessageTypeId()))
+                    {
+                        CategoryLogger.always().debug("Ots received ODMATRIX message");
+                        Object[] payload = message.createObjectArray();
+                        this.lastOdJson = DefaultGson.GSON.fromJson((String) payload[8], OdMatrixJson.class);
+                    }
                     else if ("NETWORK".equals(message.getMessageTypeId()))
                     {
                         CategoryLogger.always().debug("Ots received NETWORK message");
@@ -297,8 +333,7 @@ public class OtsTransceiver
                     {
                         CategoryLogger.always().debug("Ots received STOP message");
                         stopSimulation();
-                        this.lastNetworkMessage = null;
-                        this.preStartVehiclePayloads.clear();
+                        clearSimulationSetupData();
                     }
                     else if ("RESET".equals(message.getMessageTypeId()))
                     {
@@ -310,6 +345,7 @@ public class OtsTransceiver
                     {
                         CategoryLogger.always().debug("Ots received TERMINATE message");
                         stopSimulation();
+                        clearSimulationSetupData();
                         break;
                     }
                     else
@@ -320,7 +356,7 @@ public class OtsTransceiver
             }
             catch (Sim0MQException | SerializationException | NumberFormatException | GtuException | OtsGeometryException
                     | NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException
-                    | NamingException e)
+                    | NamingException | ParameterException | JAXBException | SAXException | ParserConfigurationException e)
             {
                 e.printStackTrace();
             }
@@ -350,20 +386,26 @@ public class OtsTransceiver
             Length initY = (Length) payload[index++];
             Direction initDirection = (Direction) payload[index++];
             Speed initSpeed = (Speed) payload[index++];
-            String vehicleType = (String) payload[index++];
+            String vehicleType = ((String) payload[index++]).toUpperCase();
             Length vehicleLength = (Length) payload[index++];
+            Length vehicleWidth = (Length) payload[index++];
             Length refToNose = (Length) payload[index++];
             int numParams = (int) payload[index++];
+            Set<ParameterType<?>> setParameters = new LinkedHashSet<>();
             for (int i = 0; i < numParams; i++)
             {
                 String parameter = (String) payload[index++];
                 Object value = payload[index++];
+                setParameterValue(parameter, value);
             }
-            Object roadIds = payload[index++]; // TODO String[] is not supported by sim0mq
+            Route route = this.network.getRoute((String) payload[index++]);
+            GtuType gtuType =
+                    Defaults.getByName(GtuType.class, vehicleType.startsWith("NL.") ? vehicleType : "NL." + vehicleType);
 
-            LanePosition lanePosition = getLanePosition(initX, initY, initDirection);
-            // TODO: GtuSpawner to too limited for our purposes, i.e. direction and route
-            new GtuSpawner().spawnGtu(id, this.gtuCharacteristics, this.network, initSpeed, lanePosition);
+            OrientedPoint2d position = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
+            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
+            setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
+
             if (this.simulator == null || !this.simulator.isStartingOrRunning())
             {
                 scheduledChangeControlMode(id, mode);
@@ -375,8 +417,20 @@ public class OtsTransceiver
             }
             else
             {
-                this.simulator.scheduleEventNow(this.simulator, "scheduledChangeControlMode", new Object[] {id, mode});
+                this.simulator.scheduleEventNow(this, "scheduledChangeControlMode", new Object[] {id, mode});
             }
+        }
+
+        /**
+         * Sets parameter in parameter factory.
+         * @param <T> value type
+         * @param parameter parameter type id
+         * @param value value
+         */
+        @SuppressWarnings("unchecked")
+        private <T> void setParameterValue(final String parameter, final Object value)
+        {
+            this.parameterFactory.setParameterValue((ParameterType<T>) Parameters.get(parameter), (T) value);
         }
 
         /**
@@ -498,7 +552,7 @@ public class OtsTransceiver
         }
 
         /**
-         * Stops any running simulation.
+         * Stops any running simulation. It leaves data to be able to reset the simulation.
          */
         private void stopSimulation()
         {
@@ -519,6 +573,18 @@ public class OtsTransceiver
         }
 
         /**
+         * Clears the information that is used to setup a simulation. This is the information that would be reused in a reset
+         * message.
+         */
+        private void clearSimulationSetupData()
+        {
+            this.lastNetworkMessage = null;
+            this.lastOdJson = null;
+            this.lastRoutesJson = null;
+            this.preStartVehiclePayloads.clear();
+        }
+
+        /**
          * Setup simulation.
          * @throws GtuException exception
          * @throws OtsGeometryException exception
@@ -528,9 +594,13 @@ public class OtsTransceiver
          * @throws OtsDrawingException exception
          * @throws SimRuntimeException exception
          * @throws NamingException exception
+         * @throws ParserConfigurationException
+         * @throws SAXException
+         * @throws JAXBException
          */
         private void setupSimulation() throws GtuException, OtsGeometryException, NetworkException, RemoteException,
-                DsolException, OtsDrawingException, SimRuntimeException, NamingException
+                DsolException, OtsDrawingException, SimRuntimeException, NamingException, ParameterException, JAXBException,
+                SAXException, ParserConfigurationException
         {
             stopSimulation();
 
@@ -539,22 +609,34 @@ public class OtsTransceiver
                 return;
             }
 
-            // String to OpenDRIVE network
-            // or
-            // Length x start
-            // Length y start
-            // Length x end
-            // Length y end
-            // int number of lanes
-            // Speed speed limit
-
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
             this.simulator = new OtsAnimator("Test animator");
 
-            CoSimModel model = new CoSimModel(this.simulator);
-            this.simulator.initialize(Time.ZERO, Duration.ZERO, Duration.instantiateSI(60.0), model);
+            String simulationString;
+            SimulationType simulationType;
+            Object[] payload = this.lastNetworkMessage.createObjectArray();
+            if ((short) payload[7] == 0 || payload[8] == null || (payload[8] instanceof String str && str.isBlank())
+                    || !(payload[8] instanceof String))
+            {
+                // No network payload: demo co-simulation model
+                simulationString = null;
+                simulationType = null;
+            }
+            else
+            {
+                simulationString = (String) payload[8];
+                // TODO default is now OPEN_DRIVE within the i4Driving context, remove default in OTS context
+                simulationType =
+                        (short) payload[7] > 1 ? SimulationType.valueOf((String) payload[9]) : SimulationType.OPEN_DRIVE;
+            }
+            CoSimModel model = new CoSimModel(this.simulator, simulationString, simulationType);
+            Duration runtime = simulationType == null ? Duration.instantiateSI(60.0) : Duration.instantiateSI(36000.0);
+            this.simulator.initialize(Time.ZERO, Duration.ZERO, runtime, model);
             this.network = (RoadNetwork) model.getNetwork();
-            this.gtuCharacteristics = model.getGtuCharacteristics();
+            this.characteristicsGeneratorOd = model.getSim0mqSimulation().getGtuCharacteristicsGeneratorOd();
+            this.parameterFactory = model.getSim0mqSimulation().getParameterFactory();
+            this.gtuSpawner = new GtuSpawnerOd(this.network, this.characteristicsGeneratorOd);
+
             listenToEvents();
 
             if (OtsTransceiver.this.showGui)
@@ -569,44 +651,27 @@ public class OtsTransceiver
                 this.app = new OtsSimulationApplication<AbstractOtsModel>(model, animationPanel);
             }
 
-            // Reset pre-start vehicles
-            for (Object[] payload : this.preStartVehiclePayloads)
+            // Routes
+            if (this.lastRoutesJson != null)
             {
-                generateVehicle(payload, false); // do not add these messages to the list
+                this.lastRoutesJson.createRoutes(this.network, DefaultsNl.VEHICLE, model.getSim0mqSimulation());
             }
-        }
 
-        /**
-         * Returns the lane position closest to the given location.
-         * @param initX X coordinate
-         * @param initY Y coordinate
-         * @param initDirection direction
-         * @return lane position closest to the given location
-         */
-        private LanePosition getLanePosition(final Length initX, final Length initY, final Direction initDirection)
-        {
-            OrientedPoint2d point = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
-            double minDistance = Double.POSITIVE_INFINITY;
-            LanePosition lanePosition = null;
-            for (Link link : this.network.getLinkMap().values())
+            // OD background traffic with default model
+            if (this.lastOdJson != null)
             {
-                if (link instanceof CrossSectionLink roadLink)
-                {
-                    for (Lane lane : roadLink.getLanesAndShoulders())
-                    {
-                        double fraction = lane.getCenterLine().projectFractional(link.getStartNode().getHeading(),
-                                link.getEndNode().getHeading(), initX.si, initY.si, FractionalFallback.ENDPOINT);
-                        Point2d pointOnLane = lane.getCenterLine().getLocationFractionExtended(fraction);
-                        double distance = pointOnLane.distance(point);
-                        if (distance < minDistance)
-                        {
-                            minDistance = distance;
-                            lanePosition = new LanePosition(lane, lane.getCenterLine().getLength().times(fraction));
-                        }
-                    }
-                }
+                Collection<GtuType> gtuTypes = Set.of(DefaultsNl.CAR, DefaultsNl.VAN, DefaultsNl.BUS, DefaultsNl.TRUCK);
+                OdMatrix od = this.lastOdJson.asOdMatrix(this.network, gtuTypes, model.getSim0mqSimulation());
+                OdOptions odOptions = new OdOptions().set(OdOptions.GTU_TYPE, this.characteristicsGeneratorOd);
+                OdApplier.applyOd(this.network, od, odOptions, DefaultsRoadNl.ROAD_USERS);
             }
-            return lanePosition;
+
+            // Reset pre-start vehicles
+            for (Object[] vehiclesPayload : this.preStartVehiclePayloads)
+            {
+                generateVehicle(vehiclesPayload, false); // do not add these messages to the list
+            }
+
         }
 
         @Override
@@ -737,41 +802,49 @@ public class OtsTransceiver
     }
 
     /**
-     * Co-simulation model.
+     * Co-simulation model. This intermediates between an OTS model, and the different supported network/OD types.
      */
     private final class CoSimModel extends AbstractOtsModel
     {
         /** */
         private static final long serialVersionUID = 1L;
 
-        /** Network. */
-        private RoadNetwork network;
+        /** String definition of the network. */
+        private final String simulationString;
 
-        /** GTU characteristics. */
-        private LaneBasedGtuCharacteristics gtuCharacteristics;
+        /** Network type. */
+        private final SimulationType simulationType;
+
+        /** Simulation. */
+        private Sim0mqSimulation simulation;
 
         /**
          * Constructor.
          * @param simulator simulator
+         * @param simulationString network string
+         * @param simulationType network type
          */
-        private CoSimModel(final OtsSimulatorInterface simulator)
+        private CoSimModel(final OtsSimulatorInterface simulator, final String simulationString,
+                final SimulationType simulationType)
         {
             super(simulator);
+            this.simulationString = simulationString;
+            this.simulationType = simulationType;
         }
 
         @Override
         public Network getNetwork()
         {
-            return this.network;
+            return this.simulation.getNetwork();
         }
 
         /**
-         * Returns GTU characteristics.
-         * @return GTU characteristics
+         * Returns the sim0mq simulation.
+         * @return sim0mq simulation
          */
-        public LaneBasedGtuCharacteristics getGtuCharacteristics()
+        public Sim0mqSimulation getSim0mqSimulation()
         {
-            return this.gtuCharacteristics;
+            return this.simulation;
         }
 
         @Override
@@ -780,15 +853,36 @@ public class OtsTransceiver
             // For now, a fixed two-lane test network
             try
             {
-                TwoLaneTestSimulation simulation = new TwoLaneTestSimulation(getSimulator());
-                this.network = simulation.getNetwork();
-                this.gtuCharacteristics = simulation.getGtuCharacteristics();
+                if (this.simulationString == null)
+                {
+                    this.simulation = new TwoLaneTestSimulation(getSimulator(), OtsTransceiver.this.mixinModel);
+                }
+                else
+                {
+                    switch (this.simulationType)
+                    {
+                        case OPEN_DRIVE:
+                            this.simulation = new OpenDriveSimulation(this.simulator, OtsTransceiver.this.mixinModel,
+                                    this.simulationString);
+                            break;
+                        case FOSIM:
+                            // TODO parse Fosim string
+                            // break;
+                        case OTS:
+                            // TODO parse OTS string
+                            // break;
+                        default:
+                            throw new SimRuntimeException("Network type " + this.simulationType + " is not supported.");
+                    }
+                }
             }
-            catch (GtuException | OtsGeometryException | NetworkException ex)
+            catch (GtuException | OtsGeometryException | NetworkException | JAXBException | SAXException
+                    | ParserConfigurationException ex)
             {
-                ex.printStackTrace();
+                throw new SimRuntimeException(ex);
             }
         }
+
     }
 
     /** All the converters that decode into arrays and matrices of Objects, keyed by prefix. */
@@ -812,6 +906,21 @@ public class OtsTransceiver
         {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Simulation type, defining how the simulation string containing the network and optionally demand is parsed.
+     */
+    private enum SimulationType
+    {
+        /** OpenDRIVE network with optional separate JSON OD matrix. */
+        OPEN_DRIVE,
+
+        /** FOSIM simulation file. */
+        FOSIM,
+
+        /** OTS XML simulation. */
+        OTS;
     }
 
 }

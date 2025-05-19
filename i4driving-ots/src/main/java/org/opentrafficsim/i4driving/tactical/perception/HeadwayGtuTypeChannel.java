@@ -1,4 +1,4 @@
-package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
+package org.opentrafficsim.i4driving.tactical.perception;
 
 import java.util.function.Supplier;
 
@@ -77,14 +77,7 @@ public class HeadwayGtuTypeChannel implements HeadwayGtuType
         triplet = this.anticipation.anticipate(triplet, tr, this.traveledDistance, downstream);
         // GTU is estimated to not be downstream/upstream, but it actually is. This is required to prevent exceptions.
         Length headway = Length.max(triplet.headway(), Length.instantiateSI(0.001));
-        try
-        {
-            return new HeadwayGtuPerceived(perceivedGtu, headway, triplet.speed(), triplet.acceleration());
-        }
-        catch (Exception e)
-        {
-            return null;
-        }
+        return new HeadwayGtuPerceived(perceivedGtu, headway, triplet.speed(), triplet.acceleration());
     }
 
     /** {@inheritDoc} */

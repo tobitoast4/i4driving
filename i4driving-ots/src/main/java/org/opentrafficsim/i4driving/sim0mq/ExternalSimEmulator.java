@@ -52,7 +52,7 @@ public final class ExternalSimEmulator
     private static final Frequency EXTERNAL_FREQUENCY = Frequency.instantiateSI(30);
 
     /** Whether to emulate demo network (or OpenDRIVE network). */
-    private static final boolean DEMO_NETWORK = false;
+    private static final boolean DEMO_NETWORK = true;
 
     /**
      * Constructor.
@@ -110,22 +110,26 @@ public final class ExternalSimEmulator
             {
                 byte[] encodedMessage;
 
+                Set<Integer> awaiting = new LinkedHashSet<>();
+                int msgId = this.messageId++;
+                awaiting.add(msgId);
                 String odFile = DEMO_NETWORK ? "/od/OdMatrix.json" : "/od/OdMatrixOpenDrive.json";
                 String jsonOd = Files.readString(Paths.get(getClass().getResource(odFile).toURI()));
                 encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ODMATRIX",
-                        this.messageId++, new Object[] {jsonOd});
+                        msgId, new Object[] {jsonOd});
                 this.responder.send(encodedMessage, ZMQ.DONTWAIT);
                 CategoryLogger.always().debug("ExternalSim sent ODMATRIX message");
 
+                msgId = this.messageId++;
+                awaiting.add(msgId);
                 String routesFile = DEMO_NETWORK ? "/route/Routes.json" : "/route/RoutesOpenDrive.json";
                 String jsonRoutes = Files.readString(Paths.get(getClass().getResource(routesFile).toURI()));
-                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ROUTES", this.messageId++,
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ROUTES", msgId,
                         new Object[] {jsonRoutes});
                 this.responder.send(encodedMessage, ZMQ.DONTWAIT);
                 CategoryLogger.always().debug("ExternalSim sent ROUTES message");
 
-                Set<Integer> awaiting = new LinkedHashSet<>();
-                int msgId = this.messageId++;
+                msgId = this.messageId++;
                 awaiting.add(msgId);
                 Object[] networkPayload = DEMO_NETWORK ? new Object[] {} : new Object[] {Files.readString(Paths
                         .get(getClass().getResource("/opendrive/examples/i4Driving_scenario01_urban-straight.xodr").toURI()))};
@@ -142,7 +146,8 @@ public final class ExternalSimEmulator
                 setupVehicles(awaiting, gtuSpeed, startX1, startY1, startX2, startY2);
 
                 Long start = null;
-                long[] events = new long[] {30000, 40000, 45000, 10000, 2};
+                // reset, stop, terminate, command (lane change), vehicle (during sim), active mode
+                long[] events = new long[] {30000, 40000, 45000, 10000, 500, 5000};
                 while (!Thread.currentThread().isInterrupted())
                 {
                     // Wait for next message from the server
@@ -290,7 +295,7 @@ public final class ExternalSimEmulator
                 events[3] = Long.MAX_VALUE;
                 CategoryLogger.always().debug("ExternalSim sent COMMAND message");
             }
-            if (start != null && now - start > events[4])
+            if (DEMO_NETWORK && start != null && now - start > events[4])
             {
                 // Vehicle after Start
                 Object[] payload = new Object[] {"Florian", "Hybrid", Length.instantiateSI(0.152921),
@@ -300,6 +305,23 @@ public final class ExternalSimEmulator
                         this.messageId++, payload), ZMQ.DONTWAIT);
                 events[4] = Long.MAX_VALUE;
                 CategoryLogger.always().debug("ExternalSim sent VEHICLE message TEST FLORIAN");
+            }
+            if (start != null && now - start > events[5])
+            {
+                // Pedestrian
+                Length x = Length.instantiateSI(20.0);
+                Length y = Length.instantiateSI(-1.0);
+                Speed v = Speed.instantiateSI(1.0);
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "VEHICLE",
+                        this.messageId++, new Object[] {"Pedestrian", "Active", x, y, Direction.instantiateSI(Math.PI / 2.0), v,
+                                "", Length.ZERO, Length.ZERO, Length.ZERO, 0, ""});
+                this.responder.send(encodedMessage, 0);
+                events[5] = Long.MAX_VALUE;
+                CategoryLogger.always().debug("ExternalSim sent ACTIVE vehicle message");
+                TrajectorySender ts =
+                        new TrajectorySender("Pedestrian", EXTERNAL_FREQUENCY, x, y, v, Acceleration.ZERO, Duration.ZERO);
+                ts.start();
+                this.trajectorySenders.put("Pedestrian", ts);
             }
             return terminate;
         }
@@ -462,41 +484,56 @@ public final class ExternalSimEmulator
                         Speed speed;
                         Acceleration accel;
                         Length positionX;
-                        if (dt < this.accelerationTime.si)
+                        Length positionY;
+                        Direction dir;
+                        if (this.gtuId.equals("Pedestrian"))
                         {
-                            // phase one: constant acceleration
-                            accel = this.acceleration;
-                            speed = Speed.instantiateSI(this.startSpeed.si + dt * this.acceleration.si);
-                            positionX = Length.instantiateSI(
-                                    this.startPositionX.si + this.startSpeed.si * dt + .5 * this.acceleration.si * dt * dt);
+                            speed = this.startSpeed;
+                            accel = Acceleration.ZERO;
+                            positionX = this.startPositionX;
+                            positionY = Length.instantiateSI(this.startPositionY.si + speed.si * dt);
+                            dir = Direction.instantiateSI(Math.PI / 2.0);
                         }
                         else
                         {
-                            // phase two: constant speed
-                            accel = Acceleration.ZERO;
-                            speed = Speed.instantiateSI(this.startSpeed.si + this.accelerationTime.si * this.acceleration.si);
-                            positionX =
-                                    Length.instantiateSI(this.startPositionX.si + this.startSpeed.si * this.accelerationTime.si
-                                            + .5 * this.acceleration.si * this.accelerationTime.si * this.accelerationTime.si
-                                            + (dt - this.accelerationTime.si) * speed.si);
-                        }
+                            if (dt < this.accelerationTime.si)
+                            {
+                                // phase one: constant acceleration
+                                accel = this.acceleration;
+                                speed = Speed.instantiateSI(this.startSpeed.si + dt * this.acceleration.si);
+                                positionX = Length.instantiateSI(
+                                        this.startPositionX.si + this.startSpeed.si * dt + .5 * this.acceleration.si * dt * dt);
+                            }
+                            else
+                            {
+                                // phase two: constant speed
+                                accel = Acceleration.ZERO;
+                                speed = Speed
+                                        .instantiateSI(this.startSpeed.si + this.accelerationTime.si * this.acceleration.si);
+                                positionX = Length.instantiateSI(this.startPositionX.si
+                                        + this.startSpeed.si * this.accelerationTime.si
+                                        + .5 * this.acceleration.si * this.accelerationTime.si * this.accelerationTime.si
+                                        + (dt - this.accelerationTime.si) * speed.si);
+                            }
 
-                        // Add some noise to the Y-position
-                        if (this.dy > -3.5 && positionX.si > 200.0)
-                        {
-                            this.dy -= 3.5 * (this.interval / 3000.0); // 3.5m in 3000ms
+                            // Add some noise to the Y-position
+                            if (this.dy > -3.5 && positionX.si > 200.0)
+                            {
+                                this.dy -= 3.5 * (this.interval / 3000.0); // 3.5m in 3000ms
+                            }
+                            double delta = dt - this.wienerTime;
+                            double tau = 30.0;
+                            this.wiener = Math.exp(-delta / tau) * this.wiener
+                                    + Math.sqrt((2 * delta) / tau) * this.random.nextGaussian();
+                            this.wienerTime = dt;
+                            positionY = Length.instantiateSI(this.startPositionY.si + this.wiener * 0.5 + this.dy);
+                            dir = Direction.ZERO;
                         }
-                        double delta = dt - this.wienerTime;
-                        double tau = 30.0;
-                        this.wiener = Math.exp(-delta / tau) * this.wiener
-                                + Math.sqrt((2 * delta) / tau) * this.random.nextGaussian();
-                        this.wienerTime = dt;
-                        Length positionY = Length.instantiateSI(this.startPositionY.si + this.wiener * 0.5 + this.dy);
 
                         // Sent update
                         try
                         {
-                            Object[] payload = new Object[] {this.gtuId, positionX, positionY, Direction.ZERO, speed, accel};
+                            Object[] payload = new Object[] {this.gtuId, positionX, positionY, dir, speed, accel};
                             Worker.this.responder.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, OTS, EXTERNAL_SIM,
                                     "EXTERNAL", Worker.this.messageId++, payload), ZMQ.DONTWAIT);
                         }

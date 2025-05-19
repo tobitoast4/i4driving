@@ -1,4 +1,4 @@
-package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
+package org.opentrafficsim.i4driving.tactical.perception;
 
 import java.util.Iterator;
 import java.util.SortedSet;
@@ -12,6 +12,8 @@ import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.RelativePosition;
 import org.opentrafficsim.core.gtu.perception.AbstractPerceptionCategory;
 import org.opentrafficsim.core.network.LateralDirectionality;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelMental;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTask;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.AbstractPerceptionReiterable;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;

@@ -123,6 +123,8 @@ public final class ChannelTaskConflict implements ChannelTask
     @Override
     public double getDemand(final LanePerception perception)
     {
+        // TODO: redefine based on data analysis, and also change in ChannelTaskActiveModeCrossing
+
         // In the following, 'headway' means time until static conflict is reached, possibly with acceleration.
         // Get minimum headway of first vehicle on each conflict in the group
         Duration conflictHeadway = Duration.POSITIVE_INFINITY;

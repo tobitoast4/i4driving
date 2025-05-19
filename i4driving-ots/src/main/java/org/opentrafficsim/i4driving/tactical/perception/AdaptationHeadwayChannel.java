@@ -1,4 +1,4 @@
-package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
+package org.opentrafficsim.i4driving.tactical.perception;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.opentrafficsim.base.parameters.ParameterException;

@@ -1,4 +1,4 @@
-package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
+package org.opentrafficsim.i4driving.tactical.perception;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -15,6 +15,15 @@ import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelFuller;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTask;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskAcceleration;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskCarFollowing;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskConflict;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskScan;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskSignal;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskSocio;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskTrafficLight;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
@@ -77,6 +86,7 @@ public class ChannelPerceptionFactory implements PerceptionFactory
         perception.addPerceptionCategory(
                 new IntersectionPerceptionChannel(perception, ESTIMATION_STATIC, ANTICIPATION_CONFLICTS));
         // perception.addPerceptionCategory(new DirectIntersectionPerception(perception, HeadwayGtuType.WRAP));
+        perception.addPerceptionCategory(new ActiveModePerception(perception));
         return perception;
     }
 
@@ -95,7 +105,7 @@ public class ChannelPerceptionFactory implements PerceptionFactory
     }
 
     /**
-     * Estimation using TS.
+     * Estimation using EST_FACTOR.
      */
     private static class SaturationEstimation implements Estimation
     {
@@ -117,11 +127,7 @@ public class ChannelPerceptionFactory implements PerceptionFactory
         public NeighborTriplet estimate(final LaneBasedGtu perceivingGtu, final LaneBasedGtu perceivedGtu,
                 final Length distance, final boolean downstream, final Time when) throws ParameterException
         {
-            // When this is ported to OTS, the manner in which to obtain 'factor' should be generalized for AR and Attention
-            // Matrix purposes
-            double lamda = perceivingGtu.getParameters().getParameter(OVER_EST);
-            double ts = Math.max(perceivingGtu.getParameters().getParameter(Fuller.TS), 1.0);
-            double factor = Math.pow(ts, lamda);
+            double factor = perceivingGtu.getParameters().getParameter(ChannelFuller.EST_FACTOR);
             Length headway = getDelayedHeadway(perceivingGtu, perceivedGtu, distance, downstream, when).times(factor);
             Speed speed =
                     getEgoSpeed(perceivingGtu).plus(getDelayedSpeedDifference(perceivingGtu, perceivedGtu, when).times(factor));

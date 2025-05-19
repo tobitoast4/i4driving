@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -58,18 +59,23 @@ import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlan;
 import org.opentrafficsim.core.gtu.plan.operational.Segment;
+import org.opentrafficsim.core.idgenerator.IdGenerator;
 import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.route.Route;
+import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.i4driving.messages.Commands;
 import org.opentrafficsim.i4driving.messages.DefaultGson;
+import org.opentrafficsim.i4driving.object.ActiveModeCrossing;
 import org.opentrafficsim.i4driving.tactical.CommandsHandler;
+import org.opentrafficsim.i4driving.tactical.NetworkUtil;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.network.RoadNetwork;
+import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.road.od.OdApplier;
 import org.opentrafficsim.road.od.OdMatrix;
 import org.opentrafficsim.road.od.OdOptions;
@@ -121,8 +127,12 @@ public class OtsTransceiver
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "true", negatable = true) // false=default
+    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true) // false=default
     private boolean showGui;
+
+    /** ID prefix of generated GTUs. */
+    @Option(names = "--idPrefix", description = "Prefix to ID of generated traffic.", defaultValue = "OTS_")
+    private String idPrefix;
 
     /** Mixed in model arguments. */
     @Mixin
@@ -216,8 +226,14 @@ public class OtsTransceiver
         /** Ids of GTUs that are externally controlled. */
         private Set<String> externalGtuIds = new LinkedHashSet<>();
 
+        /** Ids of active mode objects, and to which crossing they pertain. */
+        private Map<String, ActiveModeCrossing> activeIds = new LinkedHashMap<>();
+
         /** Command handlers. */
         private Map<String, CommandsHandler> commandHandlers = new LinkedHashMap<>();
+
+        /** Ids of GTUs that are externally deleted, i.e. do not sent back a delete message. */
+        private Set<String> deleteGtuIds = new LinkedHashSet<>();
 
         /** GSON builder to parser JSON strings. */
         private Gson gson = DefaultGson.GSON;
@@ -268,8 +284,15 @@ public class OtsTransceiver
                         Speed speed = (Speed) payload[index++];
                         Acceleration acceleration = (Acceleration) payload[index++];
                         OrientedPoint2d loc = new OrientedPoint2d(x.si, y.si, direction.si);
-                        this.simulator.scheduleEventNow(this, "scheduledDeadReckoning",
-                                new Object[] {id, loc, speed, acceleration});
+                        if (this.activeIds.containsKey(id))
+                        {
+                            this.simulator.scheduleEventNow(this, "updateActiveModeObject", new Object[] {id, loc, speed});
+                        }
+                        else
+                        {
+                            this.simulator.scheduleEventNow(this, "scheduledDeadReckoning",
+                                    new Object[] {id, loc, speed, acceleration});
+                        }
                     }
                     else if ("VEHICLE".equals(message.getMessageTypeId()))
                     {
@@ -300,6 +323,7 @@ public class OtsTransceiver
                         Object[] payload = message.createObjectArray();
                         String id = (String) payload[8];
                         CategoryLogger.always().debug("Ots received DELETE message for GTU " + id);
+                        this.deleteGtuIds.add(id);
                         this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {id});
                     }
                     else if ("ROUTES".equals(message.getMessageTypeId()))
@@ -307,12 +331,14 @@ public class OtsTransceiver
                         CategoryLogger.always().debug("Ots received ROUTES message");
                         Object[] payload = message.createObjectArray();
                         this.lastRoutesJson = DefaultGson.GSON.fromJson((String) payload[8], RoutesJson.class);
+                        sentReadyMessage((int) message.createObjectArray()[6]);
                     }
                     else if ("ODMATRIX".equals(message.getMessageTypeId()))
                     {
                         CategoryLogger.always().debug("Ots received ODMATRIX message");
                         Object[] payload = message.createObjectArray();
                         this.lastOdJson = DefaultGson.GSON.fromJson((String) payload[8], OdMatrixJson.class);
+                        sentReadyMessage((int) message.createObjectArray()[6]);
                     }
                     else if ("NETWORK".equals(message.getMessageTypeId()))
                     {
@@ -379,35 +405,50 @@ public class OtsTransceiver
         private void generateVehicle(final Object[] payload, final boolean addToPreStartList)
                 throws GtuException, OtsGeometryException, NetworkException, RemoteException
         {
+            boolean running = this.simulator != null && this.simulator.isStartingOrRunning();
             int index = 8;
             String id = (String) payload[index++];
             String mode = (String) payload[index++];
             Length initX = (Length) payload[index++];
             Length initY = (Length) payload[index++];
             Direction initDirection = (Direction) payload[index++];
+            OrientedPoint2d position = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
             Speed initSpeed = (Speed) payload[index++];
+            if (mode.toLowerCase().equals("active"))
+            {
+                if (running)
+                {
+                    this.simulator.scheduleEventNow(this, "addActiveModeObject", new Object[] {id, position, initSpeed});
+                }
+                else
+                {
+                    addActiveModeObject(id, position, initSpeed);
+                }
+                return;
+            }
             String vehicleType = ((String) payload[index++]).toUpperCase();
+            GtuType gtuType =
+                    Defaults.getByName(GtuType.class, vehicleType.startsWith("NL.") ? vehicleType : "NL." + vehicleType);
             Length vehicleLength = (Length) payload[index++];
             Length vehicleWidth = (Length) payload[index++];
             Length refToNose = (Length) payload[index++];
             int numParams = (int) payload[index++];
-            Set<ParameterType<?>> setParameters = new LinkedHashSet<>();
+            Map<String, Object> parameterMap = new LinkedHashMap<>();
             for (int i = 0; i < numParams; i++)
             {
-                String parameter = (String) payload[index++];
-                Object value = payload[index++];
-                setParameterValue(parameter, value);
+                parameterMap.put((String) payload[index++], payload[index++]);
             }
             Route route = this.network.getRoute((String) payload[index++]);
-            GtuType gtuType =
-                    Defaults.getByName(GtuType.class, vehicleType.startsWith("NL.") ? vehicleType : "NL." + vehicleType);
 
-            OrientedPoint2d position = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
-            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
-            setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
-
-            if (this.simulator == null || !this.simulator.isStartingOrRunning())
+            if (running)
             {
+                this.simulator.scheduleEventNow(this, "spawnGtu", new Object[] {id, gtuType, vehicleLength, vehicleWidth,
+                        refToNose, route, initSpeed, position, mode, parameterMap});
+                this.simulator.scheduleEventNow(this, "scheduledChangeControlMode", new Object[] {id, mode});
+            }
+            else
+            {
+                spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position, mode, parameterMap);
                 scheduledChangeControlMode(id, mode);
                 sentReadyMessage((int) payload[6]);
                 if (addToPreStartList)
@@ -415,10 +456,69 @@ public class OtsTransceiver
                     this.preStartVehiclePayloads.add(payload);
                 }
             }
-            else
+        }
+
+        /**
+         * Spawn GTU scheduled.
+         * @param id id
+         * @param gtuType GTU type
+         * @param vehicleLength length
+         * @param vehicleWidth width
+         * @param refToNose distance from reference point to front
+         * @param route route
+         * @param initSpeed speed
+         * @param position position
+         * @param mode mode
+         * @param parameterMap map of parameters
+         * @throws GtuException when initial GTU values are not correct
+         * @throws OtsGeometryException when the initial path is wrong
+         * @throws NetworkException when the GTU cannot be placed on the given position
+         */
+        private void spawnGtu(final String id, final GtuType gtuType, final Length vehicleLength, final Length vehicleWidth,
+                final Length refToNose, final Route route, final Speed initSpeed, final OrientedPoint2d position,
+                final String mode, final Map<String, Object> parameterMap)
+                throws GtuException, OtsGeometryException, NetworkException
+        {
+            Set<ParameterType<?>> setParameters = new LinkedHashSet<>();
+            for (Entry<String, Object> parameterEntry : parameterMap.entrySet())
             {
-                this.simulator.scheduleEventNow(this, "scheduledChangeControlMode", new Object[] {id, mode});
+                String parameter = parameterEntry.getKey();
+                Object value = parameterEntry.getValue();
+                setParameterValue(parameter, value, setParameters);
+                parameterMap.put(parameter, value);
             }
+            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
+            setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
+        }
+
+        /**
+         * Add active mode object.
+         * @param id id
+         * @param location location
+         * @param speed speed
+         * @throws NetworkException no valid location
+         */
+        private void addActiveModeObject(final String id, final OrientedPoint2d location, final Speed speed)
+                throws NetworkException
+        {
+            LanePosition position = NetworkUtil.getLanePosition(this.network, location);
+            ActiveModeCrossing crossing = new ActiveModeCrossing(position, false);
+            this.activeIds.put(id, crossing);
+            updateActiveModeObject(id, location, speed);
+        }
+
+        /**
+         * Updates crossing arrival time of active mode object.
+         * @param id id
+         * @param location location
+         * @param speed speed
+         */
+        private void updateActiveModeObject(final String id, final OrientedPoint2d location, final Speed speed)
+        {
+            ActiveModeCrossing crossing = this.activeIds.get(id);
+            Length width = crossing.getLane().getWidth(crossing.getLongitudinalPosition());
+            Length distance = Length.instantiateSI(Math.max(location.distance(crossing.getLocation()) - width.si / 2.0, 0.0));
+            crossing.setArrival(id, distance, speed);
         }
 
         /**
@@ -426,11 +526,15 @@ public class OtsTransceiver
          * @param <T> value type
          * @param parameter parameter type id
          * @param value value
+         * @param setParameters set of parameters that are set, to which the parameter should be added
          */
         @SuppressWarnings("unchecked")
-        private <T> void setParameterValue(final String parameter, final Object value)
+        private <T> void setParameterValue(final String parameter, final Object value,
+                final Set<ParameterType<?>> setParameters)
         {
-            this.parameterFactory.setParameterValue((ParameterType<T>) Parameters.get(parameter), (T) value);
+            ParameterType<T> param = (ParameterType<T>) Parameters.get(parameter);
+            this.parameterFactory.setParameterValue(param, (T) value);
+            setParameters.add(param);
         }
 
         /**
@@ -556,15 +660,15 @@ public class OtsTransceiver
          */
         private void stopSimulation()
         {
-            this.planGtuIds.clear();
-            this.externalGtuIds.clear();
-            this.commandHandlers.clear();
             if (this.simulator != null && !this.simulator.isStoppingOrStopped())
             {
                 this.simulator.stop();
                 this.simulator = null;
                 this.network = null;
             }
+            this.planGtuIds.clear();
+            this.externalGtuIds.clear();
+            this.commandHandlers.clear();
             if (this.app != null)
             {
                 this.app.dispose();
@@ -632,6 +736,8 @@ public class OtsTransceiver
             CoSimModel model = new CoSimModel(this.simulator, simulationString, simulationType);
             Duration runtime = simulationType == null ? Duration.instantiateSI(60.0) : Duration.instantiateSI(36000.0);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, runtime, model);
+            this.simulator.getReplication().setHistoryManager(
+                    new HistoryManagerDevs(this.simulator, Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
             this.network = (RoadNetwork) model.getNetwork();
             this.characteristicsGeneratorOd = model.getSim0mqSimulation().getGtuCharacteristicsGeneratorOd();
             this.parameterFactory = model.getSim0mqSimulation().getParameterFactory();
@@ -662,7 +768,8 @@ public class OtsTransceiver
             {
                 Collection<GtuType> gtuTypes = Set.of(DefaultsNl.CAR, DefaultsNl.VAN, DefaultsNl.BUS, DefaultsNl.TRUCK);
                 OdMatrix od = this.lastOdJson.asOdMatrix(this.network, gtuTypes, model.getSim0mqSimulation());
-                OdOptions odOptions = new OdOptions().set(OdOptions.GTU_TYPE, this.characteristicsGeneratorOd);
+                OdOptions odOptions = new OdOptions().set(OdOptions.GTU_TYPE, this.characteristicsGeneratorOd)
+                        .set(OdOptions.GTU_ID, new IdGenerator(OtsTransceiver.this.idPrefix));
                 OdApplier.applyOd(this.network, od, odOptions, DefaultsRoadNl.ROAD_USERS);
             }
 
@@ -700,8 +807,16 @@ public class OtsTransceiver
                 gtu.removeListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
                 this.planGtuIds.remove(gtuId);
                 this.externalGtuIds.remove(gtuId);
+                ActiveModeCrossing crossing = this.activeIds.remove(gtuId);
+                if (crossing != null)
+                {
+                    crossing.removeArrival(gtuId);
+                }
                 this.commandHandlers.remove(gtuId);
-                sentDeleteMessage(gtuId);
+                if (!this.deleteGtuIds.remove(gtuId))
+                {
+                    sentDeleteMessage(gtuId);
+                }
             }
         }
 
@@ -850,7 +965,6 @@ public class OtsTransceiver
         @Override
         public void constructModel() throws SimRuntimeException
         {
-            // For now, a fixed two-lane test network
             try
             {
                 if (this.simulationString == null)

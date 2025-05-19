@@ -3,23 +3,18 @@ package org.opentrafficsim.i4driving.sim0mq;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.draw.point.OrientedPoint2d;
-import org.djutils.draw.point.Point2d;
 import org.djutils.multikeymap.MultiKeyMap;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
-import org.opentrafficsim.core.geometry.OtsLine2d.FractionalFallback;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
-import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.route.Route;
+import org.opentrafficsim.i4driving.tactical.NetworkUtil;
 import org.opentrafficsim.road.gtu.generator.GtuSpawner;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.road.network.lane.CrossSectionLink;
-import org.opentrafficsim.road.network.lane.Lane;
-import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
 
@@ -79,7 +74,7 @@ public class GtuSpawnerOd
         LaneBasedGtuCharacteristics templateGtuType = new LaneBasedGtuCharacteristics(overwrittenBaseCharacteristics,
                 standardTemplate.getStrategicalPlannerFactory(), route, standardTemplate.getOrigin(),
                 standardTemplate.getDestination(), standardTemplate.getVehicleModel());
-        this.gtuSpawner.spawnGtu(id, templateGtuType, this.network, speed, getLanePosition(position));
+        this.gtuSpawner.spawnGtu(id, templateGtuType, this.network, speed, NetworkUtil.getLanePosition(this.network, position));
     }
 
     /**
@@ -91,36 +86,6 @@ public class GtuSpawnerOd
     private Category getCategory(final GtuType gtuType, final Route route)
     {
         return this.categories.get(() -> new Category(this.categorization, gtuType, route), gtuType, route);
-    }
-
-    /**
-     * Returns the lane position closest to the given location.
-     * @param position position
-     * @return lane position closest to the given location
-     */
-    private LanePosition getLanePosition(final OrientedPoint2d position)
-    {
-        double minDistance = Double.POSITIVE_INFINITY;
-        LanePosition lanePosition = null;
-        for (Link link : this.network.getLinkMap().values())
-        {
-            if (link instanceof CrossSectionLink roadLink)
-            {
-                for (Lane lane : roadLink.getLanesAndShoulders())
-                {
-                    double fraction = lane.getCenterLine().projectFractional(link.getStartNode().getHeading(),
-                            link.getEndNode().getHeading(), position.x, position.y, FractionalFallback.ENDPOINT);
-                    Point2d pointOnLane = lane.getCenterLine().getLocationFractionExtended(fraction);
-                    double distance = pointOnLane.distance(position);
-                    if (distance < minDistance)
-                    {
-                        minDistance = distance;
-                        lanePosition = new LanePosition(lane, lane.getCenterLine().getLength().times(fraction));
-                    }
-                }
-            }
-        }
-        return lanePosition;
     }
 
 }

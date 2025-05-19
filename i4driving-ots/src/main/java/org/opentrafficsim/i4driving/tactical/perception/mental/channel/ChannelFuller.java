@@ -17,6 +17,7 @@ import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller.BehavioralAdaptation;
 
@@ -36,6 +37,10 @@ public class ChannelFuller implements ChannelMental
 
     /** Task saturation. */
     public static final ParameterTypeDouble TS = Fuller.TS;
+
+    /** Erroneous estimation factor on distance and speed difference. */
+    public static final ParameterTypeDouble EST_FACTOR = new ParameterTypeDouble("f_est",
+            "Erroneous estimation factor on distance and speed difference.", 1.0, NumericConstraint.POSITIVE);
 
     /** Minimum perception delay. */
     public static final ParameterTypeDuration TAU_MIN =
@@ -146,12 +151,13 @@ public class ChannelFuller implements ChannelMental
             this.attention.put(entry.getKey(), matrix.getAttention(index));
         }
 
-        // Calculate task saturation and apply behavioral adaptations
-        double taskSaturation = sumTaskDemand / tc;
-        parameters.setParameter(TS, taskSaturation);
+        // Calculate task saturation, perception errors, and apply behavioral adaptations
+        double ts = sumTaskDemand / tc;
+        parameters.setParameter(TS, ts);
+        parameters.setParameter(EST_FACTOR, Math.pow(Math.max(ts, 1.0), parameters.getParameter(Estimation.OVER_EST)));
         for (BehavioralAdaptation behavioralAdapatation : this.behavioralAdapatations)
         {
-            behavioralAdapatation.adapt(parameters, taskSaturation);
+            behavioralAdapatation.adapt(parameters, ts);
         }
     }
 
@@ -191,7 +197,7 @@ public class ChannelFuller implements ChannelMental
         Throw.when(!this.perceptionDelay.containsKey(obj), IllegalArgumentException.class, "Channel %s is not present.", obj);
         return obj;
     }
-    
+
     /**
      * Returns the current channels.
      * @return set of channels

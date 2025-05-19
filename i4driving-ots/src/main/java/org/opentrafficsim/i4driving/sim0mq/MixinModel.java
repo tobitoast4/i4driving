@@ -11,10 +11,13 @@ import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuErrorHandler;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
+import org.opentrafficsim.i4driving.tactical.AccelerationActiveModeCrossing;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
+import org.opentrafficsim.i4driving.tactical.perception.ActiveModePerception;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.LaneChangeTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.TaskManagerAr;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelFuller;
 import org.opentrafficsim.road.gtu.lane.CollisionException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
@@ -87,7 +90,7 @@ public class MixinModel
     @Option(names = {"--anticipationReliance"}, description = "Apply anticipation reliance in Fuller.", negatable = true,
             defaultValue = "true")
     private boolean anticipationReliance = true;
-
+    
     /** Adapt headway in Fuller. */
     @Option(names = {"--adaptHeadway"}, description = "Adapt headway in Fuller.", negatable = true, defaultValue = "true")
     private boolean adaptHeadway = true;
@@ -210,6 +213,7 @@ public class MixinModel
                         }
                         parameters.setParameter(Estimation.OVER_EST,
                                 randomStream.nextDouble() <= MixinModel.this.fractionOverEstimation ? 1.0 : -1.0);
+                        parameters.setParameter(ChannelFuller.EST_FACTOR, 1.0);
                         return parameters;
                     }
 
@@ -227,6 +231,7 @@ public class MixinModel
                                 ? new IdmPlusMulti(AbstractIdm.HEADWAY, desiredSpeedModel)
                                 : new IdmPlus(AbstractIdm.HEADWAY, desiredSpeedModel);
 
+                        // TODO integrate ChannelPerceptionFactory (or its functionality).
                         Fuller mental = null;
                         if (MixinModel.this.fullFuller || MixinModel.this.fuller)
                         {
@@ -256,11 +261,12 @@ public class MixinModel
                                             ? new TaskManagerAr(primaryTask) : new SummativeTaskManager();
                             mental = new Fuller(tasks, behavioralAdapatations, taskManager);
                         }
-
+                        
                         LanePerception lanePerception = new CategoricalLanePerception(gtu, mental);
                         lanePerception.addPerceptionCategory(new DirectEgoPerception<>(lanePerception));
                         lanePerception.addPerceptionCategory(new AnticipationTrafficPerception(lanePerception));
                         lanePerception.addPerceptionCategory(new DirectInfrastructurePerception(lanePerception));
+                        lanePerception.addPerceptionCategory(new ActiveModePerception(lanePerception));
                         Estimation estimation = Estimation.FACTOR_ESTIMATION;
                         HeadwayGtuType headwayGtuType =
                                 (MixinModel.this.fullFuller || MixinModel.this.fuller)
@@ -275,6 +281,7 @@ public class MixinModel
                         tacticalPlanner.addMandatoryIncentive(new IncentiveRoute());
                         tacticalPlanner.addVoluntaryIncentive(new IncentiveSpeedWithCourtesy());
                         tacticalPlanner.addVoluntaryIncentive(new IncentiveKeep());
+                        tacticalPlanner.addAccelerationIncentive(new AccelerationActiveModeCrossing());
                         if (MixinModel.this.fullSocio
                                 || (MixinModel.this.socio && MixinModel.this.socioLaneChangeIncentive))
                         {

@@ -35,7 +35,6 @@ import org.djutils.event.EventListener;
 import org.djutils.event.EventType;
 import org.djutils.immutablecollections.ImmutableList;
 import org.djutils.logger.CategoryLogger;
-import org.djutils.serialization.EndianUtil;
 import org.djutils.serialization.SerializationException;
 import org.djutils.serialization.TypedMessage;
 import org.djutils.serialization.serializers.Serializer;
@@ -270,9 +269,9 @@ public class OtsTransceiver
                         }
                         request = this.responder.recv(ZMQ.DONTWAIT);
                     }
-                    // Sim0MQMessage message = Sim0MQMessage.decode(request);
-                    Object[] array = TypedMessage.decode(request, OBJECT_DECODERS, EndianUtil.LITTLE_ENDIAN);
-                    Sim0MQMessage message = new Sim0MQMessage(array, array.length - 8, array[5]);
+                    Sim0MQMessage message = Sim0MQMessage.decode(request);
+                    //Object[] array = TypedMessage.decode(request, OBJECT_DECODERS, EndianUtil.LITTLE_ENDIAN);
+                    //Sim0MQMessage message = new Sim0MQMessage(array, array.length - 8, array[5]);
                     if ("EXTERNAL".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = message.createObjectArray();

@@ -293,7 +293,7 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
         boolean toStandStill = this.accelerationCommand.lt0()
                 && this.deadReckoningSpeed.si / -this.accelerationCommand.si < DEAD_RECKONING_HORIZON.si;
         double t = toStandStill ? this.deadReckoningSpeed.si / -this.accelerationCommand.si : DEAD_RECKONING_HORIZON.si;
-        double distance = this.deadReckoningSpeed.si * t + .5 * this.accelerationCommand.si * t * t;
+        double distance = Math.max(1.0, this.deadReckoningSpeed.si * t + .5 * this.accelerationCommand.si * t * t);
         double x = locationAtStartTime.x + Math.cos(locationAtStartTime.dirZ) * distance;
         double y = locationAtStartTime.y - Math.sin(locationAtStartTime.dirZ) * distance;
         OtsLine2d path = new OtsLine2d(locationAtStartTime, new Point2d(x, y));

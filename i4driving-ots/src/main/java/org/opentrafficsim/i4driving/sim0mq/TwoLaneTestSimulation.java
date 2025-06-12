@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.djunits.unit.SpeedUnit;
-import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.draw.point.Point2d;
@@ -118,7 +117,7 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
         {
             new SinkDetector(lane, lane.getLength().minus(Length.instantiateSI(50.0)), simulator, DefaultsRoadNl.ROAD_USERS);
         }
-        
+
     }
 
     @Override
@@ -138,5 +137,5 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
     {
         return this.parameterFactory;
     }
-    
+
 }

@@ -53,6 +53,9 @@ public final class ExternalSimEmulator
 
     /** Whether to emulate demo network (or OpenDRIVE network). */
     private static final boolean DEMO_NETWORK = true;
+    
+    /** Run real-time or as fast as possible. */
+    private static final boolean REAL_TIME = true;
 
     /**
      * Constructor.
@@ -211,11 +214,22 @@ public final class ExternalSimEmulator
                             this.trajectorySenders.put("Ego 2", ts2);
 
                             // Start simulation
-                            encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "START",
-                                    this.messageId++, new Object[] {});
+                            String messageType;
+                            if (REAL_TIME)
+                            {
+                                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "START",
+                                        this.messageId++, new Object[] {});
+                                messageType = "START";
+                            }
+                            else
+                            {
+                                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "PROGRESS",
+                                        this.messageId++, new Object[] {Duration.instantiateSI(60.0)});
+                                messageType = "PROGRESS";
+                            }
                             this.responder.send(encodedMessage, 0);
                             this.trajectorySenders.values().forEach((ts) -> ts.start());
-                            CategoryLogger.always().debug("ExternalSim sent START message");
+                            CategoryLogger.always().debug("ExternalSim sent {} message", messageType);
                             if (start == null)
                             {
                                 start = System.currentTimeMillis(); // only first time, this is for reset/stop/terminate

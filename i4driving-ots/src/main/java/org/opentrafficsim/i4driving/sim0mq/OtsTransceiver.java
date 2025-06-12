@@ -219,6 +219,9 @@ public class OtsTransceiver
         /** Application. */
         private OtsSimulationApplication<AbstractOtsModel> app;
 
+        /** GTU that is being externally generated, for which no VEHICLE message should be sent. */
+        private String externallyGeneratedGtuId;
+        
         /** Ids of GTUs for which plan messages are sent. */
         private Set<String> planGtuIds = new LinkedHashSet<>();
 
@@ -270,8 +273,8 @@ public class OtsTransceiver
                         request = this.responder.recv(ZMQ.DONTWAIT);
                     }
                     Sim0MQMessage message = Sim0MQMessage.decode(request);
-                    //Object[] array = TypedMessage.decode(request, OBJECT_DECODERS, EndianUtil.LITTLE_ENDIAN);
-                    //Sim0MQMessage message = new Sim0MQMessage(array, array.length - 8, array[5]);
+                    // Object[] array = TypedMessage.decode(request, OBJECT_DECODERS, EndianUtil.LITTLE_ENDIAN);
+                    // Sim0MQMessage message = new Sim0MQMessage(array, array.length - 8, array[5]);
                     if ("EXTERNAL".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = message.createObjectArray();
@@ -349,6 +352,7 @@ public class OtsTransceiver
                     else if ("START".equals(message.getMessageTypeId()))
                     {
                         CategoryLogger.always().debug("Ots received START message");
+                        this.simulator.setSpeedFactor(1.0);
                         if (this.simulator != null && !this.simulator.isStartingOrRunning())
                         {
                             this.simulator.start();
@@ -372,6 +376,14 @@ public class OtsTransceiver
                         stopSimulation();
                         clearSimulationSetupData();
                         break;
+                    }
+                    else if ("PROGRESS".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        Duration until = (Duration) payload[8];
+                        CategoryLogger.always().debug("Ots received PROGRESS message until {}", until);
+                        this.simulator.setSpeedFactor(1000.0);
+                        this.simulator.runUpToAndIncluding(until);
                     }
                     else
                     {
@@ -439,16 +451,15 @@ public class OtsTransceiver
             }
             Route route = this.network.getRoute((String) payload[index++]);
 
+            this.externallyGeneratedGtuId = id;
             if (running)
             {
                 this.simulator.scheduleEventNow(this, "spawnGtu", new Object[] {id, gtuType, vehicleLength, vehicleWidth,
                         refToNose, route, initSpeed, position, mode, parameterMap});
-                this.simulator.scheduleEventNow(this, "scheduledChangeControlMode", new Object[] {id, mode});
             }
             else
             {
                 spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position, mode, parameterMap);
-                scheduledChangeControlMode(id, mode);
                 sentReadyMessage((int) payload[6]);
                 if (addToPreStartList)
                 {
@@ -488,6 +499,7 @@ public class OtsTransceiver
             }
             this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
             setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
+            scheduledChangeControlMode(id, mode);
         }
 
         /**
@@ -797,6 +809,12 @@ public class OtsTransceiver
             {
                 String gtuId = (String) event.getContent();
                 Gtu gtu = this.network.getGTU(gtuId);
+                if (!gtuId.equals(this.externallyGeneratedGtuId))
+                {
+                    this.simulator.scheduleEventNow(this, "sentVehicleMessage", new Object[] {gtu});
+                    this.planGtuIds.add(gtuId);
+                    this.externallyGeneratedGtuId = null;
+                }
                 gtu.addListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
             }
             else if (eventType.equals(Network.GTU_REMOVE_EVENT))
@@ -817,6 +835,28 @@ public class OtsTransceiver
                     sentDeleteMessage(gtuId);
                 }
             }
+        }
+
+        /**
+         * Sent VEHICLE message.
+         * @param gtu
+         * @throws Sim0MQException
+         * @throws SerializationException
+         */
+        @SuppressWarnings("unused") // scheduled
+        private void sentVehicleMessage(final Gtu gtu) throws Sim0MQException, SerializationException
+        {
+            String gtuId = gtu.getId();
+            OrientedPoint2d p = gtu.getLocation();
+            String routeId = gtu.getStrategicalPlanner().getRoute().getId();
+            Object[] payload = new Object[] {gtuId, "Ots", Length.instantiateSI(p.x), Length.instantiateSI(p.y),
+                    Direction.instantiateSI(p.dirZ), gtu.getSpeed(), gtu.getType().getId(), gtu.getLength(),
+                    gtu.getWidth(), gtu.getFront().dx(), 0, routeId};
+            this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                    OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.client, "VEHICLE",
+                    this.messageId++, payload), ZMQ.DONTWAIT);
+            CategoryLogger.always().debug("[{0.000}s] Ots sent VEHICLE message for GTU {} on route {}",
+                    this.simulator.getSimulatorTime(), gtuId, routeId);
         }
 
         /**

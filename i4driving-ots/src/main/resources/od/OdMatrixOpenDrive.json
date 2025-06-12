@@ -1,8 +1,16 @@
 {
+    "categorization": [
+        "ROUTE"
+    ],
     "demand": [
         {
             "origin": "0",
+            "originInDesignDirection": true,
             "destination": "0",
+            "destinationInDesignDirection": true,
+            "category": [
+                "A-B"
+            ],
             "frequency": "1200/h"
         }
     ]

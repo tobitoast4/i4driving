@@ -83,8 +83,14 @@ public class OdMatrixJson
         /** Origin. */
         private String origin;
 
+        /** Whether the origin is defined in the design direction. */
+        private Boolean originInDesignDirection;
+
         /** Destination. */
         private String destination;
+
+        /** Whether the destination is defined in the design direction. */
+        private Boolean destinationInDesignDirection;
 
         /** Category, defined as a list of element ids. */
         @JsonAdapter(ScalarAsListAdapter.class)
@@ -125,8 +131,9 @@ public class OdMatrixJson
         List<Node> destinations = new ArrayList<>();
         for (DemandJson demand0 : this.demand)
         {
-            Node origin = network.getNode(simulation.getOrigin(demand0.origin));
-            Node destination = network.getNode(simulation.getDestination(demand0.destination));
+            Node origin = network.getNode(simulation.getOrigin(demand0.origin, demand0.originInDesignDirection));
+            Node destination =
+                    network.getNode(simulation.getDestination(demand0.destination, demand0.destinationInDesignDirection));
             Throw.whenNull(origin, "Origin %s is not in the network.", demand0.origin);
             Throw.whenNull(destination, "Destination %s is not in the network.", demand0.destination);
             origins.add(origin);
@@ -173,8 +180,9 @@ public class OdMatrixJson
         for (DemandJson demand0 : this.demand)
         {
             // Nodes
-            Node origin = network.getNode(simulation.getOrigin(demand0.origin));
-            Node destination = network.getNode(simulation.getDestination(demand0.destination));
+            Node origin = network.getNode(simulation.getOrigin(demand0.origin, demand0.originInDesignDirection));
+            Node destination =
+                    network.getNode(simulation.getDestination(demand0.destination, demand0.destinationInDesignDirection));
 
             // Category
             Category category;

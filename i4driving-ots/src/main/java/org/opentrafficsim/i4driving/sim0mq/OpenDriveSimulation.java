@@ -128,15 +128,15 @@ public class OpenDriveSimulation implements Sim0mqSimulation
     }
 
     @Override
-    public String getOrigin(final String id)
+    public String getOrigin(final String id, final boolean designDirection)
     {
-        return this.parser.getOrigin(id).getId();
+        return this.parser.getOrigin(id, designDirection).getId();
     }
 
     @Override
-    public String getDestination(final String id)
+    public String getDestination(final String id, final boolean designDirection)
     {
-        return this.parser.getDestination(id).getId();
+        return this.parser.getDestination(id, designDirection).getId();
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.opentrafficsim.i4driving.sim0mq;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -17,6 +18,7 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Frequency;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djutils.cli.CliUtil;
 import org.djutils.logger.CategoryLogger;
 import org.djutils.serialization.SerializationException;
 import org.pmw.tinylog.Level;
@@ -26,10 +28,15 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 /**
  * Emulates an external simulation for testing purposes.
  * @author wjschakel
  */
+@Command(description = "Emulator of an external simulator", name = "ExternalSim", mixinStandardHelpOptions = true,
+        showDefaultValues = true, version = "20250613")
 public final class ExternalSimEmulator
 {
 
@@ -52,10 +59,40 @@ public final class ExternalSimEmulator
     private static final Frequency EXTERNAL_FREQUENCY = Frequency.instantiateSI(30);
 
     /** Whether to emulate demo network (or OpenDRIVE network). */
-    private static final boolean DEMO_NETWORK = true;
-    
+    private static boolean demoNetwork;
+
     /** Run real-time or as fast as possible. */
-    private static final boolean REAL_TIME = true;
+    private static boolean realTime;
+
+    /** OD file. */
+    private static String odFile;
+
+    /** Route file. */
+    private static String routeFile;
+
+    /** Network file. */
+    private static String networkFile;
+
+    /** Demo command line argument. */
+    @Option(names = "--demo", description = "Use demo network", defaultValue = "true", negatable = true)
+    private boolean demoCla;
+
+    /** Real time command line argument. */
+    @Option(names = "--realTime", description = "Run real time", defaultValue = "true", negatable = true)
+    private boolean realTimeCla;
+
+    /** OD file command line argument. */
+    @Option(names = "--od", description = "OD matrix JSON file", defaultValue = "/od/OdMatrixOpenDrive.json")
+    private String odFileCla;
+
+    /** Route file command line argument. */
+    @Option(names = "--route", description = "Route JSON file", defaultValue = "/route/RoutesOpenDrive.json")
+    private String routeFileCla;
+
+    /** Network file command line argument. */
+    @Option(names = "--network", description = "Network OpenDRIVE file",
+            defaultValue = "/opendrive/examples/i4Driving_scenario01_urban-straight.xodr")
+    private String networkFileCla;
 
     /**
      * Constructor.
@@ -71,6 +108,13 @@ public final class ExternalSimEmulator
      */
     public static void main(final String... args)
     {
+        ExternalSimEmulator sim = new ExternalSimEmulator();
+        CliUtil.execute(sim, args);
+        demoNetwork = sim.demoCla;
+        realTime = sim.realTimeCla;
+        odFile = sim.odFileCla;
+        routeFile = sim.routeFileCla;
+        networkFile = sim.networkFileCla;
         new Worker().start();
     }
 
@@ -116,17 +160,15 @@ public final class ExternalSimEmulator
                 Set<Integer> awaiting = new LinkedHashSet<>();
                 int msgId = this.messageId++;
                 awaiting.add(msgId);
-                String odFile = DEMO_NETWORK ? "/od/OdMatrix.json" : "/od/OdMatrixOpenDrive.json";
-                String jsonOd = Files.readString(Paths.get(getClass().getResource(odFile).toURI()));
-                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ODMATRIX",
-                        msgId, new Object[] {jsonOd});
+                String jsonOd = Files.readString(getPath(demoNetwork, "/od/OdMatrix.json", odFile));
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ODMATRIX", msgId,
+                        new Object[] {jsonOd});
                 this.responder.send(encodedMessage, ZMQ.DONTWAIT);
                 CategoryLogger.always().debug("ExternalSim sent ODMATRIX message");
 
                 msgId = this.messageId++;
                 awaiting.add(msgId);
-                String routesFile = DEMO_NETWORK ? "/route/Routes.json" : "/route/RoutesOpenDrive.json";
-                String jsonRoutes = Files.readString(Paths.get(getClass().getResource(routesFile).toURI()));
+                String jsonRoutes = Files.readString(getPath(demoNetwork, "/route/Routes.json", routeFile));
                 encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "ROUTES", msgId,
                         new Object[] {jsonRoutes});
                 this.responder.send(encodedMessage, ZMQ.DONTWAIT);
@@ -134,8 +176,8 @@ public final class ExternalSimEmulator
 
                 msgId = this.messageId++;
                 awaiting.add(msgId);
-                Object[] networkPayload = DEMO_NETWORK ? new Object[] {} : new Object[] {Files.readString(Paths
-                        .get(getClass().getResource("/opendrive/examples/i4Driving_scenario01_urban-straight.xodr").toURI()))};
+                Object[] networkPayload =
+                        demoNetwork ? new Object[] {} : new Object[] {Files.readString(getPath(false, "N/A", networkFile))};
                 encodedMessage =
                         Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "NETWORK", msgId, networkPayload);
                 this.responder.send(encodedMessage, ZMQ.DONTWAIT);
@@ -215,7 +257,7 @@ public final class ExternalSimEmulator
 
                             // Start simulation
                             String messageType;
-                            if (REAL_TIME)
+                            if (realTime)
                             {
                                 encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "START",
                                         this.messageId++, new Object[] {});
@@ -309,7 +351,7 @@ public final class ExternalSimEmulator
                 events[3] = Long.MAX_VALUE;
                 CategoryLogger.always().debug("ExternalSim sent COMMAND message");
             }
-            if (DEMO_NETWORK && start != null && now - start > events[4])
+            if (demoNetwork && start != null && now - start > events[4])
             {
                 // Vehicle after Start
                 Object[] payload = new Object[] {"Florian", "Hybrid", Length.instantiateSI(0.152921),
@@ -409,6 +451,24 @@ public final class ExternalSimEmulator
             {
                 ex.printStackTrace();
             }
+        }
+
+        /**
+         * Returns path.
+         * @param demoNetwork whether to use demo
+         * @param demoString string to demo file
+         * @param filepath string to non-demo file
+         * @return path
+         * @throws URISyntaxException
+         */
+        private Path getPath(final boolean demoNetwork, final String demoString, final String filepath)
+                throws URISyntaxException
+        {
+            if (demoNetwork || filepath.startsWith("\\") || filepath.startsWith("/"))
+            {
+                return Paths.get(getClass().getResource(demoNetwork ? demoString : filepath).toURI());
+            }
+            return Paths.get(filepath);
         }
 
         /**
@@ -584,6 +644,7 @@ public final class ExternalSimEmulator
             {
                 this.active = false;
             }
+
         }
 
     }

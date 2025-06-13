@@ -1081,6 +1081,7 @@ public final class OpenDriveParser
         boolean isOnJunction = road.getJunction() != null && !road.getJunction().isBlank() && !road.getJunction().equals("-1");
         if (!isOnJunction
                 && (road.getLink() == null || other == null || other.getElementType().equals(ERoadLinkElementType.JUNCTION)
+                        || (start && other.getContactPoint().equals(EContactPoint.END))
                         || (other.getContactPoint().equals(contactPoint) && other.getElementId().compareTo(road.getId()) > 0)))
         {
             return new Connection(road.getId(), contactPoint, forward);

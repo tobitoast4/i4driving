@@ -37,10 +37,10 @@ public interface Sim0mqSimulation
     /**
      * Returns the node id of the origin represented by the input id. Default is the input id.
      * @param id input id
-     * @param designDirection of the input id, when relevant
+     * @param designDirection of the input id, can be {@code null} when not relevant
      * @return origin node id
      */
-    default String getOrigin(String id, boolean designDirection)
+    default String getOrigin(String id, Boolean designDirection)
     {
         return id;
     }
@@ -48,10 +48,10 @@ public interface Sim0mqSimulation
     /**
      * Returns the node id of the destination represented by the input id. Default is the input id.
      * @param id input id
-     * @param designDirection of the input id, when relevant
+     * @param designDirection of the input id, can be {@code null} when not relevant
      * @return destination node id
      */
-    default String getDestination(String id, boolean designDirection)
+    default String getDestination(String id, Boolean designDirection)
     {
         return id;
     }

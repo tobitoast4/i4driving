@@ -3,6 +3,9 @@ package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
 import org.djutils.base.Identifiable;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 
+/**
+ * Interface for tasks that apply within a channel.
+ */
 public interface ChannelTask extends Identifiable
 {
 

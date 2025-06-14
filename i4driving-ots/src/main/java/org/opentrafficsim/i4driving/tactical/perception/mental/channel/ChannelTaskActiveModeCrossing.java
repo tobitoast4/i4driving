@@ -7,6 +7,7 @@ import org.opentrafficsim.base.OtsRuntimeException;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDuration;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.i4driving.object.ActiveModeCrossing;
 import org.opentrafficsim.i4driving.object.ActiveModeCrossing.ActiveModeArrival;
 import org.opentrafficsim.i4driving.tactical.perception.ActiveModePerception;
@@ -18,6 +19,7 @@ import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable.Underly
  * Task to recognize crossing active mode objects. This looks at downstream locations and always applies to the front area.
  * @author wjschakel
  */
+@Stateless
 public class ChannelTaskActiveModeCrossing implements ChannelTask
 {
 

@@ -12,6 +12,7 @@ import org.opentrafficsim.base.parameters.ParameterTypeSpeed;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable.UnderlyingDistance;
@@ -24,6 +25,7 @@ import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Neighbor
  * queue. This is defined as the maximum of {@code max(0,-dv)/v0 * (1-s/x0)}, where {@code dv} is the approaching speed to a
  * leader, {@code v0} is the desired speed, {@code s} is the distance to the leader and {@code x0} is the look-ahead distance.
  */
+@Stateless
 public class ChannelTaskAcceleration implements ChannelTask
 {
 

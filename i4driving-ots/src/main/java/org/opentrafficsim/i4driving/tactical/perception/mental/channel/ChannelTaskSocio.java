@@ -6,6 +6,7 @@ import java.util.function.Function;
 
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.RelativeLane;
@@ -18,6 +19,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
  * sensitivity.
  * @author wjschakel
  */
+@Stateless
 public class ChannelTaskSocio implements ChannelTask
 {
 

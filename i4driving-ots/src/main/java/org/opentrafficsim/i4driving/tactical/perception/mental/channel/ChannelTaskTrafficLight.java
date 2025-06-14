@@ -8,6 +8,7 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterTypeDuration;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable.UnderlyingDistance;
@@ -20,6 +21,7 @@ import org.opentrafficsim.road.network.lane.object.trafficlight.TrafficLight;
  * and {@code h} is the car-following task parameter that scales it.
  * @author wjschakel
  */
+@Stateless
 public class ChannelTaskTrafficLight implements ChannelTask
 {
 
@@ -31,7 +33,7 @@ public class ChannelTaskTrafficLight implements ChannelTask
 
     /** Standard supplier that supplies a single instance of the traffic light task. */
     public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
-
+    
     /** {@inheritDoc} */
     @Override
     public String getId()

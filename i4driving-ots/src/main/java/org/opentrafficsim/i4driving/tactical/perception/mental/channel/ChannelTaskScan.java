@@ -6,12 +6,14 @@ import java.util.function.Function;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 
 /**
  * Task demand for scanning. This is a constant value.
  * @author wjschakel
  */
+@Stateless
 public class ChannelTaskScan implements ChannelTask
 {
 

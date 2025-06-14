@@ -3,12 +3,14 @@ package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 
 /**
  * Task demand to follow curvature. Not yet supported.
  * @author wjschakel
  */
+@Stateless
 public class ChannelTaskCurve implements ChannelTask
 {
 

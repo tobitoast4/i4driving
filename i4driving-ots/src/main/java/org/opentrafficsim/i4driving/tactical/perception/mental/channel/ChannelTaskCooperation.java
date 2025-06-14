@@ -10,6 +10,7 @@ import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeLength;
 import org.opentrafficsim.base.parameters.ParameterTypes;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable.UnderlyingDistance;
@@ -23,6 +24,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
  * to the leader with lane change desire and {@code x0} is the look-ahead distance.
  * @author wjschakel
  */
+@Stateless
 public final class ChannelTaskCooperation implements ChannelTask
 {
 

@@ -11,6 +11,7 @@ import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeLength;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable.UnderlyingDistance;
@@ -23,6 +24,7 @@ import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Neighbor
  * distance to the leader with signal and {@code x0} is the look-ahead distance.
  * @author wjschakel
  */
+@Stateless
 public class ChannelTaskSignal implements ChannelTask
 {
 

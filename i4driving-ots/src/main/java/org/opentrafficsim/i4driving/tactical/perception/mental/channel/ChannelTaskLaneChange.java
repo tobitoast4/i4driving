@@ -5,6 +5,7 @@ import java.util.function.Function;
 
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 
@@ -13,6 +14,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
  * the relevant direction is equal or larger to the other direction. Otherwise it is 0.
  * @author wjschakel
  */
+@Stateless
 public final class ChannelTaskLaneChange implements ChannelTask
 {
 

@@ -8,6 +8,7 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterTypeDuration;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
@@ -20,6 +21,7 @@ import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Neighbor
  * {@code h} is the car-following task parameter that scales it.
  * @author wjschakel
  */
+@Stateless
 public class ChannelTaskCarFollowing implements ChannelTask
 {
 

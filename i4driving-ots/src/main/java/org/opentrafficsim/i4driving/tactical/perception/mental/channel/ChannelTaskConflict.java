@@ -23,6 +23,7 @@ import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
 import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
@@ -40,6 +41,7 @@ import org.opentrafficsim.road.network.lane.conflict.Conflict;
  * time until the respective conflict of a conflicting vehicle and {@code h} is the car-following task parameter that scales it.
  * @author wjschakel
  */
+@Stateless
 public final class ChannelTaskConflict implements ChannelTask
 {
     /** Look-ahead distance. */

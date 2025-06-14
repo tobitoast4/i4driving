@@ -26,7 +26,7 @@ public class CarFollowingTask extends AbstractTask
 
     /** Car-following task parameter. */
     public static final ParameterTypeDuration HEXP = new ParameterTypeDuration("h_exp",
-            "Exponential decay of car-following task by headway.", Duration.instantiateSI(4.0), NumericConstraint.POSITIVE);
+            "Exponential decay of car-following task by headway.", Duration.instantiateSI(3.83), NumericConstraint.POSITIVE);
 
     /**
      * Constructor.

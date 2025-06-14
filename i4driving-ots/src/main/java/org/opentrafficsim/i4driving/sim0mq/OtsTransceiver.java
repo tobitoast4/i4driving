@@ -35,6 +35,7 @@ import org.djutils.event.EventListener;
 import org.djutils.event.EventType;
 import org.djutils.immutablecollections.ImmutableList;
 import org.djutils.logger.CategoryLogger;
+import org.djutils.serialization.EndianUtil;
 import org.djutils.serialization.SerializationException;
 import org.djutils.serialization.TypedMessage;
 import org.djutils.serialization.serializers.Serializer;
@@ -221,7 +222,7 @@ public class OtsTransceiver
 
         /** GTU that is being externally generated, for which no VEHICLE message should be sent. */
         private String externallyGeneratedGtuId;
-        
+
         /** Ids of GTUs for which plan messages are sent. */
         private Set<String> planGtuIds = new LinkedHashSet<>();
 
@@ -272,9 +273,10 @@ public class OtsTransceiver
                         }
                         request = this.responder.recv(ZMQ.DONTWAIT);
                     }
-                    Sim0MQMessage message = Sim0MQMessage.decode(request);
-                    // Object[] array = TypedMessage.decode(request, OBJECT_DECODERS, EndianUtil.LITTLE_ENDIAN);
-                    // Sim0MQMessage message = new Sim0MQMessage(array, array.length - 8, array[5]);
+                    // Sim0MQMessage message = Sim0MQMessage.decode(request);
+                    Object[] array = TypedMessage.decode(request, OBJECT_DECODERS,
+                            request[11] == 1 ? EndianUtil.BIG_ENDIAN : EndianUtil.LITTLE_ENDIAN);
+                    Sim0MQMessage message = new Sim0MQMessage(array, array.length - 8, array[5]);
                     if ("EXTERNAL".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = message.createObjectArray();
@@ -850,11 +852,12 @@ public class OtsTransceiver
             OrientedPoint2d p = gtu.getLocation();
             String routeId = gtu.getStrategicalPlanner().getRoute().getId();
             Object[] payload = new Object[] {gtuId, "Ots", Length.instantiateSI(p.x), Length.instantiateSI(p.y),
-                    Direction.instantiateSI(p.dirZ), gtu.getSpeed(), gtu.getType().getId(), gtu.getLength(),
-                    gtu.getWidth(), gtu.getFront().dx(), 0, routeId};
-            this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                    OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.client, "VEHICLE",
-                    this.messageId++, payload), ZMQ.DONTWAIT);
+                    Direction.instantiateSI(p.dirZ), gtu.getSpeed(), gtu.getType().getId(), gtu.getLength(), gtu.getWidth(),
+                    gtu.getFront().dx(), 0, routeId};
+            this.responder.send(
+                    Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
+                            OtsTransceiver.this.ots, OtsTransceiver.this.client, "VEHICLE", this.messageId++, payload),
+                    ZMQ.DONTWAIT);
             CategoryLogger.always().debug("[{0.000}s] Ots sent VEHICLE message for GTU {} on route {}",
                     this.simulator.getSimulatorTime(), gtuId, routeId);
         }

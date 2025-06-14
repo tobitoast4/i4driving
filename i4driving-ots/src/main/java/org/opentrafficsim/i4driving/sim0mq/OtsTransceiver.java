@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 import javax.naming.NamingException;
@@ -187,6 +188,9 @@ public class OtsTransceiver
         /** the socket. */
         private ZMQ.Socket responder;
 
+        /** Messages to be sent. */
+        private ConcurrentLinkedQueue<QueuedMessage> queue = new ConcurrentLinkedQueue<>();
+
         /** Next message id. */
         private int messageId = 0;
 
@@ -255,7 +259,8 @@ public class OtsTransceiver
             try
             {
                 // Note on synchronicity and possible dead-locks:
-                // OTS is single-threaded. All changes during the simulation should be scheduled in the simulator.
+                // OTS is single-threaded. All changes during the simulation should be scheduled in the simulator. All messages
+                // sent back from a notification from simulation, should be queued for the Worker thread in the queue.
                 while (!Thread.currentThread().isInterrupted())
                 {
                     // Wait for next request from the client
@@ -263,6 +268,14 @@ public class OtsTransceiver
                     request = this.responder.recv(ZMQ.DONTWAIT);
                     while (request == null)
                     {
+                        QueuedMessage send = this.queue.poll();
+                        while (send != null)
+                        {
+                            this.responder.send(send.message(), ZMQ.DONTWAIT);
+                            CategoryLogger.always().debug("[q] " + send.log());
+                            send = this.queue.poll();
+                        }
+
                         try
                         {
                             // In order to allow resources to go to other processes, we sleep before checking again
@@ -805,7 +818,7 @@ public class OtsTransceiver
                 {
                     return;
                 }
-                sentOperationalPlanMessage(gtuId);
+                sendOperationalPlanMessage(gtuId);
             }
             else if (eventType.equals(Network.GTU_ADD_EVENT))
             {
@@ -813,7 +826,7 @@ public class OtsTransceiver
                 Gtu gtu = this.network.getGTU(gtuId);
                 if (!gtuId.equals(this.externallyGeneratedGtuId))
                 {
-                    this.simulator.scheduleEventNow(this, "sentVehicleMessage", new Object[] {gtu});
+                    this.simulator.scheduleEventNow(this, "sendVehicleMessage", new Object[] {gtu});
                     this.planGtuIds.add(gtuId);
                     this.externallyGeneratedGtuId = null;
                 }
@@ -834,7 +847,7 @@ public class OtsTransceiver
                 this.commandHandlers.remove(gtuId);
                 if (!this.deleteGtuIds.remove(gtuId))
                 {
-                    sentDeleteMessage(gtuId);
+                    sendDeleteMessage(gtuId);
                 }
             }
         }
@@ -846,7 +859,7 @@ public class OtsTransceiver
          * @throws SerializationException
          */
         @SuppressWarnings("unused") // scheduled
-        private void sentVehicleMessage(final Gtu gtu) throws Sim0MQException, SerializationException
+        private void sendVehicleMessage(final Gtu gtu) throws Sim0MQException, SerializationException
         {
             String gtuId = gtu.getId();
             OrientedPoint2d p = gtu.getLocation();
@@ -854,20 +867,20 @@ public class OtsTransceiver
             Object[] payload = new Object[] {gtuId, "Ots", Length.instantiateSI(p.x), Length.instantiateSI(p.y),
                     Direction.instantiateSI(p.dirZ), gtu.getSpeed(), gtu.getType().getId(), gtu.getLength(), gtu.getWidth(),
                     gtu.getFront().dx(), 0, routeId};
-            this.responder.send(
-                    Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
-                            OtsTransceiver.this.ots, OtsTransceiver.this.client, "VEHICLE", this.messageId++, payload),
-                    ZMQ.DONTWAIT);
-            CategoryLogger.always().debug("[{0.000}s] Ots sent VEHICLE message for GTU {} on route {}",
-                    this.simulator.getSimulatorTime(), gtuId, routeId);
+
+            byte[] bytes = Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
+                    OtsTransceiver.this.ots, OtsTransceiver.this.client, "VEHICLE", this.messageId++, payload);
+            String log = String.format("[%.3fs] Ots sent VEHICLE message for GTU %s on route %s",
+                    this.simulator.getSimulatorTime().si, gtuId, routeId);
+            this.queue.add(new QueuedMessage(bytes, log));
         }
 
         /**
-         * Sent operational plan.
+         * Send operational plan.
          * @param gtuId GTU id
          * @throws RemoteException exception
          */
-        private void sentOperationalPlanMessage(final String gtuId) throws RemoteException
+        private void sendOperationalPlanMessage(final String gtuId) throws RemoteException
         {
             Gtu gtu = this.network.getGTU(gtuId);
             OperationalPlan plan = ((ScenarioTacticalPlanner) gtu.getTacticalPlanner()).pullLastIntendedPlan();
@@ -908,14 +921,14 @@ public class OtsTransceiver
             payload[3] = new FloatLengthVector(y);
             payload[4] = new FloatDurationVector(t);
             payload[5] = new FloatAccelerationVector(a);
+
             try
             {
-                this.responder.send(
-                        Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
-                                OtsTransceiver.this.ots, OtsTransceiver.this.client, "PLAN", this.messageId++, payload),
-                        ZMQ.DONTWAIT);
-                CategoryLogger.always().debug("[{0.000}s] Ots sent PLAN message for GTU {}", this.simulator.getSimulatorTime(),
-                        gtuId);
+                byte[] bytes = Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
+                        OtsTransceiver.this.ots, OtsTransceiver.this.client, "PLAN", this.messageId++, payload);
+                String log =
+                        String.format("[%.3fs] Ots sent PLAN message for GTU %s", this.simulator.getSimulatorTime().si, gtuId);
+                this.queue.add(new QueuedMessage(bytes, log));
             }
             catch (Sim0MQException | SerializationException ex)
             {
@@ -924,22 +937,21 @@ public class OtsTransceiver
         }
 
         /**
-         * Sent delete message to external sim.
+         * Send delete message to external sim.
          * @param gtuId GTU id
          * @throws RemoteException exception
          */
-        private void sentDeleteMessage(final String gtuId) throws RemoteException
+        private void sendDeleteMessage(final String gtuId) throws RemoteException
         {
             Object[] payload = new Object[1];
             payload[0] = gtuId;
             try
             {
-                this.responder.send(
-                        Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
-                                OtsTransceiver.this.ots, OtsTransceiver.this.client, "DELETE", this.messageId++, payload),
-                        ZMQ.DONTWAIT);
-                CategoryLogger.always().debug("[{0.000}s] Ots sent DELETE message for GTU {}",
-                        this.simulator.getSimulatorTime(), gtuId);
+                byte[] bytes = Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
+                        OtsTransceiver.this.ots, OtsTransceiver.this.client, "DELETE", this.messageId++, payload);
+                String log = String.format("[%.3fs] Ots sent DELETE message for GTU %s", this.simulator.getSimulatorTime().si,
+                        gtuId);
+                this.queue.add(new QueuedMessage(bytes, log));
             }
             catch (Sim0MQException | SerializationException ex)
             {
@@ -1062,6 +1074,13 @@ public class OtsTransceiver
         {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Queued messages.
+     */
+    private record QueuedMessage(byte[] message, String log)
+    {
     }
 
     /**

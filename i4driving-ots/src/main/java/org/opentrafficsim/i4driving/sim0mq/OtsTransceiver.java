@@ -93,6 +93,7 @@ import org.zeromq.ZMQ;
 import com.google.gson.Gson;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
+import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
 import nl.tudelft.simulation.language.DsolException;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -245,6 +246,12 @@ public class OtsTransceiver
         /** GSON builder to parser JSON strings. */
         private Gson gson = DefaultGson.GSON;
 
+        /** Run until time. */
+        private Duration runUntil;
+
+        /** Message id of the last progress message. */
+        private int progressMessageId;
+
         /** {@inheritDoc} */
         @Override
         public void run()
@@ -272,7 +279,10 @@ public class OtsTransceiver
                         while (send != null)
                         {
                             this.responder.send(send.message(), ZMQ.DONTWAIT);
-                            CategoryLogger.always().debug("[q] " + send.log());
+                            if (send.log() != null)
+                            {
+                                CategoryLogger.always().debug("[q] " + send.log());
+                            }
                             send = this.queue.poll();
                         }
 
@@ -348,21 +358,21 @@ public class OtsTransceiver
                         CategoryLogger.always().debug("Ots received ROUTES message");
                         Object[] payload = message.createObjectArray();
                         this.lastRoutesJson = DefaultGson.GSON.fromJson((String) payload[8], RoutesJson.class);
-                        sentReadyMessage((int) message.createObjectArray()[6]);
+                        sentReadyMessage((int) message.createObjectArray()[6], false);
                     }
                     else if ("ODMATRIX".equals(message.getMessageTypeId()))
                     {
                         CategoryLogger.always().debug("Ots received ODMATRIX message");
                         Object[] payload = message.createObjectArray();
                         this.lastOdJson = DefaultGson.GSON.fromJson((String) payload[8], OdMatrixJson.class);
-                        sentReadyMessage((int) message.createObjectArray()[6]);
+                        sentReadyMessage((int) message.createObjectArray()[6], false);
                     }
                     else if ("NETWORK".equals(message.getMessageTypeId()))
                     {
                         CategoryLogger.always().debug("Ots received NETWORK message");
                         this.lastNetworkMessage = message;
                         setupSimulation();
-                        sentReadyMessage((int) message.createObjectArray()[6]);
+                        sentReadyMessage((int) message.createObjectArray()[6], false);
                     }
                     else if ("START".equals(message.getMessageTypeId()))
                     {
@@ -383,7 +393,7 @@ public class OtsTransceiver
                     {
                         CategoryLogger.always().debug("Ots received RESET message");
                         setupSimulation();
-                        sentReadyMessage((int) message.createObjectArray()[6]);
+                        sentReadyMessage((int) message.createObjectArray()[6], false);
                     }
                     else if ("TERMINATE".equals(message.getMessageTypeId()))
                     {
@@ -398,7 +408,21 @@ public class OtsTransceiver
                         Duration until = (Duration) payload[8];
                         CategoryLogger.always().debug("Ots received PROGRESS message until {}", until);
                         this.simulator.setSpeedFactor(1000.0);
+                        while (this.simulator.isStartingOrRunning())
+                        {
+                            try
+                            {
+                                // Simulator is still stopping from previous step
+                                System.out.println("Waiting for next PROGRESS");
+                                Thread.sleep(3);
+                            }
+                            catch (InterruptedException e)
+                            {
+                            }
+                        }
                         this.simulator.runUpToAndIncluding(until);
+                        this.progressMessageId = (int) payload[6];
+                        this.runUntil = until;
                     }
                     else
                     {
@@ -475,7 +499,7 @@ public class OtsTransceiver
             else
             {
                 spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position, mode, parameterMap);
-                sentReadyMessage((int) payload[6]);
+                sentReadyMessage((int) payload[6], false);
                 if (addToPreStartList)
                 {
                     this.preStartVehiclePayloads.add(payload);
@@ -511,6 +535,17 @@ public class OtsTransceiver
                 Object value = parameterEntry.getValue();
                 setParameterValue(parameter, value, setParameters);
                 parameterMap.put(parameter, value);
+            }
+            /*-
+             * Method notify() needs a GTU inside planGtuIds to send an OperationPlan to ExternalSim. For different modes:
+             *  Ots: register here, spawn (plan is sent), schedule control mode change (without effect)
+             *  Hybrid: spawn, schedule control mode change (starts dead reckoning, plan is sent)
+             *  External: spawn, schedule control mode change (starts dead reckoning, never sent plan)
+             * Note that dead reckoning can only be started after a spawn.
+             */
+            if (mode.toLowerCase().equals("ots"))
+            {
+                this.planGtuIds.add(id);
             }
             this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
             setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
@@ -650,15 +685,24 @@ public class OtsTransceiver
         /**
          * Notifies the external simulator that OTS is ready to start a simulation.
          * @param msgId message id of message that was processed
+         * @param queued whether the message should be queued
          * @throws RemoteException
          */
-        private void sentReadyMessage(final int msgId) throws RemoteException
+        private void sentReadyMessage(final int msgId, final boolean queued) throws RemoteException
         {
             try
             {
-                this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
-                        OtsTransceiver.this.ots, OtsTransceiver.this.client, "READY", this.messageId++, new Object[] {msgId}),
-                        0);
+                byte[] bytes = Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian, OtsTransceiver.this.federation,
+                        OtsTransceiver.this.ots, OtsTransceiver.this.client, "READY", this.messageId++, new Object[] {msgId});
+                if (queued)
+                {
+                    this.queue.add(new QueuedMessage(bytes, String.format("[%.3fs] Ots sent READY message for PROGRESS (%d)",
+                            this.simulator.getSimulatorTime().si, msgId)));
+                }
+                else
+                {
+                    this.responder.send(bytes, ZMQ.DONTWAIT);
+                }
             }
             catch (Sim0MQException | SerializationException ex)
             {
@@ -741,6 +785,7 @@ public class OtsTransceiver
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
             this.simulator = new OtsAnimator("Test animator");
+            this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
 
             String simulationString;
             SimulationType simulationType;
@@ -849,6 +894,15 @@ public class OtsTransceiver
                 {
                     sendDeleteMessage(gtuId);
                 }
+            }
+            else if (eventType.equals(SimulatorInterface.STOP_EVENT))
+            {
+                if (this.runUntil != null && this.simulator.getSimulatorTime().eq(this.runUntil))
+                {
+                    this.runUntil = null;
+                    sentReadyMessage(this.progressMessageId, true);
+                }
+                // if not, stopped for some other reason, perhaps a stop button in the GUI
             }
         }
 

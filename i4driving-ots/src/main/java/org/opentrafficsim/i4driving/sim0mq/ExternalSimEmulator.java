@@ -142,6 +142,12 @@ public final class ExternalSimEmulator
         /** Ego vehicle control. */
         private Map<String, TrajectorySender> trajectorySenders = new LinkedHashMap<>();
 
+        /** Step for PROGRESS message. */
+        private final Duration step = Duration.instantiateSI(3.0);
+
+        /** Step counter. */
+        private int stepNumber = 0;
+
         /** {@inheritDoc} */
         @Override
         public void run()
@@ -247,13 +253,16 @@ public final class ExternalSimEmulator
                         CategoryLogger.always().debug("ExternalSim received READY message");
                         if (awaiting.isEmpty())
                         {
-                            // Trajectory senders
-                            TrajectorySender ts1 = new TrajectorySender("Ego 1", EXTERNAL_FREQUENCY, startX1, startY1, gtuSpeed,
-                                    Acceleration.instantiateSI(0.5), Duration.instantiateSI(5.0));
-                            TrajectorySender ts2 = new TrajectorySender("Ego 2", EXTERNAL_FREQUENCY, startX2, startY2, gtuSpeed,
-                                    Acceleration.instantiateSI(-0.5), Duration.instantiateSI(3.0));
-                            this.trajectorySenders.put("Ego 1", ts1);
-                            this.trajectorySenders.put("Ego 2", ts2);
+                            if (start == null)
+                            {
+                                // Trajectory senders
+                                TrajectorySender ts1 = new TrajectorySender("Ego 1", EXTERNAL_FREQUENCY, startX1, startY1,
+                                        gtuSpeed, Acceleration.instantiateSI(0.5), Duration.instantiateSI(5.0));
+                                TrajectorySender ts2 = new TrajectorySender("Ego 2", EXTERNAL_FREQUENCY, startX2, startY2,
+                                        gtuSpeed, Acceleration.instantiateSI(-0.5), Duration.instantiateSI(3.0));
+                                this.trajectorySenders.put("Ego 1", ts1);
+                                this.trajectorySenders.put("Ego 2", ts2);
+                            }
 
                             // Start simulation
                             String messageType;
@@ -265,12 +274,22 @@ public final class ExternalSimEmulator
                             }
                             else
                             {
+                                Duration until = this.step.times(++this.stepNumber);
+                                if (until.si > 60.0)
+                                {
+                                    break;
+                                }
                                 encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, EXTERNAL_SIM, OTS, "PROGRESS",
-                                        this.messageId++, new Object[] {Duration.instantiateSI(60.0)});
+                                        this.messageId++, new Object[] {until});
                                 messageType = "PROGRESS";
                             }
                             this.responder.send(encodedMessage, 0);
-                            this.trajectorySenders.values().forEach((ts) -> ts.start());
+
+                            if (start == null)
+                            {
+                                this.trajectorySenders.values().forEach((ts) -> ts.start());
+                            }
+
                             CategoryLogger.always().debug("ExternalSim sent {} message", messageType);
                             if (start == null)
                             {

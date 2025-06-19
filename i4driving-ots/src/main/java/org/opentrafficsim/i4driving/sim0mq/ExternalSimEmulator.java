@@ -36,7 +36,7 @@ import picocli.CommandLine.Option;
  * @author wjschakel
  */
 @Command(description = "Emulator of an external simulator", name = "ExternalSim", mixinStandardHelpOptions = true,
-        showDefaultValues = true, version = "20250613")
+        showDefaultValues = true, version = "20250619")
 public final class ExternalSimEmulator
 {
 
@@ -425,13 +425,13 @@ public final class ExternalSimEmulator
             try
             {
                 int msgId;
-                // Fellow
-                // TODO set custom parameters
+                // Fellow (1 with a=1.0m/s/s, 2 without Fuller)
                 Length length = Length.instantiateSI(4.0);
                 Length width = Length.instantiateSI(1.9);
                 Length refToNose = Length.instantiateSI(3.0);
-                Object[] payload = new Object[] {"Fellow 1", "Ots", Length.instantiateSI(20.0), Length.instantiateSI(1.75),
-                        Direction.ZERO, gtuSpeed, "CAR", length, width, refToNose, 0, "A-B"};
+                Object[] payload =
+                        new Object[] {"Fellow 1", "Ots", Length.instantiateSI(20.0), Length.instantiateSI(1.75), Direction.ZERO,
+                                gtuSpeed, "CAR", length, width, refToNose, 1, "a", Acceleration.instantiateSI(1.0), "A-B"};
 
                 msgId = this.messageId++;
                 awaiting.add(msgId);
@@ -440,7 +440,7 @@ public final class ExternalSimEmulator
                         ZMQ.DONTWAIT);
                 CategoryLogger.always().debug("ExternalSim sent VEHICLE message for Fellow 1");
                 payload = new Object[] {"Fellow 2", "Ots", Length.instantiateSI(10.0), Length.instantiateSI(1.75),
-                        Direction.ZERO, gtuSpeed, "CAR", length, width, refToNose, 0, "A-B"};
+                        Direction.ZERO, gtuSpeed, "CAR", length, width, refToNose, 1, "--fullerImplementation", "NONE", "A-B"};
                 msgId = this.messageId++;
                 awaiting.add(msgId);
                 Worker.this.responder.send(

@@ -64,7 +64,8 @@ public final class ChannelTaskLaneChange implements ChannelTask
         {
             double dLeft = perception.getGtu().getParameters().getParameter(DLEFT);
             double dRight = perception.getGtu().getParameters().getParameter(DRIGHT);
-            return this.left ? (dLeft >= dRight ? dLeft : 0.0) : (dRight >= dLeft ? dRight : 0.0);
+            return this.left ? (dLeft >= dRight && dLeft > 0.0 ? dLeft : 0.0)
+                    : (dRight >= dLeft && dRight > 0.0 ? dRight : 0.0);
         }
         catch (ParameterException ex)
         {

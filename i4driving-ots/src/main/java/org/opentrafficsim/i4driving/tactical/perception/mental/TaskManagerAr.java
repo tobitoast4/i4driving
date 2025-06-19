@@ -69,10 +69,10 @@ public class TaskManagerAr implements TaskManager
         primary.setAnticipationReliance(a * primaryTaskDemand * (1.0 - primaryTaskDemand));
         for (Task auxiliary : auxiliaryTasks)
         {
-            double auxiliaryTaskLoad = auxiliary.calculateTaskDemand(perception, gtu, parameters);
-            auxiliary.setTaskDemand(auxiliaryTaskLoad);
+            double auxiliaryTaskDemand = auxiliary.calculateTaskDemand(perception, gtu, parameters);
+            auxiliary.setTaskDemand(auxiliaryTaskDemand);
             // max AR is beta of TD, actual AR approaches 0 as primary TD approaches 0
-            auxiliary.setAnticipationReliance(b * auxiliaryTaskLoad * primaryTaskDemand);
+            auxiliary.setAnticipationReliance(b * auxiliaryTaskDemand * primaryTaskDemand);
         }
     }
     

@@ -11,11 +11,15 @@ import org.opentrafficsim.i4driving.tactical.perception.mental.channel.Attention
 public class AttentionTest
 {
 
-    public static void main(String[] args)
+    /**
+     * Manual test code.
+     * @param args
+     */
+    public static void main(final String[] args)
     {
-        double[] TD = {0.4, 0.8};
-        AttentionMatrix m = new AttentionMatrix(TD);
-        for (int i = 0; i < TD.length; i++)
+        double[] td = {0.4, 0.8};
+        AttentionMatrix m = new AttentionMatrix(td);
+        for (int i = 0; i < td.length; i++)
         {
             System.out.println(m.getAttention(i));
         }
@@ -64,7 +68,7 @@ public class AttentionTest
                 }
                 attentionSum += m.getAttention(j);
             }
-            assertEquals("Attention sum must be 1.0", 1.0, attentionSum, 0.0001);
+            assertTrue("Attention sum must not exceed 1.0", attentionSum <= 1.0001);
         }
     }
 

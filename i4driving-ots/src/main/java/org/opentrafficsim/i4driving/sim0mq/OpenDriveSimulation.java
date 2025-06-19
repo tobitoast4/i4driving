@@ -19,10 +19,10 @@ import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
 import org.opentrafficsim.i4driving.opendrive.OpenDriveParser;
+import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlannerFactory;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.VehicleModel;
-import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
@@ -56,7 +56,7 @@ public class OpenDriveSimulation implements Sim0mqSimulation
     /**
      * Constructor.
      * @param simulator simulator
-     * @param mixinModel mixin model based on command line arguments
+     * @param tacticalFactory tactical planner factory
      * @param networkString OpenDRIVE string
      * @throws JAXBException
      * @throws SAXException
@@ -65,9 +65,9 @@ public class OpenDriveSimulation implements Sim0mqSimulation
      * @throws OtsGeometryException
      * @throws GtuException
      */
-    public OpenDriveSimulation(final OtsSimulatorInterface simulator, final MixinModel mixinModel, final String networkString)
-            throws JAXBException, SAXException, ParserConfigurationException, NetworkException, OtsGeometryException,
-            GtuException
+    public OpenDriveSimulation(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory,
+            final String networkString) throws JAXBException, SAXException, ParserConfigurationException, NetworkException,
+            OtsGeometryException, GtuException
     {
         this.parser = OpenDriveParser.parseFileString(networkString);
         this.network = new RoadNetwork("OtsOpenDriveNetwork", simulator);
@@ -75,7 +75,8 @@ public class OpenDriveSimulation implements Sim0mqSimulation
 
         // Model
         StreamInterface stream = simulator.getModel().getStream("generation");
-        LaneBasedTacticalPlannerFactory<?> tacticalFactory = mixinModel.getTacticalPlanner(stream);
+        tacticalFactory.setStream(stream);
+        // LaneBasedTacticalPlannerFactory<?> tacticalFactory = mixinModel.getTacticalPlanner(stream);
         this.parameterFactory = new ParameterFactorySim0mq();
         this.parameterFactory.addParameter(DefaultsNl.CAR, LmrsParameters.VGAIN, new Speed(35.0, SpeedUnit.KM_PER_HOUR));
 

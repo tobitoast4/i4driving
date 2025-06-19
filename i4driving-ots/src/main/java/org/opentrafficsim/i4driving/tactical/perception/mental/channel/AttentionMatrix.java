@@ -65,6 +65,11 @@ public class AttentionMatrix
         {
             for (int j = 0; j < n; j++)
             {
+                /*
+                 * As we need a left-eigenvector (v*P = 1*v, v=eigenvector, P=matrix), we pre-transpose the data setting at (j,
+                 * i). Note that left-eigenvectors are the transposed right-eigenvectors of matrix'. We do not care for how it
+                 * is transposed.
+                 */
                 if (i == j)
                 {
                     // probability to keep perceiving the same channel is the demand of the channel
@@ -122,8 +127,8 @@ public class AttentionMatrix
         }
 
         /*
-         * Anticipation reliance per channel is the difference between the steady state (actual proportion of time we look at a
-         * channel) and the desired proportion of time to look at a channel.
+         * Anticipation reliance per channel is the difference between the steady state (actual proportion of time we perceive a
+         * channel) and the desired proportion of time to perceive a channel.
          */
         for (int i = 0; i < n; i++)
         {
@@ -154,8 +159,7 @@ public class AttentionMatrix
 
     /**
      * Returns the deterioration of channel <i>i</i>. This is the anticipation reliance for channel <i>i</i>, divided by the
-     * desired level of attention for channel <i>i</i>. This value is an indication of perception delay and update time for the
-     * channel.
+     * desired level of attention for channel <i>i</i>. This value is an indication of perception delay for the channel.
      * <p>
      * If demand for the channel is 0, this method returns 1.
      * @param i index of channel.

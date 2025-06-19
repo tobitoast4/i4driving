@@ -12,6 +12,7 @@ import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeDuration;
+import org.opentrafficsim.base.parameters.ParameterTypeLength;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.core.gtu.GtuException;
@@ -40,6 +41,12 @@ public class ActiveModePerception extends AbstractPerceptionCategory<LaneBasedGt
     /** Over estimation. */
     public static final ParameterTypeDouble OVER_EST = Estimation.OVER_EST;
 
+    /** Look-ahead distance. */
+    public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
+
+    /** Erroneous estimation factor on distance and speed difference. */
+    public static final ParameterTypeDouble EST_FACTOR = ChannelFuller.EST_FACTOR;
+
     /** */
     private static final long serialVersionUID = 20250515L;
 
@@ -60,12 +67,12 @@ public class ActiveModePerception extends AbstractPerceptionCategory<LaneBasedGt
     public PerceptionCollectable<ActiveModeCrossingHeadway, ActiveModeCrossing> getActiveModes() throws ParameterException
     {
         Parameters parameters = getGtu().getParameters();
-        double factor = parameters.getParameter(ChannelFuller.EST_FACTOR);
+        double factor = parameters.getParameter(EST_FACTOR);
         Duration delay = parameters.getParameter(TR);
         Time when = getGtu().getSimulator().getSimulatorAbsTime().minus(delay);
 
         Length position = Try.assign(() -> getGtu().getReferencePosition().position(), "No valid reference position.");
-        Length maxDistance = parameters.getParameter(ParameterTypes.LOOKAHEAD);
+        Length maxDistance = parameters.getParameter(LOOKAHEAD);
 
         return new LaneBasedObjectIterable<ActiveModeCrossingHeadway, ActiveModeCrossing>(getGtu(), ActiveModeCrossing.class,
                 ActiveModePerception.this.getPerception().getLaneStructure().getRootRecord(RelativeLane.CURRENT), position,
@@ -139,7 +146,7 @@ public class ActiveModePerception extends AbstractPerceptionCategory<LaneBasedGt
         @Override
         public ObjectType getObjectType()
         {
-            return ObjectType.DISTANCEONLY;
+            return ObjectType.OBJECT;
         }
 
         @Override

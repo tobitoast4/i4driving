@@ -1,6 +1,8 @@
 package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
 
 import java.util.Iterator;
+import java.util.Set;
+import java.util.function.Function;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.opentrafficsim.base.OtsRuntimeException;
@@ -25,6 +27,12 @@ public class ChannelTaskActiveModeCrossing implements ChannelTask
 
     /** Car-following task parameter. */
     public static final ParameterTypeDuration HEXP = CarFollowingTask.HEXP;
+    
+    /** Default set that is returned by the supplier. */
+    private static final Set<ChannelTask> SET = Set.of(new ChannelTaskActiveModeCrossing());
+
+    /** Standard supplier that supplies a single instance of the active mode crossing task. */
+    public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
     
     @Override
     public String getId()

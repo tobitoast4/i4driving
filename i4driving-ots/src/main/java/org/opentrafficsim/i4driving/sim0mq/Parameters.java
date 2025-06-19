@@ -9,18 +9,24 @@ import org.djutils.exceptions.Throw;
 import org.djutils.reflection.ClassUtil;
 import org.opentrafficsim.base.parameters.ParameterType;
 import org.opentrafficsim.base.parameters.ParameterTypes;
+import org.opentrafficsim.i4driving.tactical.CarFollowingNgoduy;
+import org.opentrafficsim.i4driving.tactical.IdmModified;
+import org.opentrafficsim.i4driving.tactical.perception.AdaptationUpdateTime;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.TaskManagerAr;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelFuller;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskConflict;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskScan;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskSignal;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 
 /**
  * Supported parameters.
+ * @author wjschakel
  */
 public final class Parameters
 {
@@ -75,16 +81,36 @@ public final class Parameters
     static
     {
         add(ParameterTypes.class);
+        MAP.put("x0", ParameterTypes.LOOKAHEAD);
         add(LmrsParameters.class);
         add(Fuller.class);
         add(TaskManagerAr.class);
         add(CarFollowingTask.class);
         add(AdaptationHeadway.class);
         add(AdaptationSpeed.class);
+        add(AdaptationSituationalAwareness.class);
+        add(AdaptationUpdateTime.class);
         add(ChannelFuller.class);
         add(ChannelTaskScan.class);
         add(ChannelTaskSignal.class);
-        MAP.put("x0", ParameterTypes.LOOKAHEAD);
+        add(ChannelTaskConflict.class);
+        add(IdmModified.class);
+        add(CarFollowingNgoduy.class);
+        // remove status variables and old parameters
+        MAP.remove("ATT");
+        MAP.remove("f_est");
+        MAP.remove("TS");
+        MAP.remove("SA");
+        MAP.remove("dLaneChange");
+        MAP.remove("dLeft");
+        MAP.remove("dRight");
+        MAP.remove("perception");
+        MAP.remove("lcDur");
+        MAP.remove("Look-ahead"); // x0 instead
+        MAP.remove("Look-back old");
+        MAP.remove("Look-back");
+        MAP.remove("T");
+        MAP.remove("dt");
     }
 
     /**

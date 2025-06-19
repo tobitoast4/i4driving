@@ -9,7 +9,6 @@ import org.djunits.value.vdouble.scalar.Length;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeLength;
-import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
 import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
@@ -32,8 +31,8 @@ public class ChannelTaskSignal implements ChannelTask
     public static final ParameterTypeDouble TDSIGNAL =
             new ParameterTypeDouble("td_signal", "Signal task demand", 0.2, NumericConstraint.POSITIVEZERO);
 
-    /** Look-ahead distance. */
-    public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
+    /** Distance discount range. */
+    public static final ParameterTypeLength X0_D = ChannelMental.X0_D;
 
     /** Standard set of left, right and front signal task. */
     private static final Set<ChannelTask> SET =
@@ -129,7 +128,7 @@ public class ChannelTaskSignal implements ChannelTask
             UnderlyingDistance<LaneBasedGtu> leader = leaders.next();
             if (this.predicate.test(leader.getObject()))
             {
-                Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(LOOKAHEAD),
+                Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(X0_D),
                         "Parameter LOOKAHEAD not present.");
                 double tdSignal = Try.assign(() -> perception.getGtu().getParameters().getParameter(TDSIGNAL),
                         "Parameter td_signal not available.");

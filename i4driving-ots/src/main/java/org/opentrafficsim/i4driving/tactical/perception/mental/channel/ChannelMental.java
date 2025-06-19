@@ -1,6 +1,9 @@
 package org.opentrafficsim.i4driving.tactical.perception.mental.channel;
 
 import org.djunits.value.vdouble.scalar.Duration;
+import org.djunits.value.vdouble.scalar.Length;
+import org.opentrafficsim.base.parameters.ParameterTypeLength;
+import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Mental;
 
 /**
@@ -9,6 +12,10 @@ import org.opentrafficsim.road.gtu.lane.perception.mental.Mental;
  */
 public interface ChannelMental extends Mental
 {
+
+    /** Distance discount. */
+    ParameterTypeLength X0_D = new ParameterTypeLength("x0_d", "Distance discount range",
+            Length.instantiateSI(126.77), NumericConstraint.POSITIVEZERO);
 
     /**
      * Returns the perception delay belonging to a perception channel.
@@ -23,7 +30,7 @@ public interface ChannelMental extends Mental
      * @return level of attention of a perception channel.
      */
     double getAttention(Object obj);
-    
+
     /**
      * Maps an object to a channel key.
      * @param obj object.

@@ -9,7 +9,6 @@ import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeLength;
-import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.i4driving.Stateless;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
@@ -28,8 +27,8 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 public final class ChannelTaskCooperation implements ChannelTask
 {
 
-    /** Look-ahead distance. */
-    public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
+    /** Distance discount range. */
+    public static final ParameterTypeLength X0_D = ChannelMental.X0_D;
 
     /** Standard set of left and right cooperation task. */
     private static final Set<ChannelTask> SET = Set.of(new ChannelTaskCooperation(true), new ChannelTaskCooperation(false));
@@ -72,11 +71,15 @@ public final class ChannelTaskCooperation implements ChannelTask
         Iterator<UnderlyingDistance<LaneBasedGtu>> leaders =
                 neighbors.getLeaders(this.left ? RelativeLane.LEFT : RelativeLane.RIGHT).underlyingWithDistance();
         ParameterTypeDouble param = this.left ? LmrsParameters.DRIGHT : LmrsParameters.DLEFT;
-        Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(LOOKAHEAD), "Parameter x0 not present.");
+        Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(X0_D), "Parameter x0_d not present.");
         double dMax = 0.0;
         while (leaders.hasNext())
         {
             UnderlyingDistance<LaneBasedGtu> leader = leaders.next();
+            if (leader.getDistance().gt(x0))
+            {
+                break;
+            }
             double d;
             try
             {
@@ -88,7 +91,7 @@ public final class ChannelTaskCooperation implements ChannelTask
                 // leader does not provide lane change desire, ignore
             }
         }
-        return dMax;
+        return Math.min(0.999, dMax);
     }
 
 }

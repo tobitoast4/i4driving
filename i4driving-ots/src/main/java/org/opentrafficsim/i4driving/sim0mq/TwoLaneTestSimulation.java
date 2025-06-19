@@ -14,20 +14,23 @@ import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.network.LateralDirectionality;
 import org.opentrafficsim.core.network.LinkType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
+import org.opentrafficsim.i4driving.object.LocalDistraction;
+import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlannerFactory;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.VehicleModel;
-import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.factory.LaneFactory;
 import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.road.network.lane.LaneType;
 import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
@@ -56,12 +59,12 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
     /**
      * Constructor.
      * @param simulator simulator
-     * @param mixinModel model settings
+     * @param tacticalFactory tactical planner factory
      * @throws NetworkException
      * @throws OtsGeometryException
      * @throws GtuException
      */
-    public TwoLaneTestSimulation(final OtsSimulatorInterface simulator, final MixinModel mixinModel)
+    public TwoLaneTestSimulation(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
             throws GtuException, OtsGeometryException, NetworkException
     {
         // Create Road-Network
@@ -92,7 +95,8 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
 
         // Model
         StreamInterface stream = simulator.getModel().getStream("generation");
-        LaneBasedTacticalPlannerFactory<?> tacticalFactory = mixinModel.getTacticalPlanner(stream);
+        tacticalFactory.setStream(stream);
+        // LaneBasedTacticalPlannerFactory<?> tacticalFactory = mixinModel.getTacticalPlanner(stream);
         this.parameterFactory = new ParameterFactorySim0mq();
         this.parameterFactory.addParameter(DefaultsNl.CAR, LmrsParameters.VGAIN, new Speed(35.0, SpeedUnit.KM_PER_HOUR));
 
@@ -113,9 +117,13 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
         };
 
         // Destroy GTUs when leaving simulation
+        Length pos = Length.instantiateSI(200.0);
+        Length length = Length.instantiateSI(30.0);
         for (Lane lane : lanesAB)
         {
             new SinkDetector(lane, lane.getLength().minus(Length.instantiateSI(50.0)), simulator, DefaultsRoadNl.ROAD_USERS);
+            new LocalDistraction(lane.getId() + "_distraction", new LanePosition(lane, pos), length, 0.5,
+                    LateralDirectionality.RIGHT);
         }
 
     }

@@ -24,7 +24,7 @@ public class AdaptationUpdateTime implements BehavioralAdaptation
 
     /** Minimum update time. */
     public static final ParameterTypeDuration DT_MIN = new ParameterTypeDuration("dt_min", "Minimum update time.",
-            Duration.instantiateSI(0.0), NumericConstraint.POSITIVEZERO)
+            Duration.instantiateSI(0.3), NumericConstraint.POSITIVEZERO)
     {
         /** */
         private static final long serialVersionUID = 20250616L;
@@ -40,7 +40,7 @@ public class AdaptationUpdateTime implements BehavioralAdaptation
 
     /** Minimum update time. */
     public static final ParameterTypeDuration DT_MAX =
-            new ParameterTypeDuration("dt_max", "Maximum update time.", Duration.instantiateSI(3.0), NumericConstraint.POSITIVE)
+            new ParameterTypeDuration("dt_max", "Maximum update time.", Duration.instantiateSI(2.0), NumericConstraint.POSITIVE)
             {
                 /** */
                 private static final long serialVersionUID = 20250616L;

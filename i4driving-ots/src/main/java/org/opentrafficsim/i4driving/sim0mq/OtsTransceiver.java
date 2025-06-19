@@ -132,7 +132,7 @@ public class OtsTransceiver
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "true", negatable = true) // false=default
+    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true) // false=default
     private boolean showGui;
 
     /** ID prefix of generated GTUs. */

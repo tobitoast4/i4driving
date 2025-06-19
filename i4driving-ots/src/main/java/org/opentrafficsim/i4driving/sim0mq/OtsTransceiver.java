@@ -2,6 +2,8 @@ package org.opentrafficsim.i4driving.sim0mq;
 
 import java.awt.Dimension;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,6 +74,7 @@ import org.opentrafficsim.i4driving.object.ActiveModeCrossing;
 import org.opentrafficsim.i4driving.tactical.CommandsHandler;
 import org.opentrafficsim.i4driving.tactical.NetworkUtil;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
+import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlannerFactory;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
@@ -104,7 +107,7 @@ import picocli.CommandLine.Option;
  * @author wjschakel
  */
 @Command(description = "OTS Transceiver for co-simulation", name = "OTS", mixinStandardHelpOptions = true,
-        showDefaultValues = true, version = "20250406")
+        showDefaultValues = true, version = "20250619")
 public class OtsTransceiver
 {
 
@@ -129,7 +132,7 @@ public class OtsTransceiver
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true) // false=default
+    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "true", negatable = true) // false=default
     private boolean showGui;
 
     /** ID prefix of generated GTUs. */
@@ -138,7 +141,7 @@ public class OtsTransceiver
 
     /** Mixed in model arguments. */
     @Mixin
-    private MixinModel mixinModel = new MixinModel();
+    private ScenarioTacticalPlannerFactory tacticalFactory = new ScenarioTacticalPlannerFactory();
 
     /**
      * Constructor.
@@ -432,7 +435,8 @@ public class OtsTransceiver
             }
             catch (Sim0MQException | SerializationException | NumberFormatException | GtuException | OtsGeometryException
                     | NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException
-                    | NamingException | ParameterException | JAXBException | SAXException | ParserConfigurationException e)
+                    | NamingException | ParameterException | JAXBException | SAXException | ParserConfigurationException
+                    | IllegalAccessException | InvocationTargetException e)
             {
                 e.printStackTrace();
             }
@@ -451,11 +455,13 @@ public class OtsTransceiver
          * @throws OtsGeometryException exception
          * @throws NetworkException exception
          * @throws RemoteException exception
+         * @throws InvocationTargetException if a parameter cannot be set
+         * @throws IllegalAccessException if a parameter cannot be set
          */
-        private void generateVehicle(final Object[] payload, final boolean addToPreStartList)
-                throws GtuException, OtsGeometryException, NetworkException, RemoteException
+        private void generateVehicle(final Object[] payload, final boolean addToPreStartList) throws GtuException,
+                OtsGeometryException, NetworkException, RemoteException, IllegalAccessException, InvocationTargetException
         {
-            boolean running = this.simulator != null && this.simulator.isStartingOrRunning();
+            boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
             int index = 8;
             String id = (String) payload[index++];
             String mode = (String) payload[index++];
@@ -519,22 +525,67 @@ public class OtsTransceiver
          * @param position position
          * @param mode mode
          * @param parameterMap map of parameters
+         * @param <T> helper casting type
          * @throws GtuException when initial GTU values are not correct
          * @throws OtsGeometryException when the initial path is wrong
          * @throws NetworkException when the GTU cannot be placed on the given position
+         * @throws InvocationTargetException if a parameter cannot be set
+         * @throws IllegalAccessException if a parameter cannot be set
          */
-        private void spawnGtu(final String id, final GtuType gtuType, final Length vehicleLength, final Length vehicleWidth,
-                final Length refToNose, final Route route, final Speed initSpeed, final OrientedPoint2d position,
-                final String mode, final Map<String, Object> parameterMap)
-                throws GtuException, OtsGeometryException, NetworkException
+        @SuppressWarnings("checkstyle:parameternumber")
+        private <T extends Enum<T>> void spawnGtu(final String id, final GtuType gtuType, final Length vehicleLength,
+                final Length vehicleWidth, final Length refToNose, final Route route, final Speed initSpeed,
+                final OrientedPoint2d position, final String mode, final Map<String, Object> parameterMap)
+                throws GtuException, OtsGeometryException, NetworkException, IllegalAccessException, InvocationTargetException
         {
             Set<ParameterType<?>> setParameters = new LinkedHashSet<>();
             for (Entry<String, Object> parameterEntry : parameterMap.entrySet())
             {
                 String parameter = parameterEntry.getKey();
                 Object value = parameterEntry.getValue();
-                setParameterValue(parameter, value, setParameters);
-                parameterMap.put(parameter, value);
+                boolean singleShot = false;
+                if (parameter.startsWith("--"))
+                {
+                    if (!singleShot)
+                    {
+                        OtsTransceiver.this.tacticalFactory.setSingleShotMode();
+                        singleShot = true;
+                    }
+                    String methodName = "set" + parameter.substring(2).toLowerCase();
+                    for (Method method : ScenarioTacticalPlannerFactory.class.getMethods())
+                    {
+                        if (method.getName().toLowerCase().equals(methodName) && method.getParameterTypes().length == 1)
+                        {
+                            if (method.getParameterTypes()[0].equals(boolean.class))
+                            {
+                                method.invoke(OtsTransceiver.this.tacticalFactory, (boolean) value);
+                            }
+                            else if (method.getParameterTypes()[0].equals(int.class))
+                            {
+                                method.invoke(OtsTransceiver.this.tacticalFactory, (int) value);
+                            }
+                            else if (method.getParameterTypes()[0].equals(double.class))
+                            {
+                                method.invoke(OtsTransceiver.this.tacticalFactory, (double) value);
+                            }
+                            else if (method.getParameterTypes()[0].isEnum())
+                            {
+                                @SuppressWarnings("unchecked")
+                                Class<T> clazz = (Class<T>) method.getParameterTypes()[0];
+                                method.invoke(OtsTransceiver.this.tacticalFactory, Enum.valueOf(clazz, (String) value));
+                            }
+                            else
+                            {
+                                CategoryLogger.always().warn("Unable to set parameter " + parameter);
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    setParameterValue(parameter, value, setParameters);
+                }
             }
             /*-
              * Method notify() needs a GTU inside planGtuIds to send an OperationPlan to ExternalSim. For different modes:
@@ -548,6 +599,7 @@ public class OtsTransceiver
                 this.planGtuIds.add(id);
             }
             this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
+            OtsTransceiver.this.tacticalFactory.resetMode();
             setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
             scheduledChangeControlMode(id, mode);
         }
@@ -768,13 +820,15 @@ public class OtsTransceiver
          * @throws OtsDrawingException exception
          * @throws SimRuntimeException exception
          * @throws NamingException exception
-         * @throws ParserConfigurationException
-         * @throws SAXException
-         * @throws JAXBException
+         * @throws ParserConfigurationException exception
+         * @throws SAXException exception
+         * @throws JAXBException exception
+         * @throws InvocationTargetException if a parameter cannot be set
+         * @throws IllegalAccessException if a parameter cannot be set
          */
         private void setupSimulation() throws GtuException, OtsGeometryException, NetworkException, RemoteException,
                 DsolException, OtsDrawingException, SimRuntimeException, NamingException, ParameterException, JAXBException,
-                SAXException, ParserConfigurationException
+                SAXException, ParserConfigurationException, IllegalAccessException, InvocationTargetException
         {
             stopSimulation();
 
@@ -1077,14 +1131,14 @@ public class OtsTransceiver
             {
                 if (this.simulationString == null)
                 {
-                    this.simulation = new TwoLaneTestSimulation(getSimulator(), OtsTransceiver.this.mixinModel);
+                    this.simulation = new TwoLaneTestSimulation(getSimulator(), OtsTransceiver.this.tacticalFactory);
                 }
                 else
                 {
                     switch (this.simulationType)
                     {
                         case OPEN_DRIVE:
-                            this.simulation = new OpenDriveSimulation(this.simulator, OtsTransceiver.this.mixinModel,
+                            this.simulation = new OpenDriveSimulation(this.simulator, OtsTransceiver.this.tacticalFactory,
                                     this.simulationString);
                             break;
                         case FOSIM:
@@ -1132,6 +1186,8 @@ public class OtsTransceiver
 
     /**
      * Queued messages.
+     * @param message bytes of the message
+     * @param log log entry to print when the message is sent
      */
     private record QueuedMessage(byte[] message, String log)
     {

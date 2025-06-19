@@ -11,20 +11,18 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 
-import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
-import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.exceptions.Try;
 import org.djutils.immutablecollections.ImmutableSet;
 import org.opentrafficsim.base.parameters.ParameterTypeDuration;
 import org.opentrafficsim.base.parameters.ParameterTypeLength;
 import org.opentrafficsim.base.parameters.ParameterTypes;
+import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
 import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.i4driving.Stateless;
-import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable;
@@ -47,11 +45,15 @@ public final class ChannelTaskConflict implements ChannelTask
     /** Look-ahead distance. */
     public static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
 
-    /** Car-following task parameter. */
-    public static final ParameterTypeDuration HEXP = CarFollowingTask.HEXP;
+    /** Ego decay parameter. */
+    public static final ParameterTypeDuration HEGO =
+            new ParameterTypeDuration("h_ego", "Exponential decay of conflict task by ego approaching time.",
+                    Duration.instantiateSI(3.83), NumericConstraint.POSITIVEZERO);
 
-    /** We need to see whether we need to account for acceleration. */
-    private static final boolean USE_ACCELERATION = false;
+    /** Conflicting decay parameter. */
+    public static final ParameterTypeDuration HCONF =
+            new ParameterTypeDuration("h_conf", "Exponential decay of conflict task by conflicting approaching time.",
+                    Duration.instantiateSI(3.83), NumericConstraint.POSITIVEZERO);
 
     /** Comparator for underlying objects. */
     // TODO: remove this and its use once UnderlyingDistance implements Comparable
@@ -125,9 +127,8 @@ public final class ChannelTaskConflict implements ChannelTask
     @Override
     public double getDemand(final LanePerception perception)
     {
-        // TODO: redefine based on data analysis, and also change in ChannelTaskActiveModeCrossing
+        // In the following, 'headway' means time until static conflict is reached, i.e. approaching time.
 
-        // In the following, 'headway' means time until static conflict is reached, possibly with acceleration.
         // Get minimum headway of first vehicle on each conflict in the group
         Duration conflictHeadway = Duration.POSITIVE_INFINITY;
         LaneBasedGtu gtu = Try.assign(() -> perception.getGtu(), "Gtu not initialized.");
@@ -139,43 +140,22 @@ public final class ChannelTaskConflict implements ChannelTask
             if (!conflictingGtus.isEmpty())
             {
                 HeadwayGtu conflictingGtu = conflictingGtus.first();
-                if (USE_ACCELERATION)
-                {
-                    Acceleration a = Try.assign(() -> conflictingGtu.getParameters().getParameter(ParameterTypes.A),
-                            "No parameter A in conflicting GTU.");
-                    conflictHeadway = ttcFree(conflictingGtu.getDistance(), conflictingGtu.getSpeed(),
-                            conflictingGtu.getDesiredSpeed(), a);
-                }
-                else
-                {
-                    conflictHeadway = Duration.min(conflictHeadway, conflictingGtu.isParallel() ? Duration.ZERO
-                            : conflictingGtu.getDistance().divide(conflictingGtu.getSpeed()));
-                }
+                conflictHeadway = Duration.min(conflictHeadway, conflictingGtu.isParallel() ? Duration.ZERO
+                        : conflictingGtu.getDistance().divide(conflictingGtu.getSpeed()));
             }
         }
-        // Get maximum of own and minimum conflicting headway to represent urgency
+
+        // Get own approaching time
         EgoPerception<?, ?> ego =
                 Try.assign(() -> perception.getPerceptionCategory(EgoPerception.class), "EgoPerception not present.");
-        Duration headway;
-        if (USE_ACCELERATION)
-        {
-            Acceleration a = Try.assign(() -> perception.getGtu().getParameters().getParameter(ParameterTypes.A),
-                    "No parameter A in GTU.");
-            Speed desiredSpeed = Try.assign(() -> perception.getGtu().getDesiredSpeed(), "GTU not initialized.");
-            Duration egoHeadway = ttcFree(this.conflicts.first().getDistance(), ego.getSpeed(), desiredSpeed, a);
-            headway = Duration.max(conflictHeadway, egoHeadway);
-        }
-        else
-        {
-            headway = Duration.max(conflictHeadway, this.conflicts.first().getDistance().divide(ego.getSpeed()));
-            if (headway.eq0())
-            {
-                return 0.999;
-            }
-        }
-        // Scale by h in exponential function
-        Duration h = Try.assign(() -> perception.getGtu().getParameters().getParameter(HEXP), "Parameter h_exp not present.");
-        return Math.exp(-headway.si / h.si);
+        Duration egoHeadway = this.conflicts.first().getDistance().divide(ego.getSpeed());
+
+        // Find least critical
+        Duration hEgo =
+                Try.assign(() -> perception.getGtu().getParameters().getParameter(HEGO), "Parameter h_ego not present.");
+        Duration hConf =
+                Try.assign(() -> perception.getGtu().getParameters().getParameter(HCONF), "Parameter h_conf not present.");
+        return Math.min(0.999, Math.exp(-Math.max(egoHeadway.si / hEgo.si, conflictHeadway.si / hConf.si)));
     }
 
     /**
@@ -321,32 +301,6 @@ public final class ChannelTaskConflict implements ChannelTask
                 }
             }
         }
-    }
-
-    /**
-     * Returns the duration until distance is covered assuming constant acceleration up to the desired speed.
-     * @param distance distance.
-     * @param speed initial speed.
-     * @param desiredSpeed desired speed.
-     * @param acceleration (assumed) acceleration.
-     * @return time until distance is covered.
-     */
-    private static Duration ttcFree(final Length distance, final Speed speed, final Speed desiredSpeed,
-            final Acceleration acceleration)
-    {
-        if (speed.gt(desiredSpeed))
-        {
-            return distance.divide(speed);
-        }
-        double tAccelerate = (desiredSpeed.si - speed.si) / acceleration.si;
-        double dxAccelerate = speed.si * tAccelerate + .5 * acceleration.si * tAccelerate * tAccelerate;
-        if (dxAccelerate <= distance.si)
-        {
-            double dxRemain = distance.si - dxAccelerate;
-            return Duration.instantiateSI(tAccelerate + dxRemain / desiredSpeed.si);
-        }
-        return Duration.instantiateSI(
-                (Math.sqrt(speed.si * speed.si + 2.0 * acceleration.si + distance.si) - speed.si) / acceleration.si);
     }
 
 }

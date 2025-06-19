@@ -61,6 +61,7 @@ import picocli.CommandLine.Option;
 /**
  * Tactical planner factory supplier that is based on command line settings.
  */
+@Deprecated // use ScenarioTacticalPlannerFactory instead
 public class MixinModel
 {
 

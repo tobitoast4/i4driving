@@ -14,6 +14,7 @@ import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeDuration;
 import org.opentrafficsim.base.parameters.Parameters;
+import org.opentrafficsim.base.parameters.constraint.DualBound;
 import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
@@ -42,39 +43,42 @@ public class ChannelFuller implements ChannelMental
     public static final ParameterTypeDouble EST_FACTOR = new ParameterTypeDouble("f_est",
             "Erroneous estimation factor on distance and speed difference.", 1.0, NumericConstraint.POSITIVE);
 
+    /** Level of attention, which is the maximum in the steady state of the Attention Matrix. */
+    public static final ParameterTypeDouble ATT =
+            new ParameterTypeDouble("ATT", "Attention (maximum of all channels).", 0.0, DualBound.UNITINTERVAL);
+
     /** Minimum perception delay. */
-    public static final ParameterTypeDuration TAU_MIN =
-            new ParameterTypeDuration("tau_min", "Minimum perception delay", Duration.ZERO, NumericConstraint.POSITIVEZERO)
-            {
-                /** */
-                private static final long serialVersionUID = 20240919L;
+    public static final ParameterTypeDuration TAU_MIN = new ParameterTypeDuration("tau_min", "Minimum perception delay",
+            Duration.instantiateSI(0.32), NumericConstraint.POSITIVEZERO)
+    {
+        /** */
+        private static final long serialVersionUID = 20240919L;
 
-                /** {@inheritDoc} */
-                @Override
-                public void check(final Duration value, final Parameters params) throws ParameterException
-                {
-                    Throw.when(params.contains(TAU_MAX) && params.getParameter(TAU_MAX).lt(value), ParameterException.class,
-                            "Value of tau_max less smaller than tau_min.");
+        /** {@inheritDoc} */
+        @Override
+        public void check(final Duration value, final Parameters params) throws ParameterException
+        {
+            Throw.when(params.contains(TAU_MAX) && params.getParameter(TAU_MAX).lt(value), ParameterException.class,
+                    "Value of tau_max less smaller than tau_min.");
 
-                }
-            };
+        }
+    };
 
     /** Maximum perception delay. */
-    public static final ParameterTypeDuration TAU_MAX =
-            new ParameterTypeDuration("tau_max", "Maximum perception delay", Duration.ONE, NumericConstraint.POSITIVEZERO)
-            {
-                /** */
-                private static final long serialVersionUID = 20240919L;
+    public static final ParameterTypeDuration TAU_MAX = new ParameterTypeDuration("tau_max", "Maximum perception delay",
+            Duration.instantiateSI(0.32 + 0.87), NumericConstraint.POSITIVE)
+    {
+        /** */
+        private static final long serialVersionUID = 20240919L;
 
-                /** {@inheritDoc} */
-                @Override
-                public void check(final Duration value, final Parameters params) throws ParameterException
-                {
-                    Throw.when(params.contains(TAU_MIN) && params.getParameter(TAU_MIN).gt(value), ParameterException.class,
-                            "Value of tau_min is greater than tau_max.");
-
-                }
-            };
+        /** {@inheritDoc} */
+        @Override
+        public void check(final Duration value, final Parameters params) throws ParameterException
+        {
+            Throw.when(params.contains(TAU_MIN) && params.getParameter(TAU_MIN).gt(value), ParameterException.class,
+                    "Value of tau_min is greater than tau_max.");
+        }
+    };
 
     /** Task suppliers. */
     private Set<Function<LanePerception, Set<ChannelTask>>> taskSuppliers = new LinkedHashSet<>();
@@ -117,6 +121,8 @@ public class ChannelFuller implements ChannelMental
             for (ChannelTask task : taskFunction.apply(perception)) // if applicable will (re)map objects to channel keys
             {
                 double td = task.getDemand(perception);
+                Throw.when(td >= 1.0, GtuException.class,
+                        "Task %s produced task demand that is greater than, or equal to, 1.0.", task.getId());
                 channelTaskDemand.merge(task.getChannel(), td, Math::max); // map to max value
             }
         }
@@ -137,6 +143,7 @@ public class ChannelFuller implements ChannelMental
         AttentionMatrix matrix = new AttentionMatrix(tdArray);
 
         // Determine attention and perception delay per channel
+        double maxAttention = 0.0;
         this.perceptionDelay.clear();
         this.attention.clear();
         Parameters parameters = perception.getGtu().getParameters();
@@ -148,13 +155,16 @@ public class ChannelFuller implements ChannelMental
             index = entry.getValue();
             this.perceptionDelay.put(entry.getKey(),
                     Duration.interpolate(tauMin, tauMax, matrix.getDeterioration(index)).divide(tc));
-            this.attention.put(entry.getKey(), matrix.getAttention(index));
+            double att = matrix.getAttention(index);
+            maxAttention = Double.max(maxAttention, att);
+            this.attention.put(entry.getKey(), att);
         }
 
         // Calculate task saturation, perception errors, and apply behavioral adaptations
         double ts = sumTaskDemand / tc;
         parameters.setParameter(TS, ts);
         parameters.setParameter(EST_FACTOR, Math.pow(Math.max(ts, 1.0), parameters.getParameter(Estimation.OVER_EST)));
+        parameters.setParameter(ATT, maxAttention);
         for (BehavioralAdaptation behavioralAdapatation : this.behavioralAdapatations)
         {
             behavioralAdapatation.adapt(parameters, ts);

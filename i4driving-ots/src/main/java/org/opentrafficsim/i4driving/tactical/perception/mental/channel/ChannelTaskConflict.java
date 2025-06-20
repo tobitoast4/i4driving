@@ -48,12 +48,12 @@ public final class ChannelTaskConflict implements ChannelTask
     /** Ego decay parameter. */
     public static final ParameterTypeDuration HEGO =
             new ParameterTypeDuration("h_ego", "Exponential decay of conflict task by ego approaching time.",
-                    Duration.instantiateSI(3.83), NumericConstraint.POSITIVEZERO);
+                    Duration.instantiateSI(5.05), NumericConstraint.POSITIVEZERO);
 
     /** Conflicting decay parameter. */
     public static final ParameterTypeDuration HCONF =
             new ParameterTypeDuration("h_conf", "Exponential decay of conflict task by conflicting approaching time.",
-                    Duration.instantiateSI(3.83), NumericConstraint.POSITIVEZERO);
+                    Duration.instantiateSI(5.40), NumericConstraint.POSITIVEZERO);
 
     /** Comparator for underlying objects. */
     // TODO: remove this and its use once UnderlyingDistance implements Comparable
@@ -155,7 +155,7 @@ public final class ChannelTaskConflict implements ChannelTask
                 Try.assign(() -> perception.getGtu().getParameters().getParameter(HEGO), "Parameter h_ego not present.");
         Duration hConf =
                 Try.assign(() -> perception.getGtu().getParameters().getParameter(HCONF), "Parameter h_conf not present.");
-        return Math.min(0.999, Math.exp(-Math.max(egoHeadway.si / hEgo.si, conflictHeadway.si / hConf.si)));
+        return Math.min(0.999, Math.exp(-Math.min(egoHeadway.si / hEgo.si, conflictHeadway.si / hConf.si)));
     }
 
     /**

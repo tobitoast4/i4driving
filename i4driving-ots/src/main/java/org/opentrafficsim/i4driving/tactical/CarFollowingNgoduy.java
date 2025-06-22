@@ -113,7 +113,7 @@ public class CarFollowingNgoduy implements CarFollowingModel
             }
             n++;
         }
-        Speed leaderSpeed = Speed.instantiateSI(speed.si + dv / weightSum);
+        Speed leaderSpeed = Speed.instantiateSI(speed.si - dv / weightSum);
         Length distance = Length.instantiateSI(s / weightSum);
 
         Headway h = new Headway()

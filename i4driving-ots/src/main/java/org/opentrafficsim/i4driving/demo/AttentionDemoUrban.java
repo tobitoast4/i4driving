@@ -43,7 +43,6 @@ import org.opentrafficsim.core.geometry.Flattener;
 import org.opentrafficsim.core.geometry.Flattener.NumSegments;
 import org.opentrafficsim.core.geometry.FractionalLengthData;
 import org.opentrafficsim.core.geometry.OtsLine2d;
-import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
@@ -53,7 +52,6 @@ import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.perception.HistoryManagerDevs;
-import org.opentrafficsim.draw.ColorInterpolator;
 import org.opentrafficsim.draw.graphs.ContourDataSource;
 import org.opentrafficsim.draw.graphs.GraphPath;
 import org.opentrafficsim.draw.graphs.GraphPath.Section;
@@ -62,6 +60,7 @@ import org.opentrafficsim.i4driving.demo.plots.DistributionPlotExtendedData;
 import org.opentrafficsim.i4driving.sampling.TaskSaturationData;
 import org.opentrafficsim.i4driving.tactical.perception.ChannelPerceptionFactory;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelFuller;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelMental;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ConflictUtilTmp;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ConflictUtilTmp.ConflictPlans;
@@ -79,7 +78,6 @@ import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimati
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.NeighborsPerception;
 import org.opentrafficsim.road.gtu.lane.perception.headway.HeadwayConflict;
 import org.opentrafficsim.road.gtu.lane.perception.headway.HeadwayGtu;
-import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
 import org.opentrafficsim.road.gtu.lane.plan.operational.SimpleOperationalPlan;
 import org.opentrafficsim.road.gtu.lane.tactical.AbstractLaneBasedTacticalPlannerFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.Blockable;
@@ -423,6 +421,7 @@ public class AttentionDemoUrban extends AbstractSimulationScript
                         getPerceptionFactory().getParameters().setAllIn(parameters);
                         parameters.setDefaultParameter(ParameterTypes.VCONG);
                         parameters.setDefaultParameter(ParameterTypes.T0);
+                        parameters.setDefaultParameter(ChannelMental.X0_D);
                         parameters.setDefaultParameter(ParameterTypes.LCDUR);
                         return parameters;
                     }
@@ -716,76 +715,6 @@ public class AttentionDemoUrban extends AbstractSimulationScript
         public final String toString()
         {
             return "AccelerationConflicts";
-        }
-
-    }
-
-    /**
-     * Task saturation colorer.
-     */
-    public static class TaskSaturationChannelColorer implements GtuColorer
-    {
-
-        /** Full. */
-        static final Color MAX = Color.RED;
-
-        /** Medium. */
-        static final Color MID = Color.YELLOW;
-
-        /** Zero. */
-        static final Color SUBCRIT = Color.GREEN;
-
-        /** Not available. */
-        static final Color NA = Color.WHITE;
-
-        /** Legend. */
-        static final List<LegendEntry> LEGEND;
-
-        static
-        {
-            LEGEND = new ArrayList<>();
-            LEGEND.add(new LegendEntry(SUBCRIT, "sub-critical", "sub-critical task saturation"));
-            LEGEND.add(new LegendEntry(MID, "1.5", "1.5 task saturation"));
-            LEGEND.add(new LegendEntry(MAX, "3.0", "3.0 or larger"));
-            LEGEND.add(new LegendEntry(NA, "N/A", "N/A"));
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public Color getColor(final Gtu gtu)
-        {
-            Double ts = gtu.getParameters().getParameterOrNull(Fuller.TS);
-            if (ts == null)
-            {
-                return NA;
-            }
-            if (ts <= 1.0)
-            {
-                return SUBCRIT;
-            }
-            else if (ts > 3.0)
-            {
-                return MAX;
-            }
-            else if (ts < 1.5)
-            {
-                return ColorInterpolator.interpolateColor(SUBCRIT, MID, (ts - 1.0) / 0.5);
-            }
-            return ColorInterpolator.interpolateColor(MID, MAX, (ts - 1.5) / 1.5);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public List<LegendEntry> getLegend()
-        {
-            return LEGEND;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "Task saturation";
         }
 
     }

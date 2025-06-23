@@ -1,6 +1,5 @@
 package org.opentrafficsim.i4driving.demo;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -35,7 +34,6 @@ import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
-import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.LinkType;
@@ -43,7 +41,6 @@ import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.perception.HistoryManagerDevs;
-import org.opentrafficsim.draw.ColorInterpolator;
 import org.opentrafficsim.draw.graphs.ContourDataSource;
 import org.opentrafficsim.draw.graphs.GraphPath;
 import org.opentrafficsim.draw.graphs.GraphPath.Section;
@@ -61,9 +58,8 @@ import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtu
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionFactory;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
-import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
 import org.opentrafficsim.road.gtu.lane.tactical.AbstractLaneBasedTacticalPlannerFactory;
-import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdmFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
 import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModelFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.following.Idm;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
@@ -114,11 +110,13 @@ import org.opentrafficsim.trafficcontrol.FixedTimeController.SignalGroup;
 
 import nl.tudelft.simulation.dsol.swing.gui.TablePanel;
 import nl.tudelft.simulation.jstats.distributions.DistContinuous;
+import nl.tudelft.simulation.jstats.distributions.DistNormal;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 
 /**
  * Demo of attention in an Motorway setting.
- * @author AliNadi,wjschakel
+ * @author AliNadi
+ * @author wjschakel
  */
 public class AttentionDemoMotorway extends AbstractSimulationScript
 {
@@ -280,8 +278,25 @@ public class AttentionDemoMotorway extends AbstractSimulationScript
         PerceptionFactory perceptionFactory = new ChannelPerceptionFactory();
         // PerceptionFactory perceptionFactory = new DefaultLmrsPerceptionFactory();
 
-        CarFollowingModelFactory<IdmPlus> cfFactory =
-                new AbstractIdmFactory<>(new IdmPlus(Idm.HEADWAY, new SocioDesiredSpeed(Idm.DESIRED_SPEED)), stream);
+        DistContinuous fSpeed = new DistNormal(stream, 123.7 / 120.0, 0.1);
+        CarFollowingModelFactory<IdmPlus> cfFactory = new CarFollowingModelFactory<>()
+        {
+            @Override
+            public Parameters getParameters() throws ParameterException
+            {
+                ParameterSet parameters = new ParameterSet();
+                parameters.setDefaultParameters(AbstractIdm.class);
+                parameters.setParameter(ParameterTypes.FSPEED, fSpeed.draw());
+                return parameters;
+            }
+
+            @Override
+            public IdmPlus generateCarFollowingModel()
+            {
+                return new IdmPlus(Idm.HEADWAY, new SocioDesiredSpeed(Idm.DESIRED_SPEED));
+            }
+        };
+        // new AbstractIdmFactory<>(new IdmPlus(Idm.HEADWAY, new SocioDesiredSpeed(Idm.DESIRED_SPEED)), stream);
 
         // LmrsFactory lmrsFactory = new LmrsFactory(cfFactory, perceptionFactory,
         // Synchronization.PASSIVE,
@@ -495,73 +510,6 @@ public class AttentionDemoMotorway extends AbstractSimulationScript
             }
             return Float.NaN;
         }
-    }
-
-    public static class TaskSaturationChannelColorer implements GtuColorer
-    {
-
-        /** Full. */
-        static final Color MAX = Color.RED;
-
-        /** Medium. */
-        static final Color MID = Color.YELLOW;
-
-        /** Zero. */
-        static final Color SUBCRIT = Color.GREEN;
-
-        /** Not available. */
-        static final Color NA = Color.WHITE;
-
-        /** Legend. */
-        static final List<LegendEntry> LEGEND;
-
-        static
-        {
-            LEGEND = new ArrayList<>();
-            LEGEND.add(new LegendEntry(SUBCRIT, "sub-critical", "sub-critical task saturation"));
-            LEGEND.add(new LegendEntry(MID, "1.5", "1.5 task saturation"));
-            LEGEND.add(new LegendEntry(MAX, "3.0", "3.0 or larger"));
-            LEGEND.add(new LegendEntry(NA, "N/A", "N/A"));
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public Color getColor(final Gtu gtu)
-        {
-            Double ts = gtu.getParameters().getParameterOrNull(Fuller.TS);
-            if (ts == null)
-            {
-                return NA;
-            }
-            if (ts <= 1.0)
-            {
-                return SUBCRIT;
-            }
-            else if (ts > 3.0)
-            {
-                return MAX;
-            }
-            else if (ts < 1.5)
-            {
-                return ColorInterpolator.interpolateColor(SUBCRIT, MID, (ts - 1.0) / 0.5);
-            }
-            return ColorInterpolator.interpolateColor(MID, MAX, (ts - 1.5) / 1.5);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public List<LegendEntry> getLegend()
-        {
-            return LEGEND;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "Task saturation";
-        }
-
     }
 
 }

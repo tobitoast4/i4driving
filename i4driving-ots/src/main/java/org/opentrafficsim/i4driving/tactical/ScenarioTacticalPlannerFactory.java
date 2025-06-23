@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djutils.exceptions.Throw;
 import org.opentrafficsim.base.parameters.ParameterException;
@@ -20,12 +21,15 @@ import org.opentrafficsim.core.gtu.GtuErrorHandler;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlan;
+import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
 import org.opentrafficsim.i4driving.tactical.perception.ActiveModePerception;
 import org.opentrafficsim.i4driving.tactical.perception.AdaptationHeadwayChannel;
 import org.opentrafficsim.i4driving.tactical.perception.AdaptationSpeedChannel;
 import org.opentrafficsim.i4driving.tactical.perception.AdaptationUpdateTime;
 import org.opentrafficsim.i4driving.tactical.perception.ConflictAnticipation;
+import org.opentrafficsim.i4driving.tactical.perception.IntersectionPerceptionChannel;
 import org.opentrafficsim.i4driving.tactical.perception.LocalDistractionPerception;
+import org.opentrafficsim.i4driving.tactical.perception.NeighborsPerceptionChannel;
 import org.opentrafficsim.i4driving.tactical.perception.SaturationEstimation;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.LaneChangeTask;
@@ -83,6 +87,8 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsUtil;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
 
+import nl.tudelft.simulation.jstats.distributions.DistLogNormal;
+import nl.tudelft.simulation.jstats.distributions.DistTriangular;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import picocli.CommandLine.Option;
 
@@ -115,6 +121,12 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
     /** Random number stream. */
     private StreamInterface stream;
 
+    /** Distribution of vGain. */
+    private ContinuousDistSpeed vGainDist;
+
+    /** Distribution of sigma. */
+    private DistTriangular sigmaDist;
+
     /** Map storing the state. */
     private Map<Field, Object> state;
 
@@ -130,6 +142,11 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
     @Option(names = {"--primaryTask"}, description = "Primary task under ANTICIPATION_RELIANCE: LANE_CHANGING or CAR_FOLLOWING",
             defaultValue = "LANE_CHANGING")
     private PrimaryTask primaryTask = PrimaryTask.LANE_CHANGING;
+    
+    /** Temporal constant-speed anticipation. */
+    @Option(names = {"--anticipation"}, description = "Enables temporal constant-speed anticipation.", defaultValue = "true",
+            negatable = true)
+    private boolean temporalAnticipation = true;
 
     // Tasks
 
@@ -253,6 +270,8 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
     public void setStream(final StreamInterface stream)
     {
         this.stream = stream;
+        this.vGainDist = new ContinuousDistSpeed(new DistLogNormal(stream, 3.379, 0.4), SpeedUnit.KM_PER_HOUR);
+        this.sigmaDist = new DistTriangular(stream, 0.0, 0.25, 1.0);
     }
 
     /**
@@ -364,10 +383,14 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
                 }
             }
 
-            if (this.carFollowingTask || this.trafficLightsTask || this.conflictsTask)
+            if (this.carFollowingTask)
             {
-                // TODO specific parameters for conflicts
                 parameters.setDefaultParameter(ChannelTaskCarFollowing.HEXP);
+            }
+            if (this.trafficLightsTask || this.conflictsTask)
+            {
+                parameters.setDefaultParameter(ChannelTaskConflict.HEGO);
+                parameters.setDefaultParameter(ChannelTaskConflict.HCONF);
             }
             if (this.signalTask)
             {
@@ -378,8 +401,13 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         if (this.tailgating || this.socioLaneChange || this.socioSpeed)
         {
             parameters.setDefaultParameter(Tailgating.RHO);
-            parameters.setDefaultParameter(LmrsParameters.SOCIO);
-            parameters.setParameter(ParameterTypes.TMAX, Duration.instantiateSI(1.6));
+            // Alternate default values in case of social interactions, including distributions for the speed-leading strategy
+            parameters.setParameter(LmrsParameters.VGAIN, this.vGainDist.draw());
+            parameters.setParameter(LmrsParameters.SOCIO, this.sigmaDist.draw());
+            if (this.tailgating)
+            {
+                parameters.setParameter(ParameterTypes.TMAX, Duration.instantiateSI(1.6));
+            }
         }
         if (CarFollowing.M_IDM.equals(this.carFollowing))
         {
@@ -478,6 +506,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
             addTask(taskSuppliers, this.conflictsTask, ChannelTaskConflict.SUPPLIER);
             addTask(taskSuppliers, this.activeMode, ChannelTaskActiveModeCrossing.SUPPLIER);
             addTask(taskSuppliers, this.localDistraction, ChannelTaskLocalDistraction.SUPPLIER);
+            addTask(taskSuppliers, true, ChannelTaskScan.SUPPLIER);
 
             Set<BehavioralAdaptation> behavioralAdapatations = new LinkedHashSet<>();
             if (this.speedAdaptation)
@@ -497,7 +526,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
 
             estimationNeighbors = new SaturationEstimation(true);
             estimationConflicts = new SaturationEstimation(false);
-            anticipationNeighbors = Anticipation.CONSTANT_SPEED;
+            anticipationNeighbors = this.temporalAnticipation ? Anticipation.CONSTANT_SPEED : Anticipation.NONE;
             anticipationConflicts = new ConflictAnticipation();
         }
         else if (FullerImplementation.NONE.equals(this.fullerImplementation))
@@ -525,11 +554,11 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
             }
 
             Set<Task> tasks = new LinkedHashSet<>();
-            if (this.carFollowingTask)
+            if (this.carFollowingTask || this.primaryTask.equals(PrimaryTask.CAR_FOLLOWING))
             {
                 tasks.add(new CarFollowingTask());
             }
-            if (this.laneChangingTask)
+            if (this.laneChangingTask || this.primaryTask.equals(PrimaryTask.LANE_CHANGING))
             {
                 tasks.add(new LaneChangeTask());
             }
@@ -547,13 +576,14 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
             {
                 behavioralAdapatations.add(new AdaptationHeadway());
             }
+            behavioralAdapatations.add(new AdaptationSituationalAwareness());
 
             mental = new Fuller(tasks, behavioralAdapatations, taskManager);
 
             estimationNeighbors = Estimation.FACTOR_ESTIMATION;
             estimationConflicts = Estimation.FACTOR_ESTIMATION;
-            anticipationNeighbors = Anticipation.CONSTANT_SPEED;
-            anticipationConflicts = Anticipation.NONE;
+            anticipationNeighbors = this.temporalAnticipation ? Anticipation.CONSTANT_SPEED : Anticipation.NONE;
+            anticipationConflicts = new ConflictAnticipation();
         }
 
         LanePerception perception = new CategoricalLanePerception(gtu, mental);
@@ -575,8 +605,10 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
             {
                 perception.addPerceptionCategory(new ActiveModePerception(perception));
             }
-            perception.addPerceptionCategory(new DirectNeighborsPerception(perception, HeadwayGtuType.WRAP));
-            perception.addPerceptionCategory(new DirectIntersectionPerception(perception, HeadwayGtuType.WRAP));
+            perception.addPerceptionCategory(
+                    new NeighborsPerceptionChannel(perception, estimationNeighbors, anticipationNeighbors));
+            perception.addPerceptionCategory(
+                    new IntersectionPerceptionChannel(perception, estimationConflicts, anticipationConflicts));
         }
         else
         {
@@ -623,6 +655,17 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         Throw.whenNull(primaryTask, "primaryTask");
         saveState("primaryTask");
         this.primaryTask = primaryTask;
+    }
+    
+    /**
+     * Sets the temporal anticipation, which follows a constant-speed heuristic.
+     * @param temporalAnticipation anticipation
+     */
+    public void setTemporalAnticipation(final boolean temporalAnticipation)
+    {
+        Throw.whenNull(temporalAnticipation, "temporalAnticipation");
+        saveState("temporalAnticipation");
+        this.temporalAnticipation = temporalAnticipation;
     }
 
     /**

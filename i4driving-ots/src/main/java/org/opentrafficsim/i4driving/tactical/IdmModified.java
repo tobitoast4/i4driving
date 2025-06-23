@@ -62,14 +62,16 @@ public class IdmModified extends AbstractCarFollowingModel
         double v = speed.si;
         double vRat = v / desiredSpeed.si;
         double a = parameters.getParameter(A).si;
+        double b = parameters.getParameter(B).si;
 
         if (leaders.isEmpty())
         {
             return Acceleration.instantiateSI(a * (1.0 - (vRat * vRat * vRat * vRat)));
         }
 
-        double ss = desiredHeadway.si + 0;
-        double s = leaders.first().getDistance().si;
+        Headway leader = leaders.first();
+        double ss = desiredHeadway.si + v * (v - leader.getSpeed().si) / (2.0 * Math.sqrt(a * b));
+        double s = leader.getDistance().si;
         double sRat = ss / s;
 
         if (ss <= s)
@@ -80,8 +82,6 @@ public class IdmModified extends AbstractCarFollowingModel
         {
             return Acceleration.instantiateSI(a * (1.0 - (sRat * sRat)));
         }
-
-        double b = parameters.getParameter(B).si;
 
         return Acceleration.instantiateSI(Math.min(a * (1.0 - (sRat * sRat)), -b));
     }

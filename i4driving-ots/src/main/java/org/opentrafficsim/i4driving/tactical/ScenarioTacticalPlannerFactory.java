@@ -29,6 +29,7 @@ import org.opentrafficsim.i4driving.tactical.perception.LocalDistractionPercepti
 import org.opentrafficsim.i4driving.tactical.perception.SaturationEstimation;
 import org.opentrafficsim.i4driving.tactical.perception.mental.CarFollowingTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.LaneChangeTask;
+import org.opentrafficsim.i4driving.tactical.perception.mental.LocalDistractionTask;
 import org.opentrafficsim.i4driving.tactical.perception.mental.TaskManagerAr;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelFuller;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelMental;
@@ -378,6 +379,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         {
             parameters.setDefaultParameter(Tailgating.RHO);
             parameters.setDefaultParameter(LmrsParameters.SOCIO);
+            parameters.setParameter(ParameterTypes.TMAX, Duration.instantiateSI(1.6));
         }
         if (CarFollowing.M_IDM.equals(this.carFollowing))
         {
@@ -385,7 +387,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         }
         if (this.nLeaders > 1)
         {
-            parameters.setDefaultParameter(CarFollowingNgoduy.NLEADERS);
+            parameters.setParameter(CarFollowingNgoduy.NLEADERS, this.nLeaders);
             parameters.setDefaultParameter(CarFollowingNgoduy.MU1);
             if (this.nLeaders == 2)
             {
@@ -530,6 +532,10 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
             if (this.laneChangingTask)
             {
                 tasks.add(new LaneChangeTask());
+            }
+            if (this.localDistraction)
+            {
+                tasks.add(new LocalDistractionTask());
             }
 
             Set<BehavioralAdaptation> behavioralAdapatations = new LinkedHashSet<>();

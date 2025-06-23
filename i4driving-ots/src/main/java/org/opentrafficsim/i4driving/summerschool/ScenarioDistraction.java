@@ -62,7 +62,6 @@ import org.opentrafficsim.i4driving.demo.TaskSaturationChannelColorer;
 import org.opentrafficsim.i4driving.demo.plots.ContourPlotExtendedData;
 import org.opentrafficsim.i4driving.demo.plots.DistributionPlotExtendedData;
 import org.opentrafficsim.i4driving.object.LocalDistraction;
-import org.opentrafficsim.i4driving.sampling.SituationalAwarenessData;
 import org.opentrafficsim.i4driving.sampling.TaskSaturationData;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlannerFactory;
@@ -131,9 +130,6 @@ public class ScenarioDistraction extends AbstractSimulationScript
 
     /** Time-to-collision data type. */
     private static final TimeToCollision DATA_TTC = new TimeToCollision();
-
-    /** Situational awareness data. */
-    private static final SituationalAwarenessData DATA_SA = new SituationalAwarenessData();
 
     /** KPI's. */
     private List<Kpi<?, ?>> kpis = new ArrayList<>();
@@ -213,8 +209,8 @@ public class ScenarioDistraction extends AbstractSimulationScript
         this.tacticalFactory.setCarFollowing(CarFollowing.M_IDM);
         // - available Fuller implementations: NONE, SUMMATIVE, ANTICIPATION_RELIANCE, ATTENTION_MATRIX
         this.tacticalFactory.setFullerImplementation(FullerImplementation.ATTENTION_MATRIX);
-        this.tacticalFactory.setNumberOfLeaders(1); // {1, 2, 3}
-        this.tacticalFactory.setTemporalAnticipation(false);
+        this.tacticalFactory.setNumberOfLeaders(3); // {1, 2, 3}
+        this.tacticalFactory.setTemporalAnticipation(true);
         this.tacticalFactory.setFractionOverEstimation(0.5); // [0 ... 1]
         // social interactions
         this.tacticalFactory.setTailgating(false);
@@ -295,7 +291,7 @@ public class ScenarioDistraction extends AbstractSimulationScript
     @Override
     protected void addTabs(final OtsSimulatorInterface sim, final OtsSimulationApplication<?> animation)
     {
-        RoadSampler sampler = new RoadSampler(Set.of(DATA_SA, DATA_SATURATION, DATA_TTC), Collections.emptySet(), getNetwork(),
+        RoadSampler sampler = new RoadSampler(Set.of(DATA_SATURATION, DATA_TTC), Collections.emptySet(), getNetwork(),
                 Frequency.instantiateSI(2.0));
         List<Section<LaneDataRoad>> sections = new ArrayList<>();
         Lane lane = ((CrossSectionLink) getNetwork().getLink("AB")).getLanes().get(0);

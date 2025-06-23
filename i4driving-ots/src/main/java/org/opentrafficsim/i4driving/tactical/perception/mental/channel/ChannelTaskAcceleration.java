@@ -30,7 +30,7 @@ public class ChannelTaskAcceleration implements ChannelTask
 {
 
     /** Distance discount range. */
-    public static final ParameterTypeLength X0_D = ChannelMental.X0_D;
+    public static final ParameterTypeLength X0 = ParameterTypes.LOOKAHEAD;
 
     /** Speed threshold below which traffic is considered congested. */
     public static final ParameterTypeSpeed VCONG = ParameterTypes.VCONG;
@@ -65,7 +65,7 @@ public class ChannelTaskAcceleration implements ChannelTask
                 Try.assign(() -> perception.getPerceptionCategory(EgoPerception.class), "EgoPerception not present.");
         Speed v = ego.getSpeed();
         Speed vCong = Try.assign(() -> perception.getGtu().getParameters().getParameter(VCONG), "Parameter VCONG not present");
-        Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(X0_D), "Parameter X0_D not present.");
+        Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(X0), "Parameter LOOKAHEAD not present.");
         Iterator<UnderlyingDistance<LaneBasedGtu>> leaders =
                 neighbors.getLeaders(RelativeLane.CURRENT).underlyingWithDistance();
         /*

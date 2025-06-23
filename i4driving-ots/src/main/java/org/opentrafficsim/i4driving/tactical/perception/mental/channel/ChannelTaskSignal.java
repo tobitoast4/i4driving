@@ -128,8 +128,8 @@ public class ChannelTaskSignal implements ChannelTask
             UnderlyingDistance<LaneBasedGtu> leader = leaders.next();
             if (this.predicate.test(leader.getObject()))
             {
-                Length x0 = Try.assign(() -> perception.getGtu().getParameters().getParameter(X0_D),
-                        "Parameter LOOKAHEAD not present.");
+                Length x0 =
+                        Try.assign(() -> perception.getGtu().getParameters().getParameter(X0_D), "Parameter x0_d not present.");
                 double tdSignal = Try.assign(() -> perception.getGtu().getParameters().getParameter(TDSIGNAL),
                         "Parameter td_signal not available.");
                 return tdSignal * (1.0 - leader.getDistance().si / x0.si);

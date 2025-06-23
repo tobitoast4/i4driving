@@ -94,7 +94,8 @@ public class ChannelPerceptionFactory implements PerceptionFactory
                 .setDefaultParameter(ParameterTypes.LOOKBACK).setDefaultParameter(CarFollowingTask.HEXP)
                 .setDefaultParameter(ChannelTaskScan.TDSCAN).setDefaultParameters(ChannelFuller.class)
                 .setDefaultParameter(AdaptationHeadway.BETA_T).setDefaultParameter(AdaptationSpeed.BETA_V0)
-                .setDefaultParameter(ChannelTaskSignal.TDSIGNAL).setDefaultParameter(Fuller.TS_MAX);
+                .setDefaultParameter(ChannelTaskSignal.TDSIGNAL).setDefaultParameter(Fuller.TS_MAX)
+                .setDefaultParameter(ChannelTaskAcceleration.X0).setDefaultParameters(ChannelTaskConflict.class);
         set.setParameter(Fuller.TS_CRIT, 1.0); // required by behavioral adaptations, but ignored, i.e. 1.0
         return set;
     }

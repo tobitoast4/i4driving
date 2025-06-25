@@ -29,8 +29,8 @@ public class LaneChangeTask extends AbstractTask
     public double calculateTaskDemand(final LanePerception perception, final LaneBasedGtu gtu, final Parameters parameters)
             throws ParameterException, GtuException
     {
-        return Math.max(0.0,
-                Math.max(parameters.getParameter(LmrsParameters.DLEFT), parameters.getParameter(LmrsParameters.DRIGHT)));
+        return Math.min(0.999, Math.max(0.0,
+                Math.max(parameters.getParameter(LmrsParameters.DLEFT), parameters.getParameter(LmrsParameters.DRIGHT))));
     }
 
 }

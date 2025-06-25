@@ -112,7 +112,8 @@ import picocli.CommandLine.Option;
  * <p>
  * The factory can be used in a single-shot mode, where all changes to the settings only apply to a single tactical planner
  * generated. This is achieved through the method {@code setSingleShotMode()}. If the factory is not in this mode, all changes
- * are permanent.
+ * are permanent. The single-shot mode needs to be reset using {@code resetMode()}, after the GTU generated in single-shot mode
+ * has been generated.
  * @author wjschakel
  */
 public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerFactory<ScenarioTacticalPlanner>
@@ -219,7 +220,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
     // Car-following model
 
     /** Car-following model. */
-    @Option(names = {"--carFollowing"}, description = "Car-following model: IMD, IDM_PLUS or M_IDM.", defaultValue = "M_IDM")
+    @Option(names = {"--carFollowing"}, description = "Car-following model: IDM, IDM_PLUS or M_IDM.", defaultValue = "M_IDM")
     private CarFollowing carFollowing = CarFollowing.M_IDM;
 
     /** Multi-leader anticipation. */

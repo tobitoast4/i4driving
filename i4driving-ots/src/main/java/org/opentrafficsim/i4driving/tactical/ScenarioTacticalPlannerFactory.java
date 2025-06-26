@@ -22,6 +22,7 @@ import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlan;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
+import org.opentrafficsim.i4driving.demo.AccelerationConflictsTmp;
 import org.opentrafficsim.i4driving.tactical.perception.ActiveModePerception;
 import org.opentrafficsim.i4driving.tactical.perception.AdaptationHeadwayChannel;
 import org.opentrafficsim.i4driving.tactical.perception.AdaptationSpeedChannel;
@@ -48,6 +49,7 @@ import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTa
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskScan;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskSignal;
 import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ChannelTaskTrafficLight;
+import org.opentrafficsim.i4driving.tactical.perception.mental.channel.ConflictUtilTmp;
 import org.opentrafficsim.road.gtu.lane.CollisionException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
@@ -338,6 +340,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         parameters.setDefaultParameters(LmrsUtil.class);
         parameters.setDefaultParameters(LmrsParameters.class);
         parameters.setDefaultParameters(AbstractIdm.class);
+        parameters.setDefaultParameters(ConflictUtilTmp.class);
         parameters.setDefaultParameter(ParameterTypes.PERCEPTION);
         parameters.setDefaultParameter(ParameterTypes.LOOKBACK);
         parameters.setDefaultParameter(ParameterTypes.LOOKAHEAD);
@@ -471,6 +474,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         tacticalPlanner.addMandatoryIncentive(new IncentiveRoute());
         tacticalPlanner.addVoluntaryIncentive(new IncentiveSpeedWithCourtesy());
         tacticalPlanner.addVoluntaryIncentive(new IncentiveKeep());
+        tacticalPlanner.addAccelerationIncentive(new AccelerationConflictsTmp());
         if (this.activeMode && FullerImplementation.ATTENTION_MATRIX.equals(this.fullerImplementation))
         {
             tacticalPlanner.addAccelerationIncentive(new AccelerationActiveModeCrossing());

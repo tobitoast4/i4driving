@@ -90,6 +90,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
 
 import nl.tudelft.simulation.jstats.distributions.DistLogNormal;
+import nl.tudelft.simulation.jstats.distributions.DistNormalTrunc;
 import nl.tudelft.simulation.jstats.distributions.DistTriangular;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import picocli.CommandLine.Option;
@@ -130,6 +131,9 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
     /** Distribution of sigma. */
     private DistTriangular sigmaDist;
 
+    /** Distribution of fSpeed. */
+    private DistNormalTrunc fSpeedDist;
+
     /** Map storing the state. */
     private Map<Field, Object> state;
 
@@ -145,7 +149,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
     @Option(names = {"--primaryTask"}, description = "Primary task under ANTICIPATION_RELIANCE: LANE_CHANGING or CAR_FOLLOWING",
             defaultValue = "LANE_CHANGING")
     private PrimaryTask primaryTask = PrimaryTask.LANE_CHANGING;
-    
+
     /** Temporal constant-speed anticipation. */
     @Option(names = {"--anticipation"}, description = "Enables temporal constant-speed anticipation.", defaultValue = "true",
             negatable = true)
@@ -275,6 +279,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         this.stream = stream;
         this.vGainDist = new ContinuousDistSpeed(new DistLogNormal(stream, 3.379, 0.4), SpeedUnit.KM_PER_HOUR);
         this.sigmaDist = new DistTriangular(stream, 0.0, 0.25, 1.0);
+        this.fSpeedDist = new DistNormalTrunc(stream, 123.7 / 120.0, 0.1, 0.8, 50.0);
     }
 
     /**
@@ -432,6 +437,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
                 parameters.setDefaultParameter(CarFollowingNgoduy.MU3);
             }
         }
+        parameters.setParameter(ParameterTypes.FSPEED, this.fSpeedDist.draw());
         return parameters;
     }
 
@@ -661,7 +667,7 @@ public class ScenarioTacticalPlannerFactory implements LaneBasedTacticalPlannerF
         saveState("primaryTask");
         this.primaryTask = primaryTask;
     }
-    
+
     /**
      * Sets the temporal anticipation, which follows a constant-speed heuristic.
      * @param temporalAnticipation anticipation

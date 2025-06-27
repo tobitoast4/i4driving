@@ -158,7 +158,7 @@ public class ScenarioConflict extends AbstractSimulationScript
     @Override
     protected RoadNetwork setupSimulation(final OtsSimulatorInterface sim) throws Exception
     {
-        RoadNetwork network = new RoadNetwork("i4Driving distraction", sim);
+        RoadNetwork network = new RoadNetwork("i4Driving conflict", sim);
         new StopCollisionDetector(network);
         sim.getReplication()
                 .setHistoryManager(new HistoryManagerDevs(sim, Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
@@ -184,7 +184,7 @@ public class ScenarioConflict extends AbstractSimulationScript
         // - available Fuller implementations: NONE, SUMMATIVE, ANTICIPATION_RELIANCE, ATTENTION_MATRIX
         this.tacticalFactory.setFullerImplementation(FullerImplementation.ATTENTION_MATRIX);
         this.tacticalFactory.setTemporalAnticipation(true);
-        this.tacticalFactory.setFractionOverEstimation(0.5); // [0 ... 1]
+        this.tacticalFactory.setFractionOverEstimation(0.6); // [0 ... 1]
         // social interactions
         this.tacticalFactory.setTailgating(false);
         this.tacticalFactory.setSocioSpeed(false);
@@ -204,7 +204,7 @@ public class ScenarioConflict extends AbstractSimulationScript
         this.tacticalFactory.setSocioLaneChange(false);
         this.tacticalFactory.setActiveMode(false);
         this.tacticalFactory.setUpdateTimeAdaptation(false);
-        this.tacticalFactory.setNumberOfLeaders(1); // leave 1; with strong decelerations anticipation is not collision free
+        this.tacticalFactory.setNumberOfLeaders(1); // leave 1; with large gaps between leaders otherwise is not collision free
 
         // Parameters
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
@@ -258,7 +258,7 @@ public class ScenarioConflict extends AbstractSimulationScript
                 DefaultsNl.URBAN, designLine, new FractionalLengthData(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
 
         // Lane
-        List<CrossSectionSlice> slices = LaneGeometryUtil.getSlices(line, Length.instantiateSI(3.5), Length.instantiateSI(3.5));
+        List<CrossSectionSlice> slices = LaneGeometryUtil.getSlices(line, Length.ZERO, Length.instantiateSI(3.5));
         PolyLine2d left = line.flattenOffset(new FractionalLengthData(0.0, 1.75), null);
         PolyLine2d right = line.flattenOffset(new FractionalLengthData(0.0, -1.75), null);
         Polygon2d contour = LaneGeometryUtil.getContour(left, right);

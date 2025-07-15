@@ -1,6 +1,6 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
-import java.awt.Dimension;
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -42,7 +42,7 @@ import org.djutils.serialization.EndianUtil;
 import org.djutils.serialization.SerializationException;
 import org.djutils.serialization.TypedMessage;
 import org.djutils.serialization.serializers.Serializer;
-import org.opentrafficsim.animation.colorer.SynchronizationColorer;
+import org.opentrafficsim.animation.colorer.*;
 import org.opentrafficsim.animation.gtu.colorer.AccelerationGtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.animation.gtu.colorer.IdGtuColorer;
@@ -54,6 +54,7 @@ import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.AbstractOtsModel;
 import org.opentrafficsim.core.dsol.OtsAnimator;
+import org.opentrafficsim.core.dsol.OtsModelInterface;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine2d;
@@ -133,7 +134,7 @@ public class OtsTransceiver
 
     /** Show GUI. */
     @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true) // false=default
-    private boolean showGui;
+    private boolean showGui = true;
 
     /** ID prefix of generated GTUs. */
     @Option(names = "--idPrefix", description = "Prefix to ID of generated traffic.", defaultValue = "OTS_")
@@ -839,6 +840,28 @@ public class OtsTransceiver
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
             this.simulator = new OtsAnimator("Test animator");
+//            GtuColorer colorer = SwitchableGtuColorer.builder().addActiveColorer(new FixedColor(Color.BLUE, "Blue"))
+//                    .addColorer(new TaskColorer("car-following")).addColorer(new TaskColorer("lane-changing"))
+//                    .addColorer(new TaskSaturationColorer()).addColorer(new ReactionTimeColorer(Duration.instantiateSI(1.0)))
+//                    .addColorer(new SpeedGtuColorer(new Speed(150, SpeedUnit.KM_PER_HOUR)))
+//                    .addColorer(new AccelerationGtuColorer(Acceleration.instantiateSI(-6.0), Acceleration.instantiateSI(2)))
+//                    .build();
+//
+//            try
+//            {
+//                OtsAnimator simulator = new OtsAnimator("ScenarioStraight");
+//                simulator.initialize(Time.ZERO, Duration.ZERO, Duration.instantiateSI(3600.0), otsModel);
+//                OtsAnimationPanel animationPanel = new OtsAnimationPanel(otsModel.getNetwork().getExtent(), new Dimension(800, 600),
+//                        simulator, otsModel, colorer, otsModel.getNetwork());
+//                OtsSimulationApplication<OtsScenarioModel> app = new OtsSimulationApplication(otsModel, animationPanel);
+//                app.setExitOnClose(true);
+//                animationPanel.enableSimulationControlButtons();
+//            }
+//            catch ( NamingException | RemoteException | DsolException exception)
+//            {
+//                exception.printStackTrace();
+//            }
+
             this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
 
             String simulationString;
@@ -870,7 +893,7 @@ public class OtsTransceiver
 
             listenToEvents();
 
-            if (OtsTransceiver.this.showGui)
+            if (true)
             {
                 GtuColorer colorer = new SwitchableGtuColorer(0, new IdGtuColorer(),
                         new SpeedGtuColorer(new Speed(150, SpeedUnit.KM_PER_HOUR)),

@@ -148,7 +148,7 @@ public class OdMatrixJson
         }
         else
         {
-            Class<?> first = this.categorization.getFirst().typeClass;
+            Class<?> first = this.categorization.get(0).typeClass;
             Class<?>[] theRest = new Class<?>[this.categorization.size() - 1];
             for (int i = 1; i < this.categorization.size(); i++)
             {
@@ -192,7 +192,7 @@ public class OdMatrixJson
             }
             else
             {
-                Object first = this.categorization.getFirst().objectFunction.apply(objectData, demand0.category.getFirst());
+                Object first = this.categorization.get(0).objectFunction.apply(objectData, demand0.category.get(0));
                 Object[] theRest = new Object[this.categorization.size() - 1];
                 for (int i = 1; i < this.categorization.size(); i++)
                 {
@@ -231,20 +231,20 @@ public class OdMatrixJson
      */
     private void fixTime(final List<Time> time, final List<Frequency> frequency, final RoadNetwork network)
     {
-        if (time.isEmpty() || time.getFirst().gt0())
+        if (time.isEmpty() || time.get(0).gt0())
         {
             time.add(0, Time.ZERO);
             if (frequency != null && !frequency.isEmpty() && frequency.size() < time.size())
             {
-                frequency.add(0, frequency.getFirst());
+                frequency.add(0, frequency.get(0));
             }
         }
-        if (time.getLast().si < network.getSimulator().getReplication().getRunLength().si)
+        if (time.get(time.size()-1).si < network.getSimulator().getReplication().getRunLength().si)
         {
             time.add(Time.instantiateSI(network.getSimulator().getReplication().getRunLength().si));
             if (frequency != null && !frequency.isEmpty())
             {
-                frequency.add(frequency.getLast());
+                frequency.add(frequency.get(time.size()-1));
             }
         }
     }

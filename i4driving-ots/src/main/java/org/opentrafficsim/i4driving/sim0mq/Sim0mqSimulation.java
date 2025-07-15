@@ -82,7 +82,7 @@ public interface Sim0mqSimulation
         LINK((net, ids) ->
         {
             List<Node> nodes = new ArrayList<>();
-            nodes.add(net.getLink(ids.getFirst()).getStartNode());
+            nodes.add(net.getLink(ids.get(0)).getStartNode());
             ids.forEach((id) -> nodes.add(net.getLink(id).getEndNode()));
             return nodes;
         }),
@@ -93,7 +93,7 @@ public interface Sim0mqSimulation
             List<Node> nodes = new ArrayList<>();
             for (Link link : net.getLinkMap().values())
             {
-                if (isOnRoad(link, ids.getFirst()))
+                if (isOnRoad(link, ids.get(0)))
                 {
                     if (ids.size() > 1)
                     {
@@ -102,7 +102,7 @@ public interface Sim0mqSimulation
                         {
                             if (next.getStartNode().equals(link.getEndNode()) && isOnRoad(next, ids.get(1)))
                             {
-                                upstream(link, ids.getFirst(), nodes);
+                                upstream(link, ids.get(0), nodes);
                                 downstream(next, 1, ids, nodes);
                                 return nodes;
                             }

@@ -72,7 +72,7 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
 
         // Create Points and Nodes
         Point2d pointA = new Point2d(0.0, 0.0);
-        Point2d pointB = new Point2d(500.0, 0.0);
+        Point2d pointB = new Point2d(1000.0, 0.0);
 
         Node nodeA = new Node(this.network, "A", pointA);
         Node nodeB = new Node(this.network, "B", pointB);
@@ -83,7 +83,7 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
         GtuType gtuType = DefaultsNl.VEHICLE;
         Length laneWidth = Length.instantiateSI(3.5);
         LaneType laneType = DefaultsRoadNl.URBAN_ROAD;
-        Speed speedLimit = new Speed(50.0, SpeedUnit.KM_PER_HOUR);
+        Speed speedLimit = new Speed(200.0, SpeedUnit.KM_PER_HOUR);
 
         // Create Lanes
         List<Lane> lanesAB = new LaneFactory(this.network, nodeA, nodeB, linkType, simulator, policy, gtuType)

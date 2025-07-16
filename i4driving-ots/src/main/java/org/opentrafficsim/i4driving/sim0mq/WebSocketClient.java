@@ -39,7 +39,7 @@ public class WebSocketClient {
             }
         } catch (JSONException e) {
             // message is not a JSON
-            System.out.println(message);
+            System.out.println("MESSAGE: " + message);
         }
     }
 

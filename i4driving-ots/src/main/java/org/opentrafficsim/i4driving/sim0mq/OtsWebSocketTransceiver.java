@@ -18,6 +18,7 @@ import org.djutils.immutablecollections.ImmutableList;
 import org.djutils.logger.CategoryLogger;
 import org.djutils.serialization.TypedMessage;
 import org.djutils.serialization.serializers.Serializer;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opentrafficsim.animation.colorer.SynchronizationColorer;
 import org.opentrafficsim.animation.gtu.colorer.*;
@@ -80,23 +81,6 @@ import java.util.function.Function;
         showDefaultValues = true, version = "20250619")
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
-
-    /** Federation id to receive/sent messages. */
-    @Option(names = "--federationId", description = "Federation id to receive/sent messages", defaultValue = "Ots_ExternalSim")
-    private String federation;
-
-    /** Ots id to receive/sent messages. */
-    @Option(names = "--otsId", description = "Ots id to receive/sent messages", defaultValue = "Ots")
-    private String ots;
-
-    /** Client id to receive/sent messages. */
-    @Option(names = "--clientId", description = "Client id to receive/sent messages", defaultValue = "ExternalSim")
-    private String client;
-
-    /** Endianness. */
-    @Option(names = "--bigEndian", description = "Big-endianness", defaultValue = "false", negatable = true)
-    private Boolean bigEndian;
-
     /** Port number. */
     @Option(names = "--port", description = "Port number", defaultValue = "5556")
     private int port;
@@ -104,10 +88,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     /** Show GUI. */
     @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true) // false=default
     private boolean showGui = true;
-
-    /** ID prefix of generated GTUs. */
-    @Option(names = "--idPrefix", description = "Prefix to ID of generated traffic.", defaultValue = "OTS_")
-    private String idPrefix;
 
     /** Mixed in model arguments. */
     @Mixin
@@ -135,9 +115,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         new OtsWebSocketTransceiver(args).start();
     }
 
-    /**
-     * Starts worker thread.
-     */
     private void start()
     {
         try {
@@ -153,9 +130,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
     /** */
     private static final long serialVersionUID = 20241210L;
-
-    /** Last routes sent. */
-    private RoutesJson lastRoutesJson;
 
     /** GTU characteristics generator. */
     private LaneBasedGtuCharacteristicsGeneratorOd characteristicsGeneratorOd;
@@ -199,6 +173,66 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     /** Run until time. */
     private Duration runUntil;
 
+    /**
+     * Setup simulation.
+     * @throws InvocationTargetException if a parameter cannot be set
+     * @throws IllegalAccessException if a parameter cannot be set
+     */
+    private void setupSimulation()
+    {
+        try {
+
+            stopSimulation();
+
+            // An animator supports real-time running. No GUI will be shown if no animation panel is created.
+            this.simulator = new OtsAnimator("Test animator");
+            this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
+
+            CoSimModel model = new CoSimModel(this.simulator);
+            Duration runtime = Duration.instantiateSI(36000.0);
+            this.simulator.initialize(Time.ZERO, Duration.ZERO, runtime, model);
+            this.simulator.getReplication().setHistoryManager(
+                    new HistoryManagerDevs(this.simulator, Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
+            this.network = (RoadNetwork) model.getNetwork();
+            this.characteristicsGeneratorOd = model.getSim0mqSimulation().getGtuCharacteristicsGeneratorOd();
+            this.parameterFactory = model.getSim0mqSimulation().getParameterFactory();
+            this.gtuSpawner = new GtuSpawnerOd(this.network, this.characteristicsGeneratorOd);
+
+            this.network.addListener(this, Network.GTU_ADD_EVENT);
+            this.network.addListener(this, Network.GTU_REMOVE_EVENT);
+
+            boolean showGui = true;
+            if (showGui)
+            {
+                GtuColorer colorer = new SwitchableGtuColorer(0, new IdGtuColorer(),
+                        new SpeedGtuColorer(new Speed(150, SpeedUnit.KM_PER_HOUR)),
+                        new AccelerationGtuColorer(Acceleration.instantiateSI(-6.0), Acceleration.instantiateSI(2)),
+                        new SynchronizationColorer());
+                OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),
+                        this.simulator, model, colorer, this.network);
+                animationPanel.enableSimulationControlButtons();
+                this.app = new OtsSimulationApplication<AbstractOtsModel>(model, animationPanel);
+            }
+            JSONObject avData = new JSONObject();
+            avData.put("id", "AV");
+            avData.put("mode", "ots");
+            JSONObject avPosition = new JSONObject();
+            avPosition.put("x", 10);
+            avPosition.put("y", 1.6);
+            avData.put("position", avPosition);
+            JSONObject avRotation = new JSONObject();
+            avRotation.put("z", 0);
+            avData.put("rotation", avRotation);
+            avData.put("v", 0);
+            generateVehicle(avData);
+        }
+        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
+               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
+        {
+
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public void onEvent(JSONObject data)
@@ -206,32 +240,44 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         try
         {
             String messageType = data.getString("type");
-            JSONObject messageData = data.getJSONObject("data");
-            if ("EXTERNAL".equals(messageType))  // update GTU
-            {
-                String id = messageData.getString("id");
-                Length x = new Length(messageData.getDouble("x"), LengthUnit.METER);
-                Length y = new Length(messageData.getDouble("y"), LengthUnit.METER);
-                Direction direction = new Direction(messageData.getDouble("direction"), DirectionUnit.EAST_RADIAN);
-                Speed speed = new Speed(messageData.getDouble("speed"), SpeedUnit.KM_PER_HOUR);
-                Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
-                OrientedPoint2d loc = new OrientedPoint2d(x.si, y.si, direction.si);
-                if (this.activeIds.containsKey(id))
-                {
-                    this.simulator.scheduleEventNow(this, "updateActiveModeObject", new Object[] {id, loc, speed});
-                }
-                else
-                {
-                    this.simulator.scheduleEventNow(this, "scheduledDeadReckoning",
-                            new Object[] {id, loc, speed, acceleration});
+            JSONObject messageData = Utils.tryGetJSONObject(data, "data");
+            CategoryLogger.always().debug("Ots received " + messageType + " message");
+
+            if ("OBJECTS".equals(messageType)) {
+                JSONArray objects = messageData.getJSONArray("objects");
+                for (int i = 0; i < objects.length(); i++) {
+                    JSONObject odbObject = objects.getJSONObject(i);
+                    String id = odbObject.getString("id");
+                    String name = odbObject.getString("name");
+
+                    if (name.startsWith("sign.")) {
+
+                    } else if (name.startsWith("scnx.road.superstructures.objects.post")) {
+
+                    } else if (name.startsWith("Vehicles.")) {
+                        if (name.equals("Vehicles.V600.Fiat500.main")) {
+                            continue; // TODO make this better
+                        }
+                        if (this.network != null) {
+                            Gtu gtu = this.network.getGTU(id);
+                            if (gtu == null) {
+                                generateVehicle(odbObject);
+                            } else {
+                                updateVehicle(odbObject);
+                            }
+                        }
+                    }
+
                 }
             }
-            else if ("VEHICLE".equals(messageType))  // create GTU
-            {
-                String id = messageData.getString("id");
-                CategoryLogger.always().debug("Ots received VEHICLE message for GTU " + id);
-                generateVehicle(messageData);
-            }
+//            else if  ("EXTERNAL".equals(messageType))  // update GTU
+//            {
+//                updateVehicle(messageData);
+//            }
+//            else if ("VEHICLE".equals(messageType))  // create GTU
+//            {
+//                generateVehicle(messageData);
+//            }
 //            else if ("MODE".equals(messageType))
 //            {
 //                String id = messageData.getString("id");
@@ -255,47 +301,42 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             }
 //            else if ("ROUTES".equals(messageType))
 //            {
-//                CategoryLogger.always().debug("Ots received ROUTES message");
 //                Object[] payload = message.createObjectArray();
 //                this.lastRoutesJson = DefaultGson.GSON.fromJson((String) payload[8], RoutesJson.class);
 //            }
 //            else if ("ODMATRIX".equals(messageType))
 //            {
-//                CategoryLogger.always().debug("Ots received ODMATRIX message");
 //                Object[] payload = message.createObjectArray();
 //                this.lastOdJson = DefaultGson.GSON.fromJson((String) payload[8], OdMatrixJson.class);
 //            }
 //            else if ("NETWORK".equals(messageType))
 //            {
-//                CategoryLogger.always().debug("Ots received NETWORK message");
 //                this.lastNetworkMessage = message;
 //                setupSimulation();
 //            }
             else if ("START".equals(messageType))
             {
-                CategoryLogger.always().debug("Ots received START message");
                 this.simulator.setSpeedFactor(1.0);
                 if (this.simulator != null && !this.simulator.isStartingOrRunning())
                 {
                     this.simulator.start();
                 }
             }
-            else if ("STOP".equals(messageType))
+            else if ("PAUSE".equals(messageType))
             {
-                CategoryLogger.always().debug("Ots received STOP message");
-                stopSimulation();
-                clearSimulationSetupData();
+                try {
+                    this.simulator.stop();
+                } catch (SimRuntimeException e) {
+                    // Simulator already stopped
+                }
             }
             else if ("RESET".equals(messageType))
             {
-                CategoryLogger.always().debug("Ots received RESET message");
                 setupSimulation();
             }
             else if ("TERMINATE".equals(messageType))
             {
-                CategoryLogger.always().debug("Ots received TERMINATE message");
                 stopSimulation();
-                clearSimulationSetupData();
             }
 //            else if ("PROGRESS".equals(messageType))
 //            {
@@ -330,17 +371,32 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         {
             e.printStackTrace();
         }
-        CategoryLogger.always().debug("Ots terminated");
-        System.exit(0);
+//        CategoryLogger.always().debug("Ots terminated");
+//        System.exit(0);
+    }
+
+    private void updateVehicle(JSONObject messageData) {
+        String id = messageData.getString("id");
+        Length x = new Length(messageData.getJSONObject("position").getDouble("x"), LengthUnit.METER);
+        Length y = new Length(messageData.getJSONObject("position").getDouble("y"), LengthUnit.METER);
+        Direction direction = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
+        Speed speed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
+//        Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
+        Acceleration acceleration = new Acceleration(0, AccelerationUnit.METER_PER_SECOND_2);
+        OrientedPoint2d loc = new OrientedPoint2d(x.si, y.si, direction.si);
+        if (this.activeIds.containsKey(id))
+        {
+            this.simulator.scheduleEventNow(this, "updateActiveModeObject", new Object[] {id, loc, speed});
+        }
+        else
+        {
+            this.simulator.scheduleEventNow(this, "scheduledDeadReckoning",
+                    new Object[] {id, loc, speed, acceleration});
+        }
     }
 
     /**
      * Generates vehicle.
-     * @param messageData message payload
-     * @throws GtuException exception
-     * @throws OtsGeometryException exception
-     * @throws NetworkException exception
-     * @throws RemoteException exception
      * @throws InvocationTargetException if a parameter cannot be set
      * @throws IllegalAccessException if a parameter cannot be set
      */
@@ -349,12 +405,14 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     {
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
         String id = messageData.getString("id");
+        CategoryLogger.always().debug("Ots received VEHICLE message for GTU " + id);
+
         String mode = Utils.tryGetString(messageData, "mode", "external");
-        Length initX = new Length(messageData.getDouble("x"), LengthUnit.METER);
-        Length initY = new Length(messageData.getDouble("y"), LengthUnit.METER);
-        Direction initDirection = new Direction(messageData.getDouble("direction"), DirectionUnit.EAST_RADIAN);
+        Length initX = new Length(messageData.getJSONObject("position").getDouble("x"), LengthUnit.METER);
+        Length initY = new Length(messageData.getJSONObject("position").getDouble("y"), LengthUnit.METER);
+        Direction initDirection = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
         OrientedPoint2d position = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
-        Speed initSpeed = new Speed(messageData.getDouble("speed"), SpeedUnit.KM_PER_HOUR);
+        Speed initSpeed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
 //        Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
         if (mode.toLowerCase().equals("active"))
         {
@@ -492,22 +550,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             this.planGtuIds.add(id);
         }
 
-//        Speed maximumSpeed = new Speed(200, SpeedUnit.KM_PER_HOUR);
-//        Acceleration maximumAcceleration = new Acceleration(4, AccelerationUnit.METER_PER_SECOND_2);
-//        Acceleration maximumDeceleration = new Acceleration(8, AccelerationUnit.METER_PER_SECOND_2);
-//        LaneBasedGtu gtu = new LaneBasedGtu(id, gtuType, vehicleLength, vehicleWidth, maximumSpeed, vehicleLength.divide(2), network);
-//
-//        gtu.setMaximumAcceleration(maximumAcceleration);
-//        gtu.setMaximumDeceleration(maximumDeceleration);
-////        gtu.setVehicleModel(templateGtuType.getVehicleModel());
-////        gtu.setNoLaneChangeDistance(this.noLaneChangeDistance);
-////        gtu.setInstantaneousLaneChange(this.instantaneousLaneChanges);
-////        gtu.setErrorHandler(this.errorHandler);
-//
-//        gtu.init(templateGtuType.getStrategicalPlannerFactory().create(gtu, templateGtuType.getRoute(),
-//                templateGtuType.getOrigin(), templateGtuType.getDestination()), position, speed);
-
-        this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
+        Gtu gtu = this.network.getGTU(id);
+        if (gtu == null) {  // somehow this is not guaranteed to this point, so we check again
+            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
+        }
         OtsWebSocketTransceiver.this.tacticalFactory.resetMode();
         setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
         scheduledChangeControlMode(id, mode);
@@ -679,89 +725,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         }
     }
 
-    /**
-     * Clears the information that is used to setup a simulation. This is the information that would be reused in a reset
-     * message.
-     */
-    private void clearSimulationSetupData()
-    {
-        this.lastRoutesJson = null;
-    }
-
-    /**
-     * Setup simulation.
-     * @throws InvocationTargetException if a parameter cannot be set
-     * @throws IllegalAccessException if a parameter cannot be set
-     */
-    private void setupSimulation()
-    {
-        try {
-
-            stopSimulation();
-
-            // An animator supports real-time running. No GUI will be shown if no animation panel is created.
-            this.simulator = new OtsAnimator("Test animator");
-            this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
-
-            String simulationString = null;
-            SimulationType simulationType = SimulationType.SILAB;
-
-            CoSimModel model = new CoSimModel(this.simulator, simulationString, simulationType);
-            Duration runtime = simulationType == null ? Duration.instantiateSI(60.0) : Duration.instantiateSI(36000.0);
-            this.simulator.initialize(Time.ZERO, Duration.ZERO, runtime, model);
-            this.simulator.getReplication().setHistoryManager(
-                    new HistoryManagerDevs(this.simulator, Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
-            this.network = (RoadNetwork) model.getNetwork();
-            this.characteristicsGeneratorOd = model.getSim0mqSimulation().getGtuCharacteristicsGeneratorOd();
-            this.parameterFactory = model.getSim0mqSimulation().getParameterFactory();
-            this.gtuSpawner = new GtuSpawnerOd(this.network, this.characteristicsGeneratorOd);
-
-            listenToEvents();
-
-            if (true)
-            {
-                GtuColorer colorer = new SwitchableGtuColorer(0, new IdGtuColorer(),
-                        new SpeedGtuColorer(new Speed(150, SpeedUnit.KM_PER_HOUR)),
-                        new AccelerationGtuColorer(Acceleration.instantiateSI(-6.0), Acceleration.instantiateSI(2)),
-                        new SynchronizationColorer());
-                OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),
-                        this.simulator, model, colorer, this.network);
-                animationPanel.enableSimulationControlButtons();
-                this.app = new OtsSimulationApplication<AbstractOtsModel>(model, animationPanel);
-            }
-
-            // Routes
-            if (this.lastRoutesJson != null)
-            {
-                this.lastRoutesJson.createRoutes(this.network, DefaultsNl.VEHICLE, model.getSim0mqSimulation());
-            }
-
-            // OD background traffic with default model
-    //        if (this.lastOdJson != null)
-    //        {
-    //            Collection<GtuType> gtuTypes = Set.of(DefaultsNl.CAR, DefaultsNl.VAN, DefaultsNl.BUS, DefaultsNl.TRUCK);
-    //            OdMatrix od = this.lastOdJson.asOdMatrix(this.network, gtuTypes, model.getSim0mqSimulation());
-    //            OdOptions odOptions = new OdOptions().set(OdOptions.GTU_TYPE, this.characteristicsGeneratorOd)
-    //                    .set(OdOptions.GTU_ID, new IdGenerator(OtsWebSocketTransceiver.this.idPrefix));
-    //            OdApplier.applyOd(this.network, od, odOptions, DefaultsRoadNl.ROAD_USERS);
-    //        }
-
-            JSONObject avVehicleData = new JSONObject();
-            avVehicleData.put("id", "AV");
-            avVehicleData.put("mode", "ots");
-            avVehicleData.put("x", 10);
-            avVehicleData.put("y", 1.6);
-            avVehicleData.put("direction", 0);
-            avVehicleData.put("speed", 0);
-            generateVehicle(avVehicleData);
-        }
-        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
-               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
-        {
-
-        }
-    }
-
     @Override
     public void notify(final Event event) throws RemoteException
     {
@@ -783,7 +746,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             Gtu gtu = this.network.getGTU(gtuId);
             if (!gtuId.equals(this.externallyGeneratedGtuId))
             {
-                this.simulator.scheduleEventNow(this, "sendVehicleMessage", new Object[] {gtu});
                 this.planGtuIds.add(gtuId);
                 this.externallyGeneratedGtuId = null;
             }
@@ -815,39 +777,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             }
             // if not, stopped for some other reason, perhaps a stop button in the GUI
         }
-    }
-
-    /**
-     * Sent VEHICLE message.
-     * @param gtu
-     */
-    @SuppressWarnings("unused") // scheduled
-    private void sendVehicleMessage(final Gtu gtu)
-    {
-        String gtuId = gtu.getId();
-        OrientedPoint2d p = gtu.getLocation();
-        String routeId = gtu.getStrategicalPlanner().getRoute().getId();
-        JSONObject vehicleData = new JSONObject();
-        vehicleData.put("id", gtuId);
-        vehicleData.put("x", p.x);
-        vehicleData.put("y", p.y);
-        vehicleData.put("dirZ", p.dirZ);
-        vehicleData.put("speed", gtu.getSpeed().getInUnit(SpeedUnit.KM_PER_HOUR));
-        vehicleData.put("type", gtu.getType().getId());
-        vehicleData.put("length", gtu.getLength().si);
-        vehicleData.put("width", gtu.getWidth().si);
-        vehicleData.put("width", gtu.getWidth().si);
-        vehicleData.put("front", gtu.getFront().dx().si);
-        vehicleData.put("routeId", routeId);
-
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("type", "VEHICLE");
-        jsonObject.put("data", vehicleData);
-        String msg = jsonObject.toString();
-        webSocketClient.sendMessage(msg);
-        String log = String.format("[%.3fs] Ots sent VEHICLE message for GTU %s on route %s",
-                this.simulator.getSimulatorTime().si, gtuId, routeId);
-        System.out.println(log);
     }
 
     /**
@@ -947,16 +876,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     }
 
     /**
-     * Listen to relevant events.
-     * @throws RemoteException exception
-     */
-    private void listenToEvents() throws RemoteException
-    {
-        this.network.addListener(this, Network.GTU_ADD_EVENT);
-        this.network.addListener(this, Network.GTU_REMOVE_EVENT);
-    }
-
-    /**
      * Co-simulation model. This intermediates between an OTS model, and the different supported network/OD types.
      */
     private final class CoSimModel extends AbstractOtsModel
@@ -964,27 +883,16 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         /** */
         private static final long serialVersionUID = 1L;
 
-        /** String definition of the network. */
-        private final String simulationString;
-
-        /** Network type. */
-        private final SimulationType simulationType;
-
         /** Simulation. */
         private Sim0mqSimulation simulation;
 
         /**
          * Constructor.
          * @param simulator simulator
-         * @param simulationString network string
-         * @param simulationType network type
          */
-        private CoSimModel(final OtsSimulatorInterface simulator, final String simulationString,
-                final SimulationType simulationType)
+        private CoSimModel(final OtsSimulatorInterface simulator)
         {
             super(simulator);
-            this.simulationString = simulationString;
-            this.simulationType = simulationType;
         }
 
         @Override
@@ -1007,86 +915,13 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         {
             try
             {
-                if (this.simulationString == null)
-                {
-                    this.simulation = new TwoLaneTestSimulation(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
-                }
-                else
-                {
-                    switch (this.simulationType)
-                    {
-                        case OPEN_DRIVE:
-                            this.simulation = new OpenDriveSimulation(this.simulator, OtsWebSocketTransceiver.this.tacticalFactory,
-                                    this.simulationString);
-                            break;
-                        case FOSIM:
-                            // TODO parse Fosim string
-                            // break;
-                        case OTS:
-                            // TODO parse OTS string
-                            // break;
-                        default:
-                            throw new SimRuntimeException("Network type " + this.simulationType + " is not supported.");
-                    }
-                }
+                this.simulation = new TwoLaneTestSimulation(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
             }
-            catch (GtuException | OtsGeometryException | NetworkException | JAXBException | SAXException
-                    | ParserConfigurationException ex)
+            catch (GtuException | OtsGeometryException | NetworkException ex)
             {
                 throw new SimRuntimeException(ex);
             }
         }
 
     }
-
-    /** All the converters that decode into arrays and matrices of Objects, keyed by prefix. */
-    private static final Map<Byte, Serializer<?>> OBJECT_DECODERS = new HashMap<>();
-
-    static
-    {
-        try
-        {
-            Field field = TypedMessage.class.getDeclaredField("OBJECT_DECODERS");
-            field.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            Map<Byte, Serializer<?>> map = (Map<Byte, Serializer<?>>) field.get(TypedMessage.class);
-            map.forEach((b, s) ->
-            {
-                OBJECT_DECODERS.put(b, s);
-                OBJECT_DECODERS.put((byte) (b - 128), s);
-            });
-        }
-        catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Queued messages.
-     * @param message bytes of the message
-     * @param log log entry to print when the message is sent
-     */
-    private record QueuedMessage(byte[] message, String log)
-    {
-    }
-
-    /**
-     * Simulation type, defining how the simulation string containing the network and optionally demand is parsed.
-     */
-    private enum SimulationType
-    {
-        /** OpenDRIVE network with optional separate JSON OD matrix. */
-        SILAB,
-
-        /** OpenDRIVE network with optional separate JSON OD matrix. */
-        OPEN_DRIVE,
-
-        /** FOSIM simulation file. */
-        FOSIM,
-
-        /** OTS XML simulation. */
-        OTS;
-    }
-
 }

@@ -71,8 +71,8 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
         this.network = new RoadNetwork("Two-Lane Test Network", simulator);
 
         // Create Points and Nodes
-        Point2d pointA = new Point2d(0.0, 0.0);
-        Point2d pointB = new Point2d(1000.0, 0.0);
+        Point2d pointA = new Point2d(0.0, 5.25);
+        Point2d pointB = new Point2d(1000.0, 5.25);
 
         Node nodeA = new Node(this.network, "A", pointA);
         Node nodeB = new Node(this.network, "B", pointB);

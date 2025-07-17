@@ -202,7 +202,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avData.put("mode", "ots");
             JSONObject avPosition = new JSONObject();
             avPosition.put("x", 10);
-            avPosition.put("y", 1.6);
+            avPosition.put("y", 7.125);
             avData.put("position", avPosition);
             JSONObject avRotation = new JSONObject();
             avRotation.put("z", 0);
@@ -225,7 +225,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         {
             String messageType = data.getString("type");
             JSONObject messageData = Utils.tryGetJSONObject(data, "data");
-            CategoryLogger.always().debug("Ots received " + messageType + " message");
 
             if ("OBJECTS".equals(messageType)) {
                 JSONArray objects = messageData.getJSONArray("objects");
@@ -389,7 +388,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     {
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
         String id = messageData.getString("id");
-        CategoryLogger.always().debug("Ots received VEHICLE message for GTU " + id);
 
         String mode = Utils.tryGetString(messageData, "mode", "external");
         Length initX = new Length(messageData.getJSONObject("position").getDouble("x"), LengthUnit.METER);

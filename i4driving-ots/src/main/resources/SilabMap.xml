@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ots:Ots xmlns:ots="http://www.opentrafficsim.org/ots" xmlns:xi="http://www.w3.org/2001/XInclude"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.opentrafficsim.org/ots ./xsd/ots.xsd">
+  xsi:schemaLocation="http://www.opentrafficsim.org/ots file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\ots.xsd">
   <ots:Definitions>
-    <xi:include href="./xsd/defaults/default_gtutypes.xml">
+    <xi:include href="./xsd/defaults/default_gtutypes.xml">s
       <xi:fallback>
-        <xi:include href="C:/GitHub/i4driving/i4driving-ots/src/main/resources/xsd/defaults/default_gtutypes.xml" />
+        <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_gtutypes.xml" />
       </xi:fallback>
     </xi:include>
     <xi:include href="./xsd/defaults/default_linktypes.xml">
       <xi:fallback>
-        <xi:include href="C:/GitHub/i4driving/i4driving-ots/src/main/resources/xsd/defaults/default_linktypes.xml" />
+        <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_linktypes.xml" />
       </xi:fallback>
     </xi:include>
     <xi:include href="./xsd/defaults/default_stripetypes.xml">
       <xi:fallback>
-        <xi:include href="C:/GitHub/i4driving/i4driving-ots/src/main/resources/xsd/defaults/default_stripetypes.xml" />
+        <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_stripetypes.xml" />
       </xi:fallback>
     </xi:include>
     <xi:include href="./xsd/defaults/default_lanetypes.xml">
       <xi:fallback>
-        <xi:include href="C:/GitHub/i4driving/i4driving-ots/src/main/resources/xsd/defaults/default_lanetypes.xml" />
+        <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_lanetypes.xml" />
       </xi:fallback>
     </xi:include>
     <xi:include href="./xsd/defaults/default_detectortypes.xml">
       <xi:fallback>
-        <xi:include href="C:/GitHub/i4driving/i4driving-ots/src/main/resources/xsd/defaults/default_detectortypes.xml" />
+        <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_detectortypes.xml" />
       </xi:fallback>
     </xi:include>
     <ots:LinkTypes>
@@ -41,115 +41,33 @@
       </ots:LinkType>
     </ots:LinkTypes>
     <ots:RoadLayouts>
-      <ots:RoadLayout Id="3LaneHighway" LinkType="HIGHWAY">
-        <ots:Shoulder Id="LeftShoulder">
-          <ots:CenterOffset>12.1m</ots:CenterOffset>
-          <ots:Width>3m</ots:Width>
-        </ots:Shoulder>
-        <ots:Stripe Id="1">
-          <ots:CenterOffset>10.8m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Lane Id="FORWARD1" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>9.0m</ots:CenterOffset>
-          <ots:Width>3.6m</ots:Width>
-        </ots:Lane>
-        <ots:Stripe Id="2">
-          <ots:CenterOffset>7.2m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.DASHED</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Lane Id="FORWARD2" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>5.4m</ots:CenterOffset>
-          <ots:Width>3.6m</ots:Width>
-        </ots:Lane>
-        <ots:Stripe Id="3">
-          <ots:CenterOffset>3.6m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.DASHED</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Lane Id="FORWARD3" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>1.8m</ots:CenterOffset>
-          <ots:Width>3.6m</ots:Width>
-        </ots:Lane>
-        <ots:Stripe Id="4">
-          <ots:CenterOffset>0m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Shoulder Id="RightShoulder">
-          <ots:CenterOffset>-1.5m</ots:CenterOffset>
-          <ots:Width>3m</ots:Width>
-        </ots:Shoulder>
-      </ots:RoadLayout>
       <ots:RoadLayout Id="2LaneHighway" LinkType="HIGHWAY">
         <ots:Shoulder Id="LeftShoulder">
-          <ots:CenterOffset>-0.25m</ots:CenterOffset>
+          <ots:CenterOffset>13.875m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>
-        <ots:Stripe Id="1">
-          <ots:CenterOffset>-1.75m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Lane Id="FORWARD1" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>-3.5m</ots:CenterOffset>
+<!--        <ots:Stripe Id="1">-->
+<!--          <ots:CenterOffset>-1.75m</ots:CenterOffset>-->
+<!--          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>-->
+<!--        </ots:Stripe>-->
+        <ots:Lane Id="4" LaneType="NL.HIGHWAY">
+          <ots:CenterOffset>10.625m</ots:CenterOffset>
           <ots:Width>3.5m</ots:Width>
         </ots:Lane>
-        <ots:Stripe Id="2">
-          <ots:CenterOffset>-5.25m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.DASHED</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Lane Id="FORWARD2" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>-7m</ots:CenterOffset>
+<!--        <ots:Stripe Id="2">-->
+<!--          <ots:CenterOffset>-5.25m</ots:CenterOffset>-->
+<!--          <ots:DefinedStripe>NL.DASHED</ots:DefinedStripe>-->
+<!--        </ots:Stripe>-->
+        <ots:Lane Id="5" LaneType="NL.HIGHWAY">
+          <ots:CenterOffset>7.125m</ots:CenterOffset>
           <ots:Width>3.5m</ots:Width>
         </ots:Lane>
-        <ots:Stripe Id="3">
-          <ots:CenterOffset>-8.75m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
+<!--        <ots:Stripe Id="3">-->
+<!--          <ots:CenterOffset>-8.75m</ots:CenterOffset>-->
+<!--          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>-->
+<!--        </ots:Stripe>-->
         <ots:Shoulder Id="RightShoulder">
-          <ots:CenterOffset>-10.25m</ots:CenterOffset>
-          <ots:Width>3m</ots:Width>
-        </ots:Shoulder>
-      </ots:RoadLayout>
-      <ots:RoadLayout Id="1LaneHighway" LinkType="HIGHWAY">
-        <ots:Shoulder Id="LeftShoulder">
-          <ots:CenterOffset>4.9m</ots:CenterOffset>
-          <ots:Width>3m</ots:Width>
-        </ots:Shoulder>
-        <ots:Stripe Id="1">
-          <ots:CenterOffset>3.6m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Lane Id="FORWARD1" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>1.8m</ots:CenterOffset>
-          <ots:Width>3.6m</ots:Width>
-        </ots:Lane>
-        <ots:Stripe Id="2">
-          <ots:CenterOffset>0m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Shoulder Id="RightShoulder">
-          <ots:CenterOffset>-1.5m</ots:CenterOffset>
-          <ots:Width>3m</ots:Width>
-        </ots:Shoulder>
-      </ots:RoadLayout>
-      <ots:RoadLayout Id="1LaneLocal" LinkType="LOCAL">
-        <ots:Shoulder Id="LeftShoulder">
-          <ots:CenterOffset>4.9m</ots:CenterOffset>
-          <ots:Width>3m</ots:Width>
-        </ots:Shoulder>
-        <ots:Stripe Id="1">
-          <ots:CenterOffset>3.6m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Lane Id="FORWARD1" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>1.8m</ots:CenterOffset>
-          <ots:Width>3.6m</ots:Width>
-        </ots:Lane>
-        <ots:Stripe Id="2">
-          <ots:CenterOffset>0m</ots:CenterOffset>
-          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>
-        </ots:Stripe>
-        <ots:Shoulder Id="RightShoulder">
-          <ots:CenterOffset>-1.5m</ots:CenterOffset>
+          <ots:CenterOffset>3.875m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>
       </ots:RoadLayout>
@@ -164,8 +82,8 @@
     </ots:Link>
   </ots:Network>
   <ots:Demand>
-    <ots:Sink Lane="FORWARD1" Link="AB" Position="END-50m" Type="NL.ROAD_USERS" />
-    <ots:Sink Lane="FORWARD2" Link="AB" Position="END-50m" Type="NL.ROAD_USERS" />
+    <ots:Sink Lane="4" Link="AB" Position="END-50m" Type="NL.ROAD_USERS" />
+    <ots:Sink Lane="5" Link="AB" Position="END-50m" Type="NL.ROAD_USERS" />
   </ots:Demand>
   <ots:Run>
     <ots:RunLength>1h</ots:RunLength>

@@ -43,7 +43,7 @@
     <ots:RoadLayouts>
       <ots:RoadLayout Id="2LaneHighway" LinkType="HIGHWAY">
         <ots:Shoulder Id="LeftShoulder">
-          <ots:CenterOffset>13.875m</ots:CenterOffset>
+          <ots:CenterOffset>-0.375m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>
 <!--        <ots:Stripe Id="1">-->
@@ -51,7 +51,7 @@
 <!--          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>-->
 <!--        </ots:Stripe>-->
         <ots:Lane Id="4" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>10.625m</ots:CenterOffset>
+          <ots:CenterOffset>-3.635m</ots:CenterOffset>
           <ots:Width>3.5m</ots:Width>
         </ots:Lane>
 <!--        <ots:Stripe Id="2">-->
@@ -59,7 +59,7 @@
 <!--          <ots:DefinedStripe>NL.DASHED</ots:DefinedStripe>-->
 <!--        </ots:Stripe>-->
         <ots:Lane Id="5" LaneType="NL.HIGHWAY">
-          <ots:CenterOffset>7.125m</ots:CenterOffset>
+          <ots:CenterOffset>-7.125m</ots:CenterOffset>
           <ots:Width>3.5m</ots:Width>
         </ots:Lane>
 <!--        <ots:Stripe Id="3">-->
@@ -67,14 +67,14 @@
 <!--          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>-->
 <!--        </ots:Stripe>-->
         <ots:Shoulder Id="RightShoulder">
-          <ots:CenterOffset>3.875m</ots:CenterOffset>
+          <ots:CenterOffset>-10.375m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>
       </ots:RoadLayout>
     </ots:RoadLayouts>
   </ots:Definitions>
   <ots:Network>
-    <ots:Node Coordinate="(0, 0)" Direction="0 deg(E)" Id="A" />
+    <ots:Node Coordinate="(-10, 0)" Direction="0 deg(E)" Id="A" />
     <ots:Node Coordinate="(1050, 0)" Direction="0 deg(E)" Id="B" />
     <ots:Link Id="AB" NodeEnd="B" NodeStart="A" Type="HIGHWAY">
       <ots:Straight />

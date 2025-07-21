@@ -697,6 +697,14 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 laneChange = laneChangeDirection;
             }
         }
+        if (event.getType().equals(LaneBasedGtu.LANE_EXIT_EVENT))
+        {
+            System.out.println("LANE_EXIT_EVENT");
+        }
+        if (event.getType().equals(LaneBasedGtu.LANE_ENTER_EVENT))
+        {
+            System.out.println("LANE_ENTER_EVENT");
+        }
     }
 
     /**
@@ -725,6 +733,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                         gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU("AV");
                         if (gtuAV != null) {
                             gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANE_ENTER_EVENT);
+                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
                         }
                     }
                     if (!simulator.isStartingOrRunning() || gtuAV == null || gtuAV.isDestroyed()) {
@@ -748,13 +758,16 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                     positionJson.put("x", position.getX());
                     positionJson.put("y", position.getY());
                     dataJson.put("position", positionJson);
+                    JSONObject rotationJson = new JSONObject();
+                    rotationJson.put("z", position.getDirZ());
+                    dataJson.put("rotation", rotationJson);
 
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("type", "PLAN");
                     jsonObject.put("data", dataJson);
                     webSocketClient.sendMessage(jsonObject.toString());
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(10);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }

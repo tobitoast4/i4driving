@@ -6,10 +6,7 @@ import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import nl.tudelft.simulation.language.DsolException;
-import org.djunits.unit.AccelerationUnit;
-import org.djunits.unit.DirectionUnit;
-import org.djunits.unit.LengthUnit;
-import org.djunits.unit.SpeedUnit;
+import org.djunits.unit.*;
 import org.djunits.value.vdouble.scalar.*;
 import org.djutils.cli.CliUtil;
 import org.djutils.draw.point.OrientedPoint2d;
@@ -29,6 +26,7 @@ import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.network.LinkWeight;
 import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
@@ -50,6 +48,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalPlanner;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalPlannerFactory;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
+import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LanePosition;
@@ -68,6 +67,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.rmi.RemoteException;
 import java.util.*;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
@@ -212,21 +212,24 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avData.put("id", avId);
             avData.put("mode", "ots");
             JSONObject avPosition = new JSONObject();
-            avPosition.put("x", 10);
-            avPosition.put("y", -7.125);
+            avPosition.put("x", 471.7277);
+            avPosition.put("y", -222.031);
             avData.put("position", avPosition);
             JSONObject avRotation = new JSONObject();
             avRotation.put("z", 0);
             avData.put("rotation", avRotation);
             avData.put("v", 0);
-            generateVehicle(avData);
+            JSONObject jsonParameters = new JSONObject();
+            jsonParameters.put("t0", new Duration(10, DurationUnit.SECOND));
+            avData.put("parameters", jsonParameters);
+//            generateVehicle(avData);
             CategoryLogger.always().debug("Generate GTU AV");
         }
-        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
-               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
-        {
-//        catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
-//            {
+//        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
+//               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
+//        {
+        catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
+            {
 
         }
     }
@@ -421,10 +424,18 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             }
         }
 
-        ArrayList<Node> routeNodes = new ArrayList<>();
-        routeNodes.add(this.network.getNode("A"));
-        routeNodes.add(this.network.getNode("B"));
-        Route route = new Route("main", DefaultsNl.CAR, routeNodes);
+        Route route;
+        if (id.equals("AV")) {
+            Node nodeA = this.network.getNode("l191-0");
+            Node nodeB = this.network.getNode("cp2-lane1-1");
+            RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
+            route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
+        } else {
+            Node nodeA = this.network.getNode("cp1-lane1-0");
+            Node nodeB = this.network.getNode("cp1-lane1-1");
+            RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
+            route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
+        }
 //        String routId = "A-B";  // TODO: Get routeId dynamically by x / y
 //        Route route = this.network.getRoute(routId);
 

@@ -76,7 +76,7 @@ public final class SilabSimulation implements Sim0mqSimulation
     public SilabSimulation(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
             throws GtuException, OtsGeometryException, NetworkException
     {
-        URL xmlURL = URLResource.getResource("/SilabMap.xml");
+        URL xmlURL = URLResource.getResource("/MotorwayExit.xml");
         this.network = new RoadNetwork("SilabMap", simulator);
         try {
             new XmlParser(this.network).setUrl(xmlURL).build();
@@ -93,8 +93,8 @@ public final class SilabSimulation implements Sim0mqSimulation
         this.parameterFactory = new ParameterFactorySim0mq();
         this.parameterFactory.addParameter(DefaultsNl.CAR, LmrsParameters.VGAIN, new Speed(35.0, SpeedUnit.KM_PER_HOUR));
 
-        Node nodeA = this.network.getNode("A");
-        Node nodeB = this.network.getNode("B");
+        Node nodeA = this.network.getNode("l191-0");
+        Node nodeB = this.network.getNode("l188-0");
         List<Node> nodes = Arrays.asList(nodeA, nodeB);
         Route route = new Route("Fellow route", DefaultsNl.CAR, nodes);
 

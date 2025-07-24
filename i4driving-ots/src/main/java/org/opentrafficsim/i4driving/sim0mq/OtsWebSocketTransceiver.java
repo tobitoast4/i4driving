@@ -117,15 +117,13 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     /** Command handlers. */
     private Map<String, CommandsHandler> commandHandlers = new LinkedHashMap<>();
 
-    /** Ids of GTUs that are externally deleted, i.e. do not sent back a delete message. */
-    private Set<String> deleteGtuIds = new LinkedHashSet<>();
-
     /** GSON builder to parser JSON strings. */
     private Gson gson = DefaultGson.GSON;
 
     private WebSocketClient webSocketClient;
     private Worker avWorker;
     private String laneChange = "";
+    private String avId;
 
     /**
      * Constructor.
@@ -172,6 +170,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     {
         try {
             laneChange = "";
+            avId = "AV";
             stopSimulation();
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
@@ -210,7 +209,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 this.app = new OtsSimulationApplication<AbstractOtsModel>(model, animationPanel);
             }
             JSONObject avData = new JSONObject();
-            avData.put("id", "AV");
+            avData.put("id", avId);
             avData.put("mode", "ots");
             JSONObject avPosition = new JSONObject();
             avPosition.put("x", 10);
@@ -226,6 +225,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
                | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
         {
+//        catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
+//            {
 
         }
     }
@@ -259,9 +260,20 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
                     } else if (name.startsWith("Vehicles.")) {
                         if (name.equals("Vehicles.V600.Fiat500.main")) {
-                            continue; // TODO make this better
-                        }
-                        if (this.network != null) {
+                            double x = odbObject.getJSONObject("position").getDouble("x");
+                            double y = odbObject.getJSONObject("position").getDouble("y");
+                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
+                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
+                            LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+//                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
+                            System.out.println(avGtu.getLocation().distance(loc));
+//                            if (avGtu.getLocation().distance(loc) > 1) {
+//                                this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {avId});
+//                                avId = "AV" + avCount++;
+//                                odbObject.put("id", avId);
+//                                generateVehicle(odbObject);
+//                            }
+                        } else if (this.network != null) {
                             Gtu gtu = this.network.getGTU(id);
                             if (gtu == null) {
                                 generateVehicle(odbObject);
@@ -276,7 +288,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
                 Set<String> gtuIdsToRemove = new LinkedHashSet<>();
                 for (String id : externalGtuIds) {  // remove GTUs that are not in view anymore
-                    if (!updatedGtuIds.contains(id)) {
+                    if (!updatedGtuIds.contains(id) && !id.equals(avId)) {
                         this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {id});
                         gtuIdsToRemove.add(id);
                     }
@@ -301,8 +313,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //            }
             else if ("DELETE".equals(messageType))
             {
-                String id = messageData.getString("id");;
-                this.deleteGtuIds.add(id);
+                String id = messageData.getString("id");
                 this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {id});
             }
             else if ("START".equals(messageType))
@@ -383,14 +394,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //        }
         Speed initSpeed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
 //        Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
-        if (mode.toLowerCase().equals("active"))
-        {
-            if (running)
-            {
+        if (mode.toLowerCase().equals("active")) {
+            if (running) {
                 this.simulator.scheduleEventNow(this, "addActiveModeObject", new Object[] {id, position, initSpeed});
-            }
-            else
-            {
+            } else {
                 addActiveModeObject(id, position, initSpeed);
             }
             return;
@@ -523,7 +530,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     }
 
     /**
-     * Add active mode object.
+     * Add active mode object. (Objects that cross the streets)
      * @param id id
      * @param location location
      * @param speed speed
@@ -632,7 +639,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             {
                 if (this.externalGtuIds.add(id))
                 {
-                    getTacticalPlanner(id).startDeadReckoning();
+                    if (getTacticalPlanner(id) != null) {
+                        getTacticalPlanner(id).startDeadReckoning();
+                    }
                 }
                 break;
             }
@@ -730,7 +739,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 while (!this.exit)
                 {
                     if (this.gtuAV == null) {
-                        gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU("AV");
+                        gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avId);
                         if (gtuAV != null) {
                             gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
                             gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANE_ENTER_EVENT);

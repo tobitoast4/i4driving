@@ -3,7 +3,7 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.opentrafficsim.org/ots file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\ots.xsd">
   <ots:Definitions>
-    <xi:include href="./xsd/defaults/default_gtutypes.xml">s
+    <xi:include href="./xsd/defaults/default_gtutypes.xml">
       <xi:fallback>
         <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_gtutypes.xml" />
       </xi:fallback>
@@ -11,11 +11,6 @@
     <xi:include href="./xsd/defaults/default_linktypes.xml">
       <xi:fallback>
         <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_linktypes.xml" />
-      </xi:fallback>
-    </xi:include>
-    <xi:include href="./xsd/defaults/default_stripetypes.xml">
-      <xi:fallback>
-        <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_stripetypes.xml" />
       </xi:fallback>
     </xi:include>
     <xi:include href="./xsd/defaults/default_lanetypes.xml">
@@ -42,31 +37,33 @@
     </ots:LinkTypes>
     <ots:RoadLayouts>
       <ots:RoadLayout Id="2LaneHighway" LinkType="HIGHWAY">
-        <ots:Shoulder Id="LeftShoulder">
+
+        <ots:Shoulder Id="LeftShoulder" LaneType="">
           <ots:CenterOffset>6.75m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>
-<!--        <ots:Stripe Id="1">-->
-<!--          <ots:CenterOffset>-1.75m</ots:CenterOffset>-->
-<!--          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>-->
-<!--        </ots:Stripe>-->
+
+        <ots:Stripe Type="SOLID">
+          <ots:CenterOffset>5.25m</ots:CenterOffset>
+          <ots:DrawingWidth>20cm</ots:DrawingWidth>
+        </ots:Stripe>
         <ots:Lane Id="4" LaneType="NL.HIGHWAY">
           <ots:CenterOffset>3.5m</ots:CenterOffset>
           <ots:Width>3.5m</ots:Width>
         </ots:Lane>
-<!--        <ots:Stripe Id="2">-->
-<!--          <ots:CenterOffset>-5.25m</ots:CenterOffset>-->
-<!--          <ots:DefinedStripe>NL.DASHED</ots:DefinedStripe>-->
-<!--        </ots:Stripe>-->
+        <ots:Stripe Type="DASHED">
+          <ots:CenterOffset>1.75m</ots:CenterOffset>
+          <ots:DrawingWidth>20cm</ots:DrawingWidth>
+        </ots:Stripe>
         <ots:Lane Id="5" LaneType="NL.HIGHWAY">
           <ots:CenterOffset>0m</ots:CenterOffset>
           <ots:Width>3.5m</ots:Width>
         </ots:Lane>
-<!--        <ots:Stripe Id="3">-->
-<!--          <ots:CenterOffset>-8.75m</ots:CenterOffset>-->
-<!--          <ots:DefinedStripe>NL.SOLID</ots:DefinedStripe>-->
-<!--        </ots:Stripe>-->
-        <ots:Shoulder Id="RightShoulder">
+        <ots:Stripe Type="SOLID">
+          <ots:CenterOffset>-1.75m</ots:CenterOffset>
+          <ots:DrawingWidth>20cm</ots:DrawingWidth>
+        </ots:Stripe>
+        <ots:Shoulder Id="RightShoulder" LaneType="">
           <ots:CenterOffset>-3.25m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>

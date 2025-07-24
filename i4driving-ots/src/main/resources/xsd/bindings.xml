@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<jaxb:bindings xmlns:jaxb="https://jakarta.ee/xml/ns/jaxb" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+<jaxb:bindings xmlns:jaxb="http://java.sun.com/xml/ns/jaxb" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ots="http://www.opentrafficsim.org/ots"
-  xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" jaxb:version="3.0" jaxb:extensionBindingPrefixes="xjc simplify"
+  xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" jaxb:version="2.0" jaxb:extensionBindingPrefixes="xjc simplify"
   xmlns:simplify="http://jaxb2-commons.dev.java.net/basic/simplify">
 
   <!-- Global bindings define an adapter to convert an XML type anywhere where it is used. -->
@@ -69,8 +69,6 @@
       adapter="org.opentrafficsim.xml.bindings.PositiveTimeAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.AccelerationType" xmlType="ots:AccelerationType"
       adapter="org.opentrafficsim.xml.bindings.AccelerationAdapter" />
-    <xjc:javaType name="org.opentrafficsim.xml.bindings.types.PositiveAccelerationType"
-      xmlType="ots:PositiveAccelerationType" adapter="org.opentrafficsim.xml.bindings.AccelerationAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.AngleType" xmlType="ots:AngleType"
       adapter="org.opentrafficsim.xml.bindings.AngleAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.DirectionType" xmlType="ots:DirectionType"
@@ -80,8 +78,6 @@
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.LengthType" xmlType="ots:PositiveLengthType"
       adapter="org.opentrafficsim.xml.bindings.PositiveLengthAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.SpeedType" xmlType="ots:SpeedType"
-      adapter="org.opentrafficsim.xml.bindings.SpeedAdapter" />
-    <xjc:javaType name="org.opentrafficsim.xml.bindings.types.SpeedType" xmlType="ots:PositiveSpeedType"
       adapter="org.opentrafficsim.xml.bindings.SpeedAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.TimeType" xmlType="ots:TimeType"
       adapter="org.opentrafficsim.xml.bindings.TimeAdapter" />
@@ -115,6 +111,8 @@
       adapter="org.opentrafficsim.xml.bindings.EncodingAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.GtuPositionType" xmlType="ots:GtuPositionType"
       adapter="org.opentrafficsim.xml.bindings.GtuPositionAdapter" />
+    <xjc:javaType name="org.opentrafficsim.xml.bindings.types.StripeType" xmlType="ots:StripeType"
+      adapter="org.opentrafficsim.xml.bindings.StripeTypeAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.FieldType" xmlType="ots:StaticFieldNameType"
       adapter="org.opentrafficsim.xml.bindings.StaticFieldNameAdapter" />
     <xjc:javaType name="org.opentrafficsim.xml.bindings.types.ColorType" xmlType="ots:ColorType"
@@ -124,7 +122,6 @@
 
   <!-- The following bindings are on elements that appear once, and hence are not defined in a separate type. -->
   <!-- Simplifications, see: https://github.com/highsource/jaxb2-basics/wiki/JAXB2-Simplify-Plugin#as-element-properties -->
-
   <jaxb:bindings schemaLocation="ots-network.xsd">
     <!-- Network.Node/Centroid/Link/Connector/include as separate lists -->
     <jaxb:bindings node="//xsd:element[@name='Network']/xsd:complexType/xsd:sequence/xsd:choice">
@@ -135,42 +132,10 @@
       node="//xsd:element[@name='Clothoid']/xsd:complexType/xsd:sequence/xsd:choice/xsd:element[@name='Interpolated']">
       <simplify:as-element-property />
     </jaxb:bindings>
+    <!-- Flattener.MaxDeviation/MaxAngle as separate lists -->
     <jaxb:bindings
-      node="//xsd:element[@name='StripeOverride']/xsd:complexType/xsd:attribute[@name='LateralSync']">
-      <jaxb:property>
-        <jaxb:baseType>
-          <xjc:javaType name="org.opentrafficsim.xml.bindings.types.StripeLateralSyncType"
-            adapter="org.opentrafficsim.xml.bindings.StripeLateralSyncAdapter" />
-        </jaxb:baseType>
-      </jaxb:property>
-    </jaxb:bindings>
-  </jaxb:bindings>
-
-  <jaxb:bindings schemaLocation="ots-definitions.xsd">
-    <jaxb:bindings
-      node="//xsd:element[@name='StripeType']/xsd:complexType/xsd:attribute[@name='LateralSync']">
-      <jaxb:property>
-        <jaxb:baseType>
-          <xjc:javaType name="org.opentrafficsim.xml.bindings.types.StripeLateralSyncType"
-            adapter="org.opentrafficsim.xml.bindings.StripeLateralSyncAdapter" />
-        </jaxb:baseType>
-      </jaxb:property>
-    </jaxb:bindings>
-    <jaxb:bindings
-      node="//xsd:element[@name='Custom']/xsd:complexType/xsd:attribute[@name='LateralSync']">
-      <jaxb:property>
-        <jaxb:baseType>
-          <xjc:javaType name="org.opentrafficsim.xml.bindings.types.StripeLateralSyncType"
-            adapter="org.opentrafficsim.xml.bindings.StripeLateralSyncAdapter" />
-        </jaxb:baseType>
-      </jaxb:property>
-    </jaxb:bindings>
-    <jaxb:bindings node="//xsd:complexType[@name='StripeCompatibility']/xsd:attribute[@name='Direction']">
-      <jaxb:property>
-        <jaxb:baseType>
-          <xjc:javaType name="java.lang.String" adapter="org.opentrafficsim.xml.bindings.StringAdapter" />
-        </jaxb:baseType>
-      </jaxb:property>
+      node="//xsd:element[@name='DeviationAndAngle']/xsd:complexType/xsd:sequence/xsd:element[@name='MaxDeviation']">
+      <simplify:as-element-property />
     </jaxb:bindings>
   </jaxb:bindings>
 

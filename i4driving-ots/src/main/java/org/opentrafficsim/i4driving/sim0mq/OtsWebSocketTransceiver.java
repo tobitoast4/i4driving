@@ -9,7 +9,10 @@ import nl.tudelft.simulation.language.DsolException;
 import org.djunits.unit.*;
 import org.djunits.value.vdouble.scalar.*;
 import org.djutils.cli.CliUtil;
+import org.djutils.draw.line.PolyLine2d;
+import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.OrientedPoint2d;
+import org.djutils.draw.point.Point2d;
 import org.djutils.event.EventListener;
 import org.djutils.logger.CategoryLogger;
 import org.json.JSONArray;
@@ -31,6 +34,7 @@ import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
+import org.opentrafficsim.core.object.StaticObject;
 import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.i4driving.messages.Commands;
@@ -190,7 +194,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             this.network.addListener(this, Network.GTU_ADD_EVENT);
             this.network.addListener(this, Network.GTU_REMOVE_EVENT);
 
-            if (this.avWorker != null) {  // stop old bg thread if ther is one
+//            Point2d[] points = new Point2d[]{ new Point2d(0, 0), new Point2d(1, 0), new Point2d(0, 1) };
+//            Polygon2d polyLine2d = new Polygon2d(points);
+//            StaticObject so = StaticObject.create("XXX", polyLine2d, new Length(1, METER));
+//            this.network.addObject(so);
+
+            if (this.avWorker != null) {  // stop old bg thread if there is one
                 this.avWorker.exit();
             }
             this.avWorker = new OtsWebSocketTransceiver.Worker();
@@ -212,24 +221,27 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avData.put("id", avId);
             avData.put("mode", "ots");
             JSONObject avPosition = new JSONObject();
+//            avPosition.put("x", 507.099200);
+//            avPosition.put("y", -188.139600);
             avPosition.put("x", 471.7277);
-            avPosition.put("y", -222.031);
+            avPosition.put("y", -229.031);
+
             avData.put("position", avPosition);
             JSONObject avRotation = new JSONObject();
-            avRotation.put("z", 0);
+            avRotation.put("z", 0.857657);
             avData.put("rotation", avRotation);
             avData.put("v", 0);
             JSONObject jsonParameters = new JSONObject();
             jsonParameters.put("t0", new Duration(10, DurationUnit.SECOND));
             avData.put("parameters", jsonParameters);
-//            generateVehicle(avData);
+            generateVehicle(avData);
             CategoryLogger.always().debug("Generate GTU AV");
         }
-//        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
-//               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
-//        {
-        catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
-            {
+        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
+               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
+        {
+//        catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
+//            {
 
         }
     }
@@ -269,13 +281,20 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
                             LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
 //                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
-                            System.out.println(avGtu.getLocation().distance(loc));
+                            if (avGtu != null) {
+                                System.out.println(avGtu.getLocation().distance(loc));
+                            }
+//                            Gtu gtu = new Gtu("id", DefaultsNl.CAR, simulator, this.network, Length.instantiateSI(4.0), Length.instantiateSI(1.8),
+//                                    Speed.instantiateSI(50.0), Length.instantiateSI(2.0), Length.ZERO);
+//                            gtu.init();
 //                            if (avGtu.getLocation().distance(loc) > 1) {
 //                                this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {avId});
 //                                avId = "AV" + avCount++;
 //                                odbObject.put("id", avId);
 //                                generateVehicle(odbObject);
 //                            }
+                        } else if (name.contains("User")) {
+
                         } else if (this.network != null) {
                             Gtu gtu = this.network.getGTU(id);
                             if (gtu == null) {
@@ -432,7 +451,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         } else {
             Node nodeA = this.network.getNode("cp1-lane1-0");
-            Node nodeB = this.network.getNode("cp1-lane1-1");
+            Node nodeB = this.network.getNode("cp2-lane1-1");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         }

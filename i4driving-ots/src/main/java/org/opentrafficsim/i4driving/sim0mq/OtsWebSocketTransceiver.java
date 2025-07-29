@@ -125,6 +125,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private Gson gson = DefaultGson.GSON;
 
     private WebSocketClient webSocketClient;
+    private double sendMessageDelayMS = 10.0;
+    private Double last_avYaw = null;
     private String laneChange;
     private String avId;
 
@@ -776,8 +778,19 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         positionJson.put("x", position.getX());
         positionJson.put("y", position.getY());
         dataJson.put("position", positionJson);
+
         JSONObject rotationJson = new JSONObject();
-        rotationJson.put("z", position.getDirZ());
+        double current_avYaw = position.getDirZ();
+        rotationJson.put("z", current_avYaw);
+        if (last_avYaw == null) {
+            rotationJson.put("v_z", 0);  // Turning velocity for z axis
+        } else {
+            double angularDistance = Utils.angleDistance(current_avYaw, last_avYaw);
+            angularDistance = Utils.round(angularDistance, 6);
+            double vYaw = angularDistance / (sendMessageDelayMS / 1000);
+            rotationJson.put("v_z", vYaw);  // Turning velocity for z axis
+        }
+        last_avYaw = current_avYaw;
         dataJson.put("rotation", rotationJson);
 
         JSONObject jsonObject = new JSONObject();
@@ -785,7 +798,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         jsonObject.put("data", dataJson);
         webSocketClient.sendMessage(jsonObject.toString());
 
-        this.simulator.scheduleEventRel(new Duration(10, DurationUnit.MILLISECOND), () -> scheduledSendMessage());
+        this.simulator.scheduleEventRel(new Duration(sendMessageDelayMS, DurationUnit.MILLISECOND), () -> scheduledSendMessage());
     }
 
     /**

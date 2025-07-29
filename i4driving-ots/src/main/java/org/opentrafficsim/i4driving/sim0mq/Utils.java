@@ -49,16 +49,16 @@ public class Utils {
 
     public static double angleDistance(double ta, double ca) {
         // All angles in radiant
-        // if ta > ca (counter-clockwise rotation), result is + else -
+        // if ta > ca, result is - else +
         ta = normalizeAngle(ta);  // target angle   -> t=n+1
         ca = normalizeAngle(ca);  // current angle  -> t=n
-        if (Math.abs(ta-ca) < Math.PI) {
-            return ta - ca;
-        } else if (Math.abs(ta-ca) > Math.PI) {
-            if (ta > ca) {
-                return - (Math.abs(2*Math.PI - ta) + ca);
+        if (Math.abs(ca-ta) < Math.PI) {
+            return ca - ta;
+        } else if (Math.abs(ca-ta) > Math.PI) {
+            if (ca > ta) {
+                return - (Math.abs(2*Math.PI - ca) + ta);
             } else {
-                return Math.abs(2*Math.PI - ca) + ta;
+                return Math.abs(2*Math.PI - ta) + ca;
             }
         } else {
             // ta == ca

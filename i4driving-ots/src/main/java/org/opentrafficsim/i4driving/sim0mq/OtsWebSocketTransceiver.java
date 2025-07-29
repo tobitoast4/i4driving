@@ -125,8 +125,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private Gson gson = DefaultGson.GSON;
 
     private WebSocketClient webSocketClient;
-    private Worker avWorker;
-    private String laneChange = "";
+    private String laneChange;
     private String avId;
 
     /**
@@ -199,11 +198,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //            StaticObject so = StaticObject.create("XXX", polyLine2d, new Length(1, METER));
 //            this.network.addObject(so);
 
-            if (this.avWorker != null) {  // stop old bg thread if there is one
-                this.avWorker.exit();
-            }
-            this.avWorker = new OtsWebSocketTransceiver.Worker();
-            this.avWorker.start();
+            this.simulator.scheduleEventNow(() -> scheduledSendMessage());
 
             boolean showGui = true;
             if (showGui)
@@ -746,77 +741,51 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //        }
     }
 
-    /**
-     * Worker thread to send messages.
-     */
-    protected class Worker extends Thread
-    {
-        private boolean exit = false;
-        private LaneBasedGtu gtuAV = null;
-
-        public void exit(){
-            this.exit = true;
+    private void scheduledSendMessage() {
+        if (!this.simulator.isStartingOrRunning()) {
+            return;
         }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                // Note on synchronicity and possible dead-locks:
-                // OTS is single-threaded. All changes during the simulation should be scheduled in the simulator. All messages
-                // sent back from a notification from simulation, should be queued for the Worker thread in the queue.
-                while (!this.exit)
-                {
-                    if (this.gtuAV == null) {
-                        gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avId);
-//                        if (gtuAV != null) {
-//                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
-//                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANE_ENTER_EVENT);
-//                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
-//                        }
-                    }
-                    if (!simulator.isStartingOrRunning() || gtuAV == null || gtuAV.isDestroyed()) {
-                        continue;
-                    }
-
-                    OrientedPoint2d position = gtuAV.getLocation();
-                    double acceleration = gtuAV.getAcceleration().getSI();
-                    double speed = gtuAV.getSpeed().getSI();
-                    boolean isBrakingLightsOn = false;
-                    isBrakingLightsOn = gtuAV.isBrakingLightsOn();
-                    String turnIndicatorStatus = gtuAV.getTurnIndicatorStatus().name();
-                    JSONObject dataJson = new JSONObject();
-                    dataJson.put("speed", speed);
-                    dataJson.put("acceleration", acceleration);
-                    dataJson.put("isBrakingLightsOn", isBrakingLightsOn);
-                    dataJson.put("turnIndicatorStatus", turnIndicatorStatus);
-                    dataJson.put("laneChangeDirection", OtsWebSocketTransceiver.this.laneChange);
-                    dataJson.put("laneId", this.gtuAV.getReferencePosition().lane().getId());
-                    JSONObject positionJson = new JSONObject();
-                    positionJson.put("x", position.getX());
-                    positionJson.put("y", position.getY());
-                    dataJson.put("position", positionJson);
-                    JSONObject rotationJson = new JSONObject();
-                    rotationJson.put("z", position.getDirZ());
-                    dataJson.put("rotation", rotationJson);
-
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("type", "PLAN");
-                    jsonObject.put("data", dataJson);
-                    webSocketClient.sendMessage(jsonObject.toString());
-                    try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
+        LaneBasedGtu gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avId);
+        if (gtuAV == null || gtuAV.isDestroyed()) {
+            return;
         }
+//        if (gtuAV != null) {
+//            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+//            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANE_ENTER_EVENT);
+//            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+//        }
+
+        OrientedPoint2d position = gtuAV.getLocation();
+        double acceleration = gtuAV.getAcceleration().getSI();
+        double speed = gtuAV.getSpeed().getSI();
+        boolean isBrakingLightsOn = false;
+        isBrakingLightsOn = gtuAV.isBrakingLightsOn();
+        String turnIndicatorStatus = gtuAV.getTurnIndicatorStatus().name();
+        JSONObject dataJson = new JSONObject();
+        dataJson.put("speed", speed);
+        dataJson.put("acceleration", acceleration);
+        dataJson.put("isBrakingLightsOn", isBrakingLightsOn);
+        dataJson.put("turnIndicatorStatus", turnIndicatorStatus);
+        dataJson.put("laneChangeDirection", this.laneChange);
+        try {
+            dataJson.put("laneId", gtuAV.getReferencePosition().lane().getId());
+        } catch (GtuException e) {
+            dataJson.put("laneId", -1);
+        }
+        JSONObject positionJson = new JSONObject();
+        positionJson.put("x", position.getX());
+        positionJson.put("y", position.getY());
+        dataJson.put("position", positionJson);
+        JSONObject rotationJson = new JSONObject();
+        rotationJson.put("z", position.getDirZ());
+        dataJson.put("rotation", rotationJson);
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("type", "PLAN");
+        jsonObject.put("data", dataJson);
+        webSocketClient.sendMessage(jsonObject.toString());
+
+        this.simulator.scheduleEventRel(new Duration(10, DurationUnit.MILLISECOND), () -> scheduledSendMessage());
     }
 
     /**

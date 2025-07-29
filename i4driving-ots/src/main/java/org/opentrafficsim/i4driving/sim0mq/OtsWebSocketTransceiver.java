@@ -275,15 +275,15 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
                     } else if (name.startsWith("Vehicles.")) {
                         if (name.equals("Vehicles.V600.Fiat500.main")) {
-                            double x = odbObject.getJSONObject("position").getDouble("x");
-                            double y = odbObject.getJSONObject("position").getDouble("y");
-                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
-                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
-                            LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-//                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
-                            if (avGtu != null) {
-                                System.out.println(avGtu.getLocation().distance(loc));
-                            }
+//                            double x = odbObject.getJSONObject("position").getDouble("x");
+//                            double y = odbObject.getJSONObject("position").getDouble("y");
+//                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
+//                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
+//                            LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+////                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
+//                            if (avGtu != null) {
+//                                System.out.println(avGtu.getLocation().distance(loc));
+//                            }
 //                            Gtu gtu = new Gtu("id", DefaultsNl.CAR, simulator, this.network, Length.instantiateSI(4.0), Length.instantiateSI(1.8),
 //                                    Speed.instantiateSI(50.0), Length.instantiateSI(2.0), Length.ZERO);
 //                            gtu.init();
@@ -728,22 +728,22 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
     public void notify(final org.djutils.event.Event event) throws RemoteException
     {
-        if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))
-        {
-            Object[] payload = (Object[]) event.getContent();
-            String laneChangeDirection = (String) payload[5];  // this can either be "RIGHT" / "LEFT" / "NONE"
-            if (!laneChangeDirection.equals("") && !laneChangeDirection.equals("NONE")) {
-                laneChange = laneChangeDirection;
-            }
-        }
-        if (event.getType().equals(LaneBasedGtu.LANE_EXIT_EVENT))
-        {
-            System.out.println("LANE_EXIT_EVENT");
-        }
-        if (event.getType().equals(LaneBasedGtu.LANE_ENTER_EVENT))
-        {
-            System.out.println("LANE_ENTER_EVENT");
-        }
+//        if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))
+//        {
+//            Object[] payload = (Object[]) event.getContent();
+//            String laneChangeDirection = (String) payload[5];  // this can either be "RIGHT" / "LEFT" / "NONE"
+//            if (!laneChangeDirection.equals("") && !laneChangeDirection.equals("NONE")) {
+//                laneChange = laneChangeDirection;
+//            }
+//        }
+//        if (event.getType().equals(LaneBasedGtu.LANE_EXIT_EVENT))
+//        {
+//            System.out.println("LANE_EXIT_EVENT");
+//        }
+//        if (event.getType().equals(LaneBasedGtu.LANE_ENTER_EVENT))
+//        {
+//            System.out.println("LANE_ENTER_EVENT");
+//        }
     }
 
     /**
@@ -770,11 +770,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 {
                     if (this.gtuAV == null) {
                         gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avId);
-                        if (gtuAV != null) {
-                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
-                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANE_ENTER_EVENT);
-                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
-                        }
+//                        if (gtuAV != null) {
+//                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+//                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANE_ENTER_EVENT);
+//                            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+//                        }
                     }
                     if (!simulator.isStartingOrRunning() || gtuAV == null || gtuAV.isDestroyed()) {
                         continue;

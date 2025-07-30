@@ -228,9 +228,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avRotation.put("z", 0.857657);
             avData.put("rotation", avRotation);
             avData.put("v", 0);
-            JSONObject jsonParameters = new JSONObject();
-            jsonParameters.put("t0", new Duration(10, DurationUnit.SECOND));
-            avData.put("parameters", jsonParameters);
             generateVehicle(avData);
             CategoryLogger.always().debug("Generate GTU AV");
         }
@@ -290,8 +287,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //                                odbObject.put("id", avId);
 //                                generateVehicle(odbObject);
 //                            }
-                        } else if (name.contains("User")) {
-
                         } else if (this.network != null) {
                             Gtu gtu = this.network.getGTU(id);
                             if (gtu == null) {
@@ -400,6 +395,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private void generateVehicle(final JSONObject messageData) throws GtuException,
             OtsGeometryException, NetworkException, RemoteException, IllegalAccessException, InvocationTargetException
     {
+        JSONObject jsonParameters0 = new JSONObject();
+        jsonParameters0.put("t0", new Duration(10, DurationUnit.SECOND));
+        messageData.put("parameters", jsonParameters0);
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
         String id = messageData.getString("id");
 
@@ -448,7 +446,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         } else {
             Node nodeA = this.network.getNode("cp1-lane1-0");
-            Node nodeB = this.network.getNode("cp2-lane1-1");
+            Node nodeB = this.network.getNode("l190-1");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         }

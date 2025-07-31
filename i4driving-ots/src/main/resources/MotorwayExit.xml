@@ -274,11 +274,11 @@
       <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l170" NodeStart="l149-0" NodeEnd="l170-1" Type="HIGHWAY" OffsetStart="-3.75m">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l171" NodeStart="l171-0" NodeEnd="l136-0" Type="HIGHWAY" OffsetEnd="-3.75m">
-      <ots:Bezier Shape="0.99" Weighted="true" />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l152" NodeStart="l152-0" NodeEnd="l149-0" Type="HIGHWAY">
@@ -338,19 +338,19 @@
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l181" NodeStart="l181-0" NodeEnd="l173-0" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l213" NodeStart="l213-0" NodeEnd="l173-0" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l212" NodeStart="l172-1" NodeEnd="l212-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l195" NodeStart="l172-1" NodeEnd="l195-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l221" NodeStart="l221-0" NodeEnd="l195-1" Type="HIGHWAY">
@@ -358,7 +358,7 @@
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l216" NodeStart="l216-0" NodeEnd="l213-0" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l217" NodeStart="l217-0" NodeEnd="l217-1" Type="HIGHWAY">
@@ -370,7 +370,7 @@
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l224" NodeStart="l212-1" NodeEnd="l218-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l219" NodeStart="l218-1" NodeEnd="l219-1" Type="HIGHWAY">
@@ -390,11 +390,11 @@
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l184" NodeStart="l184-0" NodeEnd="l184-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l185" NodeStart="l185-0" NodeEnd="l185-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l186" NodeStart="l185-1" NodeEnd="l186-1" Type="HIGHWAY">
@@ -406,11 +406,11 @@
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l188" NodeStart="l188-0" NodeEnd="l188-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l189" NodeStart="l189-0" NodeEnd="l189-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l190" NodeStart="l189-1" NodeEnd="l190-1" Type="HIGHWAY">
@@ -434,7 +434,7 @@
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l202" NodeStart="l184-1" NodeEnd="l202-1" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l205" NodeStart="l205-0" NodeEnd="l185-0" Type="HIGHWAY">
@@ -454,11 +454,11 @@
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l207" NodeStart="l207-0" NodeEnd="l189-0" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l208" NodeStart="l206-1" NodeEnd="l197-0" Type="HIGHWAY">
-      <ots:Bezier />
+      <ots:Bezier Shape="0.66" Weighted="false" />
       <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l209" NodeStart="l206-1" NodeEnd="l200-0" Type="HIGHWAY">

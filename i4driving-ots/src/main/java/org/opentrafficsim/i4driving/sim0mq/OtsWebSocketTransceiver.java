@@ -70,6 +70,9 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.rmi.RemoteException;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
@@ -129,6 +132,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private Double last_avYaw = null;
     private String laneChange;
     private String avId;
+
+    private int messageSendId=0;
 
     /**
      * Constructor.
@@ -220,8 +225,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             JSONObject avPosition = new JSONObject();
 //            avPosition.put("x", 507.099200);
 //            avPosition.put("y", -188.139600);
-            avPosition.put("x", 471.7277);
-            avPosition.put("y", -229.031);
+            avPosition.put("x", 571.763300);
+            avPosition.put("y", -69.903400);
 
             avData.put("position", avPosition);
             JSONObject avRotation = new JSONObject();
@@ -267,17 +272,23 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
                     } else if (name.startsWith("scnx.road.superstructures.objects.post")) {
 
-                    } else if (name.startsWith("Vehicles.")) {
+                    } else if (name.contains("User")) {
+
+                    }
+                    else if (name.startsWith("Vehicles.")) {
                         if (name.equals("Vehicles.V600.Fiat500.main")) {
-//                            double x = odbObject.getJSONObject("position").getDouble("x");
-//                            double y = odbObject.getJSONObject("position").getDouble("y");
-//                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
-//                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
-//                            LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-////                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
-//                            if (avGtu != null) {
-//                                System.out.println(avGtu.getLocation().distance(loc));
-//                            }
+                            double x = odbObject.getJSONObject("position").getDouble("x");
+                            double y = odbObject.getJSONObject("position").getDouble("y");
+                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
+                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
+                            if (this.network != null) {
+
+                                LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+//                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
+                                if (avGtu != null) {
+//                                    System.out.println(avGtu.getLocation().distance(loc));
+                                }
+                            }
 //                            Gtu gtu = new Gtu("id", DefaultsNl.CAR, simulator, this.network, Length.instantiateSI(4.0), Length.instantiateSI(1.8),
 //                                    Speed.instantiateSI(50.0), Length.instantiateSI(2.0), Length.ZERO);
 //                            gtu.init();
@@ -440,7 +451,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
         Route route;
         if (id.equals("AV")) {
-            Node nodeA = this.network.getNode("l191-0");
+            Node nodeA = this.network.getNode("l171-0");
             Node nodeB = this.network.getNode("cp2-lane1-1");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
@@ -793,6 +804,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("type", "PLAN");
+
+        long unixMillis = Instant.now().toEpochMilli();
+        jsonObject.put("send_time", unixMillis);
+        jsonObject.put("send_id", messageSendId++);
         jsonObject.put("data", dataJson);
         webSocketClient.sendMessage(jsonObject.toString());
 

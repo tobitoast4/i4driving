@@ -225,8 +225,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             JSONObject avPosition = new JSONObject();
 //            avPosition.put("x", 507.099200);
 //            avPosition.put("y", -188.139600);
-            avPosition.put("x", 571.763300);
-            avPosition.put("y", -69.903400);
+            avPosition.put("x", 507.099200);
+            avPosition.put("y", -188.139600);
 
             avData.put("position", avPosition);
             JSONObject avRotation = new JSONObject();
@@ -272,8 +272,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
                     } else if (name.startsWith("scnx.road.superstructures.objects.post")) {
 
-                    } else if (name.contains("User")) {
-
+                    }
+                    else if (name.contains("User")) {
+                        continue;
                     }
                     else if (name.startsWith("Vehicles.")) {
                         if (name.equals("Vehicles.V600.Fiat500.main")) {
@@ -451,13 +452,13 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
         Route route;
         if (id.equals("AV")) {
-            Node nodeA = this.network.getNode("l171-0");
+            Node nodeA = this.network.getNode("l188-0");
             Node nodeB = this.network.getNode("cp2-lane1-1");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         } else {
             Node nodeA = this.network.getNode("cp1-lane1-0");
-            Node nodeB = this.network.getNode("l190-1");
+            Node nodeB = this.network.getNode("cp2-lane1-1");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         }

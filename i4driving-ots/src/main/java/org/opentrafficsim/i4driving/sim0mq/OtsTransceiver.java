@@ -599,7 +599,7 @@ public class OtsTransceiver
             {
                 this.planGtuIds.add(id);
             }
-            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
+            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, null, position);
             OtsTransceiver.this.tacticalFactory.resetMode();
             setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
             scheduledChangeControlMode(id, mode);

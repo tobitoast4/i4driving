@@ -221,6 +221,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avRotation.put("z", 0.857657);
             avData.put("rotation", avRotation);
             avData.put("v", 0);
+            avData.put("speedLimit", 0);
             generateVehicle(avData);
             CategoryLogger.always().debug("Generate GTU AV");
 
@@ -434,6 +435,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //            mode = "active";
 //        }
         Speed initSpeed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
+        double temporaryLimit = Utils.tryGetDouble(messageData, "speedLimit", -1);
+        Speed temporarySpeedLimit = null;
+        if (temporaryLimit >= 0) {
+            temporarySpeedLimit = new Speed(temporaryLimit, SpeedUnit.KM_PER_HOUR);
+        }
 //        Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
         if (mode.toLowerCase().equals("active")) {
             if (running) {
@@ -480,11 +486,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         if (running)
         {
             this.simulator.scheduleEventNow(this, "spawnGtu", new Object[] {id, gtuType, vehicleLength, vehicleWidth,
-                    refToNose, route, initSpeed, position, mode, parameterMap});
+                    refToNose, route, initSpeed, temporarySpeedLimit, position, mode, parameterMap});
         }
         else
         {
-            spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position, mode, parameterMap);
+            spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, temporarySpeedLimit, position, mode, parameterMap);
         }
     }
 
@@ -510,7 +516,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @SuppressWarnings("checkstyle:parameternumber")
     private <T extends Enum<T>> void spawnGtu(final String id, final GtuType gtuType, final Length vehicleLength,
             final Length vehicleWidth, final Length refToNose, final Route route, final Speed initSpeed,
-            final OrientedPoint2d position, final String mode, final Map<String, Object> parameterMap)
+            final Speed temporarySpeedLimit, final OrientedPoint2d position, final String mode,
+            final Map<String, Object> parameterMap)
             throws GtuException, OtsGeometryException, NetworkException, IllegalAccessException, InvocationTargetException
     {
         Set<ParameterType<?>> setParameters = new LinkedHashSet<>();
@@ -571,7 +578,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
          */
         Gtu gtu = this.network.getGTU(id);
         if (gtu == null) {  // somehow this is not guaranteed to this point, so we check again
-            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, position);
+            this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, temporarySpeedLimit, position);
         }
         OtsWebSocketTransceiver.this.tacticalFactory.resetMode();
         setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));

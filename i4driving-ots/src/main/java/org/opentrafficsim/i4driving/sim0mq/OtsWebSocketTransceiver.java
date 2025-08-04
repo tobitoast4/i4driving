@@ -257,6 +257,13 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         avIndicator.setLocation(newLocation);
     }
 
+    private void changeSpeedLimitAV(Speed temporarySpeedLimit) {
+        LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+        if (avGtu != null) {
+            avGtu.setTemporarySpeedLimit(temporarySpeedLimit);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public void onEvent(JSONObject data)
@@ -319,6 +326,22 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
                             } else {
                                 updateVehicle(odbObject);
+                            }
+                        }
+
+                        if (name.contains("User")) { // start stopped AV when close enough
+                            double x = odbObject.getJSONObject("position").getDouble("x");
+                            double y = odbObject.getJSONObject("position").getDouble("y");
+                            OrientedPoint2d userPosition = new OrientedPoint2d(x, y);
+                            if (this.network != null) {
+                                LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+                                if (avGtu != null) {
+                                    System.out.println(avGtu.getLocation().distance(userPosition));
+                                    if (avGtu.getLocation().distance(userPosition) <= 300) {
+                                        Speed newSpeedLimit = new Speed(-1, SpeedUnit.METER_PER_HOUR);
+                                        this.simulator.scheduleEventNow(this, "changeSpeedLimitAV", new Object[] {newSpeedLimit});
+                                    }
+                                }
                             }
                         }
                         updatedGtuIds.add(id);
@@ -436,10 +459,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //        }
         Speed initSpeed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
         double temporaryLimit = Utils.tryGetDouble(messageData, "speedLimit", -1);
-        Speed temporarySpeedLimit = null;
-        if (temporaryLimit >= 0) {
-            temporarySpeedLimit = new Speed(temporaryLimit, SpeedUnit.KM_PER_HOUR);
-        }
+        Speed temporarySpeedLimit = new Speed(temporaryLimit, SpeedUnit.KM_PER_HOUR);
 //        Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
         if (mode.toLowerCase().equals("active")) {
             if (running) {

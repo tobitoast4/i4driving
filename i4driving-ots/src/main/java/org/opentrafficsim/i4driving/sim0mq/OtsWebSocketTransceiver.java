@@ -241,7 +241,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 new Point2d(10, -10),
                 new Point2d(10, 10),
                 new Point2d(-10, 10),
-        };
+        };  // actally the geometry does not matter (at least idk for what (maybe for
+            // collisions, which is not relevant here anyway)
         PolyLine2d polyLine2d = new PolyLine2d(point2ds);
         try {
             avIndicator = new IndicatorPoint("AV_PositionIndicator", polyLine2d);

@@ -337,7 +337,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 if (avGtu != null) {
                                     System.out.println(avGtu.getLocation().distance(userPosition));
-                                    if (avGtu.getLocation().distance(userPosition) <= 300) {
+                                    if (avGtu.getLocation().distance(userPosition) <= 520) {
                                         Speed newSpeedLimit = new Speed(-1, SpeedUnit.METER_PER_HOUR);
                                         this.simulator.scheduleEventNow(this, "changeSpeedLimitAV", new Object[] {newSpeedLimit});
                                     }

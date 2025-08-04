@@ -243,7 +243,7 @@
     </ots:Link>
     <ots:Link Id="l135" NodeStart="l136-1" NodeEnd="l66-0" Type="HIGHWAY">
       <ots:Straight />
-      <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+      <ots:DefinedLayout>3LaneHighway</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l139" NodeStart="l69-1" NodeEnd="l144-0" Type="HIGHWAY">
       <ots:Straight />
@@ -311,7 +311,7 @@
     </ots:Link>
     <ots:Link Id="l155" NodeStart="l169-0" NodeEnd="l152-0" Type="HIGHWAY">
       <ots:Straight />
-      <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+      <ots:DefinedLayout>3LaneHighway</ots:DefinedLayout>
     </ots:Link>
     <ots:Link Id="l166" NodeStart="l160-1" NodeEnd="l166-1" Type="HIGHWAY">
       <ots:Straight />

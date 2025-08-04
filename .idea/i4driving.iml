@@ -5,9 +5,7 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="json-20210308" level="project" />
-    <orderEntry type="library" name="json-20210309" level="project" />
-    <orderEntry type="library" name="json" level="project" />
     <orderEntry type="library" name="tyrus-standalone-client-1.13.1" level="project" />
+    <orderEntry type="library" name="json-20210307" level="project" />
   </component>
 </module>

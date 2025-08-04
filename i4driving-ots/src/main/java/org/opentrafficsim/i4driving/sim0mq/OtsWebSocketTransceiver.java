@@ -4,19 +4,16 @@ import com.google.gson.Gson;
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
-import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import nl.tudelft.simulation.language.DsolException;
 import org.djunits.unit.*;
 import org.djunits.value.vdouble.scalar.*;
 import org.djutils.cli.CliUtil;
-import org.djutils.draw.line.PolyLine2d;
-import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.OrientedPoint2d;
-import org.djutils.draw.point.Point2d;
 import org.djutils.event.EventListener;
 import org.djutils.logger.CategoryLogger;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.opentrafficsim.animation.colorer.SilabColorer;
 import org.opentrafficsim.animation.colorer.SynchronizationColorer;
 import org.opentrafficsim.animation.gtu.colorer.*;
 import org.opentrafficsim.base.parameters.ParameterType;
@@ -34,7 +31,6 @@ import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
-import org.opentrafficsim.core.object.StaticObject;
 import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.i4driving.messages.Commands;
@@ -46,15 +42,8 @@ import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlanner;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlannerFactory;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
-import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusFactory;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.DefaultLmrsPerceptionFactory;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
-import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalPlanner;
-import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalPlannerFactory;
-import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
@@ -71,15 +60,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.rmi.RemoteException;
 import java.time.Instant;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.function.Function;
-
-import static org.djunits.unit.LengthUnit.METER;
-import static org.djunits.unit.SpeedUnit.KM_PER_HOUR;
 
 /**
  * OTS co-simulation server.
@@ -193,8 +176,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             this.simulator.getReplication().setHistoryManager(
                     new HistoryManagerDevs(this.simulator, Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
             this.network = (RoadNetwork) model.getNetwork();
-            this.characteristicsGeneratorOd = model.getSim0mqSimulation().getGtuCharacteristicsGeneratorOd();
-            this.parameterFactory = model.getSim0mqSimulation().getParameterFactory();
+            this.characteristicsGeneratorOd = model.getSimulation().getGtuCharacteristicsGeneratorOd();
+            this.parameterFactory = model.getSimulation().getParameterFactory();
             this.gtuSpawner = new GtuSpawnerOd(this.network, this.characteristicsGeneratorOd);
 
             this.network.addListener(this, Network.GTU_ADD_EVENT);
@@ -210,10 +193,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             boolean showGui = true;
             if (showGui)
             {
-                GtuColorer colorer = new SwitchableGtuColorer(0, new IdGtuColorer(),
-                        new SpeedGtuColorer(new Speed(150, SpeedUnit.KM_PER_HOUR)),
-                        new AccelerationGtuColorer(Acceleration.instantiateSI(-6.0), Acceleration.instantiateSI(2)),
-                        new SynchronizationColorer());
+                GtuColorer colorer = new SilabColorer(avId, "USER");
                 OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),
                         this.simulator, model, colorer, this.network);
                 animationPanel.enableSimulationControlButtons();
@@ -273,9 +253,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                     } else if (name.startsWith("scnx.road.superstructures.objects.post")) {
 
                     }
-                    else if (name.contains("User")) {
-                        continue;
-                    }
+//                    else if (name.contains("User")) {
+//                        continue;
+//                    }
                     else if (name.startsWith("Vehicles.")) {
                         if (name.equals("Vehicles.V600.Fiat500.main")) {
                             double x = odbObject.getJSONObject("position").getDouble("x");
@@ -865,7 +845,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
          * Returns the sim0mq simulation.
          * @return sim0mq simulation
          */
-        public Sim0mqSimulation getSim0mqSimulation()
+        public Sim0mqSimulation getSimulation()
         {
             return this.simulation;
         }

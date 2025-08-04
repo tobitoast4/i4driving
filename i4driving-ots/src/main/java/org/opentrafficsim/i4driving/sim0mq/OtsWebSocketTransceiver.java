@@ -8,7 +8,10 @@ import nl.tudelft.simulation.language.DsolException;
 import org.djunits.unit.*;
 import org.djunits.value.vdouble.scalar.*;
 import org.djutils.cli.CliUtil;
+import org.djutils.draw.line.PolyLine2d;
+import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.OrientedPoint2d;
+import org.djutils.draw.point.Point2d;
 import org.djutils.event.EventListener;
 import org.djutils.logger.CategoryLogger;
 import org.json.JSONArray;
@@ -31,6 +34,7 @@ import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
+import org.opentrafficsim.core.object.StaticObject;
 import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.i4driving.messages.Commands;
@@ -44,7 +48,10 @@ import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharact
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
+import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.LanePosition;
+import org.opentrafficsim.road.network.lane.object.IndicatorPoint;
+import org.opentrafficsim.road.network.lane.object.SpeedSign;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.pmw.tinylog.Level;
@@ -115,6 +122,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private Double last_avYaw = null;
     private String laneChange;
     private String avId;
+    private IndicatorPoint avIndicator = null;
 
     private int messageSendId=0;
 
@@ -215,6 +223,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avData.put("v", 0);
             generateVehicle(avData);
             CategoryLogger.always().debug("Generate GTU AV");
+
+            createIndicatorPoint();  // shows where AV is in SILAB
         }
         catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
                | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
@@ -223,6 +233,26 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //            {
 
         }
+    }
+
+    private void createIndicatorPoint() {
+        Point2d[] point2ds = new Point2d[]{
+                new Point2d(-10, -10),
+                new Point2d(10, -10),
+                new Point2d(10, 10),
+                new Point2d(-10, 10),
+        };
+        PolyLine2d polyLine2d = new PolyLine2d(point2ds);
+        try {
+            avIndicator = new IndicatorPoint("AV_PositionIndicator", polyLine2d);
+            network.addObject(avIndicator);
+        } catch (NetworkException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void moveIndicatorPoint(OrientedPoint2d newLocation) {
+        avIndicator.setLocation(newLocation);
     }
 
     /** {@inheritDoc} */
@@ -260,16 +290,17 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                         if (name.equals("Vehicles.V600.Fiat500.main")) {
                             double x = odbObject.getJSONObject("position").getDouble("x");
                             double y = odbObject.getJSONObject("position").getDouble("y");
-                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
-                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
-                            if (this.network != null) {
-
-                                LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-//                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
-                                if (avGtu != null) {
-//                                    System.out.println(avGtu.getLocation().distance(loc));
-                                }
-                            }
+                            this.simulator.scheduleEventNow(this, "moveIndicatorPoint", new Object[] {new OrientedPoint2d(x, y)});
+//                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
+//                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
+//                            if (this.network != null) {
+//
+//                                LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+////                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
+//                                if (avGtu != null) {
+////                                    System.out.println(avGtu.getLocation().distance(loc));
+//                                }
+//                            }
 //                            Gtu gtu = new Gtu("id", DefaultsNl.CAR, simulator, this.network, Length.instantiateSI(4.0), Length.instantiateSI(1.8),
 //                                    Speed.instantiateSI(50.0), Length.instantiateSI(2.0), Length.ZERO);
 //                            gtu.init();

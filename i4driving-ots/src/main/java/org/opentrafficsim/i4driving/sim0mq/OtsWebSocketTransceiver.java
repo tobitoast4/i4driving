@@ -348,8 +348,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 if (avGtu != null) {
 //                                    System.out.println(avGtu.getLocation().distance(userPosition));
-                                    if (avGtu.getLocation().distance(userPosition) <= 100) {
-                                        avGtu.setOverwrittenAcceleration(null);
+                                    if (avGtu.getLocation().distance(this.network.getNode("l136-0").getPoint()) <= 50) {
+                                        Acceleration acc = new Acceleration(-9999, AccelerationUnit.METER_PER_SECOND_2);
+                                        this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
+                                                new Object[] {acc});
                                         firstNodePassed = true;
                                     }
                                 }
@@ -362,7 +364,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                     if (avGtu != null && userGtu != null) {
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
                                                 new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND));
-//                                    System.out.println(acc);
+//                                        System.out.println(acc);
                                         this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
                                                 new Object[] {acc});
                                     }

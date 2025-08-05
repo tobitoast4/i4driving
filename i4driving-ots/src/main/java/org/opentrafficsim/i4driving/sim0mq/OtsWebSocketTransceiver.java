@@ -218,7 +218,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avRotation.put("z", 0.857657);
             avData.put("rotation", avRotation);
             avData.put("v", 0);
-            avData.put("speedLimit", 0);
+//            avData.put("speedLimit", 0);
             generateVehicle(avData);
             CategoryLogger.always().debug("Generate GTU AV");
 
@@ -344,7 +344,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                                 if (avGtu != null && userGtu != null) {
-                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10) {
+                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 100) {
                                         Acceleration acc = new Acceleration(Double.NEGATIVE_INFINITY, AccelerationUnit.METER_PER_SECOND_2);
                                         this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
                                                 new Object[] {acc});

@@ -28,6 +28,12 @@ public class AccelerationRecommender {
     public Acceleration getRecommendedAVAcceleration(LaneBasedGtu avGtu,LaneBasedGtu userGtu, Acceleration userA, Speed userV)
             throws GtuException {
         RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
+        double v0 = userV.getSI();
+        double a = userA.getSI();
+        if (v0 <= 0) {
+            // Stop AV if user is also not moving
+            return new Acceleration(-6, AccelerationUnit.METER_PER_SECOND_2);
+        }
 
         // Calculate user's distance to target
         LanePosition userLanePosition;
@@ -51,17 +57,12 @@ public class AccelerationRecommender {
         Route avRoute = routeGenerator.getRoute(avRouteStart, this.targetNode, DefaultsNl.CAR);
         Length avDistToTarget = this.calculateRouteLength(avRoute).minus(avLanePosition.position());
 
-        Speed userSpeed = userGtu.getSpeed();
         double s = userDistToTarget.getSI();
-        double v0 = userV.getSI();
-        double a = userA.getSI();
-//        double timeToArrival = getTimeToArrival(a, v0, s);
-        double timeToArrival = s / v0;
-        System.out.println(timeToArrival);
-
         Speed avSpeed = avGtu.getSpeed();
+        double userTimeToArrival = s / v0;
+//        double timeToArrival = getTimeToArrival(a, v0, s);
 
-        double avAcceleration = (2 * avDistToTarget.getSI() - (avSpeed.getSI()*timeToArrival)) / (timeToArrival*timeToArrival);
+        double avAcceleration = 2 * (avDistToTarget.getSI() - (avSpeed.getSI()*userTimeToArrival)) / (userTimeToArrival*userTimeToArrival);
         if (Double.isNaN(avAcceleration)) {
             return new Acceleration(0, AccelerationUnit.METER_PER_SECOND_2);
         }

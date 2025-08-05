@@ -9,7 +9,6 @@ import org.djunits.unit.*;
 import org.djunits.value.vdouble.scalar.*;
 import org.djutils.cli.CliUtil;
 import org.djutils.draw.line.PolyLine2d;
-import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.OrientedPoint2d;
 import org.djutils.draw.point.Point2d;
 import org.djutils.event.EventListener;
@@ -17,7 +16,6 @@ import org.djutils.logger.CategoryLogger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.opentrafficsim.animation.colorer.SilabColorer;
-import org.opentrafficsim.animation.colorer.SynchronizationColorer;
 import org.opentrafficsim.animation.gtu.colorer.*;
 import org.opentrafficsim.base.parameters.ParameterType;
 import org.opentrafficsim.core.definitions.Defaults;
@@ -34,7 +32,6 @@ import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.network.route.Route;
-import org.opentrafficsim.core.object.StaticObject;
 import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.i4driving.messages.Commands;
@@ -48,10 +45,8 @@ import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharact
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.road.network.lane.object.IndicatorPoint;
-import org.opentrafficsim.road.network.lane.object.SpeedSign;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.pmw.tinylog.Level;
@@ -347,25 +342,18 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             String node_id = "l136-0";
                             if (this.network != null) {
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-                                if (avGtu != null) {
-//                                    System.out.println(avGtu.getLocation().distance(userPosition));
-                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 50) {
-                                        Acceleration acc = new Acceleration(-9999, AccelerationUnit.METER_PER_SECOND_2);
+                                LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
+                                if (avGtu != null && userGtu != null) {
+                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10) {
+                                        Acceleration acc = new Acceleration(Double.NEGATIVE_INFINITY, AccelerationUnit.METER_PER_SECOND_2);
                                         this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
                                                 new Object[] {acc});
                                         firstNodePassed = true;
                                     }
-                                }
-                            }
-                            if (!firstNodePassed) {
-                                AccelerationRecommender accRecommender = new AccelerationRecommender(this.network, this.network.getNode(node_id));
-                                if (this.network != null) {
-                                    LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
-                                    LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-                                    if (avGtu != null && userGtu != null) {
+                                    if (!firstNodePassed) {
+                                        ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
                                                 new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND));
-//                                        System.out.println(acc);
                                         this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
                                                 new Object[] {acc});
                                     }

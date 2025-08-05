@@ -122,6 +122,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private Double last_avYaw = null;
     private String laneChange;
     private String avId;
+    private boolean firstNodePassed;
     private IndicatorPoint avIndicator = null;
 
     private int messageSendId=0;
@@ -172,6 +173,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         try {
             laneChange = "";
             avId = "AV";
+            firstNodePassed = false;
             stopSimulation();
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
@@ -264,6 +266,13 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         }
     }
 
+    private void changeOverwriteAccelerationAV(Acceleration acceleration) {
+        LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+        if (avGtu != null) {
+            avGtu.setOverwrittenAcceleration(acceleration);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public void onEvent(JSONObject data)
@@ -332,14 +341,30 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                         if (name.contains("User")) { // start stopped AV when close enough
                             double x = odbObject.getJSONObject("position").getDouble("x");
                             double y = odbObject.getJSONObject("position").getDouble("y");
+                            double a = odbObject.getDouble("a");
+                            double v = odbObject.getDouble("v");
                             OrientedPoint2d userPosition = new OrientedPoint2d(x, y);
                             if (this.network != null) {
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 if (avGtu != null) {
-                                    System.out.println(avGtu.getLocation().distance(userPosition));
-                                    if (avGtu.getLocation().distance(userPosition) <= 520) {
-                                        Speed newSpeedLimit = new Speed(-1, SpeedUnit.METER_PER_HOUR);
-                                        this.simulator.scheduleEventNow(this, "changeSpeedLimitAV", new Object[] {newSpeedLimit});
+//                                    System.out.println(avGtu.getLocation().distance(userPosition));
+                                    if (avGtu.getLocation().distance(userPosition) <= 100) {
+                                        avGtu.setOverwrittenAcceleration(null);
+                                        firstNodePassed = true;
+                                    }
+                                }
+                            }
+                            if (!firstNodePassed) {
+                                AccelerationRecommender accRecommender = new AccelerationRecommender(this.network, this.network.getNode("l136-0"));
+                                if (this.network != null) {
+                                    LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
+                                    LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+                                    if (avGtu != null && userGtu != null) {
+                                        Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
+                                                new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND));
+//                                    System.out.println(acc);
+                                        this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
+                                                new Object[] {acc});
                                     }
                                 }
                             }

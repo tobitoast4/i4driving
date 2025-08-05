@@ -344,11 +344,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             double a = odbObject.getDouble("a");
                             double v = odbObject.getDouble("v");
                             OrientedPoint2d userPosition = new OrientedPoint2d(x, y);
+                            String node_id = "l136-0";
                             if (this.network != null) {
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 if (avGtu != null) {
 //                                    System.out.println(avGtu.getLocation().distance(userPosition));
-                                    if (avGtu.getLocation().distance(this.network.getNode("l136-0").getPoint()) <= 50) {
+                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 50) {
                                         Acceleration acc = new Acceleration(-9999, AccelerationUnit.METER_PER_SECOND_2);
                                         this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
                                                 new Object[] {acc});
@@ -357,7 +358,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 }
                             }
                             if (!firstNodePassed) {
-                                AccelerationRecommender accRecommender = new AccelerationRecommender(this.network, this.network.getNode("l136-0"));
+                                AccelerationRecommender accRecommender = new AccelerationRecommender(this.network, this.network.getNode(node_id));
                                 if (this.network != null) {
                                     LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                                     LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
@@ -685,7 +686,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @SuppressWarnings("unused") // scheduled
     private void scheduledDelete(final String id)
     {
-        this.network.getGTU(id).destroy();
+        Gtu gtu = this.network.getGTU(id);
+        if (gtu != null) {
+            gtu.destroy();
+        }
         CategoryLogger.always().debug("Destroyed GTU " + id);
     }
 

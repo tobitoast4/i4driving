@@ -62,6 +62,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.rmi.RemoteException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
@@ -113,6 +115,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private Gson gson = DefaultGson.GSON;
 
     private WebSocketClient webSocketClient;
+    private MessageWriter messageWriter;
     private double sendMessageDelayMS = 10.0;
     private Double last_avYaw = null;
     private String laneChange;
@@ -166,6 +169,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private void setupSimulation()
     {
         try {
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
+            String formatted = now.format(formatter);
+            messageWriter = new MessageWriter("silab_msgs_" + formatted + ".log");
             laneChange = "";
             avId = "AV";
             firstNodePassed = false;
@@ -272,6 +279,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @Override
     public void onEvent(JSONObject data)
     {
+        long unixMillis = Instant.now().toEpochMilli();
+        String log = "" + unixMillis + ": " + data.toString();
+        messageWriter.writeMessage(log);
         try
         {
             String messageType = data.getString("type");

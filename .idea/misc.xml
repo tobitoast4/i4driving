@@ -5,6 +5,7 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/i4driving-ots/pom.xml" />
+        <option value="$PROJECT_DIR$/../opentrafficsim/pom.xml" />
       </list>
     </option>
   </component>

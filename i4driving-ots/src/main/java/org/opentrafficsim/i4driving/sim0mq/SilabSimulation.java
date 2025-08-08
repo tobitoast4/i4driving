@@ -1,5 +1,6 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
+import nl.tudelft.simulation.jstats.streams.MersenneTwister;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Length;
@@ -13,10 +14,7 @@ import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
-import org.opentrafficsim.core.network.LateralDirectionality;
-import org.opentrafficsim.core.network.LinkType;
-import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.core.network.*;
 import org.opentrafficsim.core.network.route.Route;
 import org.opentrafficsim.i4driving.object.LocalDistraction;
 import org.opentrafficsim.i4driving.tactical.ScenarioTacticalPlannerFactory;
@@ -26,6 +24,7 @@ import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharact
 import org.opentrafficsim.road.gtu.lane.VehicleModel;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
+import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.factory.LaneFactory;
 import org.opentrafficsim.road.network.factory.xml.XmlParserException;
@@ -76,7 +75,7 @@ public final class SilabSimulation implements Sim0mqSimulation
     public SilabSimulation(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
             throws GtuException, OtsGeometryException, NetworkException
     {
-        URL xmlURL = URLResource.getResource("/SilabMap.xml");
+        URL xmlURL = URLResource.getResource("/MotorwayExit.xml");
         this.network = new RoadNetwork("SilabMap", simulator);
         try {
             new XmlParser(this.network).setUrl(xmlURL).build();
@@ -93,10 +92,10 @@ public final class SilabSimulation implements Sim0mqSimulation
         this.parameterFactory = new ParameterFactorySim0mq();
         this.parameterFactory.addParameter(DefaultsNl.CAR, LmrsParameters.VGAIN, new Speed(35.0, SpeedUnit.KM_PER_HOUR));
 
-        Node nodeA = this.network.getNode("A");
-        Node nodeB = this.network.getNode("B");
-        List<Node> nodes = Arrays.asList(nodeA, nodeB);
-        Route route = new Route("Fellow route", DefaultsNl.CAR, nodes);
+        Node nodeA = this.network.getNode("cp1-lane1-0");
+        Node nodeB = this.network.getNode("cp2-lane1-1");
+        RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
+        Route route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
 
         // GTU characteristics generator
         GtuType.registerTemplateSupplier(DefaultsNl.CAR, Defaults.NL);

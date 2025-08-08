@@ -62,7 +62,7 @@ public class GtuSpawnerOd
      */
     @SuppressWarnings("parameternumber")
     public void spawnGtu(final String id, final GtuType gtuType, final Length length, final Length width, final Length front,
-            final Route route, final Speed speed, final OrientedPoint2d position)
+            final Route route, final Speed speed, final Speed temporarySpeedLimit, final OrientedPoint2d position)
             throws GtuException, OtsGeometryException, NetworkException
     {
         LaneBasedGtuCharacteristics standardTemplate =
@@ -74,7 +74,7 @@ public class GtuSpawnerOd
         LaneBasedGtuCharacteristics templateGtuType = new LaneBasedGtuCharacteristics(overwrittenBaseCharacteristics,
                 standardTemplate.getStrategicalPlannerFactory(), route, standardTemplate.getOrigin(),
                 standardTemplate.getDestination(), standardTemplate.getVehicleModel());
-        this.gtuSpawner.spawnGtu(id, templateGtuType, this.network, speed, NetworkUtil.getLanePosition(this.network, position));
+        this.gtuSpawner.spawnGtu(id, templateGtuType, this.network, speed, temporarySpeedLimit, NetworkUtil.getLanePosition(this.network, position));
     }
 
     /**

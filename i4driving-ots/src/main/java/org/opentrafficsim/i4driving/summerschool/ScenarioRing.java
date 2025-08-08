@@ -277,7 +277,7 @@ public class ScenarioRing extends AbstractSimulationScript
                 LaneBasedGtuCharacteristics characteristics =
                         new LaneBasedGtuCharacteristics(GtuType.defaultCharacteristics(type, network, stream),
                                 laneBasedStrategicalPlannerFactory, null, null, null, VehicleModel.MINMAX);
-                spawner.spawnGtu("" + n++, characteristics, network, new Speed(80.0, SpeedUnit.KM_PER_HOUR),
+                spawner.spawnGtu("" + n++, characteristics, network, new Speed(80.0, SpeedUnit.KM_PER_HOUR), null,
                         new LanePosition(lane, lane.getLength().times((i / (double) nVehicles))));
             }
         }

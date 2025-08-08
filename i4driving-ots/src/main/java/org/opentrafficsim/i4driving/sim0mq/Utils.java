@@ -27,4 +27,51 @@ public class Utils {
             return null;
         }
     }
+
+    public static double getDistance(double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1;
+        double dy = y2 - y1;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    public static double round(double value, int places) {
+        double scale = Math.pow(10, places);
+        return Math.round(value * scale) / scale;
+    }
+
+    public static double toRadians(double degrees) {
+        return Math.toRadians(degrees);
+    }
+
+    public static double toDegrees(double radians) {
+        return Math.toDegrees(radians);
+    }
+
+    public static double angleDistance(double ta, double ca) {
+        // All angles in radiant
+        // if ta > ca, result is - else +
+        ta = normalizeAngle(ta);  // target angle   -> t=n+1
+        ca = normalizeAngle(ca);  // current angle  -> t=n
+        if (Math.abs(ca-ta) < Math.PI) {
+            return ca - ta;
+        } else if (Math.abs(ca-ta) > Math.PI) {
+            if (ca > ta) {
+                return - (Math.abs(2*Math.PI - ca) + ta);
+            } else {
+                return Math.abs(2*Math.PI - ta) + ca;
+            }
+        } else {
+            // ta == ca
+            return 0;
+        }
+    }
+
+    public static double normalizeAngle(double angle) {
+        // Normalizes angle to be 0 < angle < 2pi
+        angle = angle % (2 * Math.PI);
+        if (angle < 0) {
+            angle += 2 * Math.PI;
+        }
+        return angle;
+    }
 }

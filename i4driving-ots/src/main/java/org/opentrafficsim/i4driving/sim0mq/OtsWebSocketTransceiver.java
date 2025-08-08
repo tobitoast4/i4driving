@@ -195,11 +195,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             this.network.addListener(this, Network.GTU_ADD_EVENT);
             this.network.addListener(this, Network.GTU_REMOVE_EVENT);
 
-//            Point2d[] points = new Point2d[]{ new Point2d(0, 0), new Point2d(1, 0), new Point2d(0, 1) };
-//            Polygon2d polyLine2d = new Polygon2d(points);
-//            StaticObject so = StaticObject.create("XXX", polyLine2d, new Length(1, METER));
-//            this.network.addObject(so);
-
             this.simulator.scheduleEventNow(() -> scheduledSendMessage());
 
             boolean showGui = true;
@@ -215,8 +210,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avData.put("id", avId);
             avData.put("mode", "ots");
             JSONObject avPosition = new JSONObject();
-//            avPosition.put("x", 507.099200);
-//            avPosition.put("y", -188.139600);
             avPosition.put("x", 507.099200);
             avPosition.put("y", -188.139600);
 
@@ -234,8 +227,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
                | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
         {
-//        catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
-//            {
 
         }
     }
@@ -314,25 +305,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             double x = odbObject.getJSONObject("position").getDouble("x");
                             double y = odbObject.getJSONObject("position").getDouble("y");
                             this.simulator.scheduleEventNow(this, "moveIndicatorPoint", new Object[] {new OrientedPoint2d(x, y)});
-//                            double direction = odbObject.getJSONObject("rotation").getDouble("z");
-//                            OrientedPoint2d loc = new OrientedPoint2d(x, y, direction);
-//                            if (this.network != null) {
-//
-//                                LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-////                            ScenarioTacticalPlanner planner = getTacticalPlanner("AV");
-//                                if (avGtu != null) {
-////                                    System.out.println(avGtu.getLocation().distance(loc));
-//                                }
-//                            }
-//                            Gtu gtu = new Gtu("id", DefaultsNl.CAR, simulator, this.network, Length.instantiateSI(4.0), Length.instantiateSI(1.8),
-//                                    Speed.instantiateSI(50.0), Length.instantiateSI(2.0), Length.ZERO);
-//                            gtu.init();
-//                            if (avGtu.getLocation().distance(loc) > 1) {
-//                                this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {avId});
-//                                avId = "AV" + avCount++;
-//                                odbObject.put("id", avId);
-//                                generateVehicle(odbObject);
-//                            }
                         } else if (this.network != null) {
                             Gtu gtu = this.network.getGTU(id);
                             if (gtu == null) {
@@ -354,7 +326,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                                 if (avGtu != null && userGtu != null) {
-                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 100) {
+                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10) {
                                         Acceleration acc = new Acceleration(Double.NEGATIVE_INFINITY, AccelerationUnit.METER_PER_SECOND_2);
                                         this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
                                                 new Object[] {acc});
@@ -433,7 +405,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 System.err.println("Cannot process a " + messageType + " message.");
             }
         }
-//        catch (Sim0MQException | SerializationException | NumberFormatException | GtuException | OtsGeometryException
         catch (NumberFormatException | GtuException | OtsGeometryException | NetworkException
                | RemoteException | SimRuntimeException | IllegalAccessException | InvocationTargetException e)
         {
@@ -447,7 +418,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Length y = new Length(messageData.getJSONObject("position").getDouble("y"), LengthUnit.METER);
         Direction direction = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
         Speed speed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
-//        Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
+
+        // we have no acceleration given in the SILAB ODBQuery so set this to 0
         Acceleration acceleration = new Acceleration(0, AccelerationUnit.METER_PER_SECOND_2);
         OrientedPoint2d loc = new OrientedPoint2d(x.si, y.si, direction.si);
         if (this.activeIds.containsKey(id))
@@ -470,7 +442,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             OtsGeometryException, NetworkException, RemoteException, IllegalAccessException, InvocationTargetException
     {
         JSONObject jsonParameters0 = new JSONObject();
-        jsonParameters0.put("t0", new Duration(10, DurationUnit.SECOND));
+        jsonParameters0.put("t0", new Duration(1, DurationUnit.SECOND));
         messageData.put("parameters", jsonParameters0);
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
         String id = messageData.getString("id");
@@ -480,13 +452,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Length initY = new Length(messageData.getJSONObject("position").getDouble("y"), LengthUnit.METER);
         Direction initDirection = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
         OrientedPoint2d position = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
-//        if (messageData.getDouble("v") == 0 && !id.equals("AV")) {
-//            mode = "active";
-//        }
+
         Speed initSpeed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
         double temporaryLimit = Utils.tryGetDouble(messageData, "speedLimit", -1);
         Speed temporarySpeedLimit = new Speed(temporaryLimit, SpeedUnit.KM_PER_HOUR);
-//        Acceleration acceleration = new Acceleration(messageData.getDouble("acceleration"), AccelerationUnit.METER_PER_SECOND_2);
+
         if (mode.toLowerCase().equals("active")) {
             if (running) {
                 this.simulator.scheduleEventNow(this, "addActiveModeObject", new Object[] {id, position, initSpeed});
@@ -526,8 +496,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         }
-//        String routId = "A-B";  // TODO: Get routeId dynamically by x / y
-//        Route route = this.network.getRoute(routId);
 
         if (running)
         {
@@ -805,19 +773,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     {
 //        if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))
 //        {
-//            Object[] payload = (Object[]) event.getContent();
-//            String laneChangeDirection = (String) payload[5];  // this can either be "RIGHT" / "LEFT" / "NONE"
-//            if (!laneChangeDirection.equals("") && !laneChangeDirection.equals("NONE")) {
-//                laneChange = laneChangeDirection;
-//            }
-//        }
-//        if (event.getType().equals(LaneBasedGtu.LANE_EXIT_EVENT))
-//        {
-//            System.out.println("LANE_EXIT_EVENT");
-//        }
-//        if (event.getType().equals(LaneBasedGtu.LANE_ENTER_EVENT))
-//        {
-//            System.out.println("LANE_ENTER_EVENT");
 //        }
     }
 

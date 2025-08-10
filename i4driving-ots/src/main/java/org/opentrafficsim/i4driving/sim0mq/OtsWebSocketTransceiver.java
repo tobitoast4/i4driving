@@ -124,6 +124,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private IndicatorPoint avIndicator = null;
 
     private int messageSendId=0;
+    private boolean writeLogs = false;
 
     /**
      * Constructor.
@@ -270,9 +271,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @Override
     public void onEvent(JSONObject data)
     {
-        long unixMillis = Instant.now().toEpochMilli();
-        String log = "" + unixMillis + ": " + data.toString();
-        messageWriter.writeMessage(log);
+        if (writeLogs) {
+            long unixMillis = Instant.now().toEpochMilli();
+            String log = "" + unixMillis + ": " + data.toString();
+            messageWriter.writeMessage(log);
+        }
         try
         {
             String messageType = data.getString("type");

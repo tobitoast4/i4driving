@@ -24,5 +24,9 @@
         <module name="ots-road" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ots-opendrive" target="17" />
+      <module name="ots-xml" target="17" />
+    </bytecodeTargetLevel>
   </component>
 </project>

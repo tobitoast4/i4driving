@@ -1,5 +1,6 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
+import org.djutils.logger.CategoryLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -16,7 +17,8 @@ public class WebSocketClient {
             WebSocketContainer container = ContainerProvider.getWebSocketContainer();
             container.connectToServer(this, endpointURI);
         } catch (Exception e) {
-            e.printStackTrace();
+            CategoryLogger.always().error("Could not connect to WebSocket server: " + endpointURI +
+                    " as of " + e + "\nMake sure the server is running");
         }
     }
 
@@ -26,7 +28,6 @@ public class WebSocketClient {
 
     @OnOpen
     public void onOpen(Session session) {
-        System.out.println("Connected to server");
         this.userSession = session;
     }
 
@@ -39,13 +40,12 @@ public class WebSocketClient {
             }
         } catch (JSONException e) {
             // message is not a JSON
-            System.out.println("JSONException: " + e);
+            CategoryLogger.always().error(e);
         }
     }
 
     @OnClose
     public void onClose(Session session, CloseReason reason) {
-//        System.out.println("Disconnected: " + reason);
         this.userSession = null;
     }
 
@@ -53,7 +53,7 @@ public class WebSocketClient {
         if (userSession != null && userSession.isOpen()) {
             userSession.getAsyncRemote().sendText(message);
         } else {
-//            System.out.println("Session is not open.");
+            CategoryLogger.always().error("Session is not open.");
         }
     }
 }

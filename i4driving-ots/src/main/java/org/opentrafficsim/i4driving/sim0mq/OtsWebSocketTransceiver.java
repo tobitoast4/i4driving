@@ -178,8 +178,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avId = "AV";
             firstNodePassed = false;
             stopSimulation();
-            CategoryLogger.always().info("showGui: " + showGui);
-            CategoryLogger.always().info("writeLogs: " + writeLogs);
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
             this.simulator = new OtsAnimator("Test animator");
@@ -278,7 +276,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             if ("STATUS".equals(messageType))
             {
                 String message = Utils.tryGetString(data, "data", "ERROR");
-                System.out.println(message);
+                CategoryLogger.always().info(message);
             }
             else if ("OBJECTS".equals(messageType))
             {

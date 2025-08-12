@@ -78,7 +78,7 @@ import java.util.function.Function;
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
     /** Port number. */
-    @Option(names = "--port", description = "Port number", defaultValue = "5556")
+    @Option(names = "--port", description = "Port number", defaultValue = "8099")
     private int port;
 
     /** Show GUI. */
@@ -125,7 +125,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private IndicatorPoint avIndicator = null;
 
     private int messageSendId=0;
-    private boolean writeLogs = false;
+    private boolean writeLogs = true;
 
     /**
      * Constructor.
@@ -152,7 +152,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private void start()
     {
         try {
-            URI uri = new URI("ws://localhost:8099");
+            URI uri = new URI("ws://localhost:" + port);
             webSocketClient = new WebSocketClient(uri);
             webSocketClient.setListener(this);
         } catch (URISyntaxException e) {
@@ -199,7 +199,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
             this.simulator.scheduleEventNow(() -> scheduledSendMessage());
 
-            boolean showGui = true;
             if (showGui)
             {
                 GtuColorer colorer = new SilabColorer(avId, "USER");
@@ -334,13 +333,13 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
                                                 new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
-                                                new Time(-1.7, TimeUnit.BASE_SECOND));
+                                                new Time(-2, TimeUnit.BASE_SECOND));
                                         // Building JSONObject that looks like
                                         // {
                                         //      "time": "0.0 s",
                                         //      "type": "setAcceleration",
                                         //      "data": {
-                                        //          "acceleration": ""
+                                        //          "acceleration": "2 m/s2"
                                         //      }
                                         // }
                                         JSONObject jsonCommand = new JSONObject();

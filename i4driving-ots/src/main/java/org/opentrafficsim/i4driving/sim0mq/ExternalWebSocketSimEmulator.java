@@ -14,7 +14,7 @@ import java.time.Instant;
 public class ExternalWebSocketSimEmulator {
 
     private ExternalWebSocketServer server;
-    private String fileName = "01.log";
+    private String fileName = "101.log";
 
     private ExternalWebSocketSimEmulator() {
         server = new ExternalWebSocketServer(new InetSocketAddress(8099));
@@ -49,7 +49,11 @@ public class ExternalWebSocketSimEmulator {
         }
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            Thread.sleep(10000);  // Lets wait 10 seconds initially to give time to connect to the server, before sending data
+            while (server.getConnections().isEmpty()) {
+                // Lets wait until a client connects to the server, before sending data
+            }
+
+            Thread.sleep(3000);  // Wait some time until client is loaded
             String line;
             while ((line = reader.readLine()) != null) {
                 int position = line.indexOf(":");  // gets the first occurance of a ':'

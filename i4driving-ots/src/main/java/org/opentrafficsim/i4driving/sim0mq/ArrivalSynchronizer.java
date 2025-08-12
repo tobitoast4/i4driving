@@ -7,6 +7,7 @@ import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.scalar.Time;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.network.*;
@@ -27,8 +28,19 @@ public class ArrivalSynchronizer {
         this.targetNode = targetNode;
     }
 
-    public Acceleration getRecommendedAVAcceleration(LaneBasedGtu avGtu,LaneBasedGtu userGtu, Acceleration userA, Speed userV)
-            throws GtuException {
+    /**
+     *
+     * @param avGtu
+     * @param userGtu
+     * @param userA
+     * @param userV
+     * @param avTimeDifference: If -, the av will be there before the user. If +, the av will be there after the user.
+     * @return
+     * @throws GtuException
+     */
+    public Acceleration getRecommendedAVAcceleration(LaneBasedGtu avGtu,
+        LaneBasedGtu userGtu, Acceleration userA, Speed userV, Time avTimeDifference)
+    throws GtuException {
         // This should be used if AV is controlled by OTS
         RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
         double v0 = userV.getSI();
@@ -53,6 +65,7 @@ public class ArrivalSynchronizer {
         Speed avSpeed = avGtu.getSpeed();
 //        double userTimeToArrival = s / v0;  // simple approach (does not consider acceleration of user GTU
         double userTimeToArrival = getTimeToArrival(a, v0, s);
+        userTimeToArrival = userTimeToArrival + avTimeDifference.getSI();
 
         double avAcceleration = 2 * (avDistToTarget.getSI() - (avSpeed.getSI()*userTimeToArrival)) / (userTimeToArrival*userTimeToArrival);
         if (Double.isNaN(avAcceleration)) {

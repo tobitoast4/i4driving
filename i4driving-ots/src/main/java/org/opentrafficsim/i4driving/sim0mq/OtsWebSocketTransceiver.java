@@ -1,6 +1,7 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
@@ -260,13 +261,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         }
     }
 
-    private void changeOverwriteAccelerationAV(Acceleration acceleration) {
-        LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-        if (avGtu != null) {
-            avGtu.setOverwrittenAcceleration(acceleration);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override
     public void onEvent(JSONObject data)
@@ -330,17 +324,32 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                                 if (avGtu != null && userGtu != null) {
                                     if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10) {
-                                        Acceleration acc = new Acceleration(Double.NEGATIVE_INFINITY, AccelerationUnit.METER_PER_SECOND_2);
-                                        this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
-                                                new Object[] {acc});
+                                        JSONObject jsonCommand = new JSONObject();
+                                        jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
+                                        jsonCommand.put("type", "resetAcceleration");
+                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {"AV", jsonCommand.toString()});
                                         firstNodePassed = true;
                                     }
                                     if (!firstNodePassed) {
                                         ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
-                                                new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND));
-                                        this.simulator.scheduleEventNow(this, "changeOverwriteAccelerationAV",
-                                                new Object[] {acc});
+                                                new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
+                                                new Time(-1.7, TimeUnit.BASE_SECOND));
+                                        // Building JSONObject that looks like
+                                        // {
+                                        //      "time": "0.0 s",
+                                        //      "type": "setAcceleration",
+                                        //      "data": {
+                                        //          "acceleration": ""
+                                        //      }
+                                        // }
+                                        JSONObject jsonCommand = new JSONObject();
+                                        jsonCommand.put("time", "0.0 s");
+                                        jsonCommand.put("type", "setAcceleration");
+                                        JSONObject commandData = new JSONObject();
+                                        commandData.put("acceleration", acc.toString());
+                                        jsonCommand.put("data", commandData);
+                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {"AV", jsonCommand.toString()});
                                     }
                                 }
                             }
@@ -360,20 +369,20 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                     this.externalGtuIds.remove(id);
                 }
             }
-//            else if ("MODE".equals(messageType))
-//            {
-//                String id = messageData.getString("id");
-//                CategoryLogger.always().debug("Ots received MODE message for GTU " + id);
-//                String mode = (String) payload[9];
-//                this.simulator.scheduleEventNow(this, "scheduledChangeControlMode", new Object[] {id, mode});
-//            }
-//            else if ("COMMAND".equals(messageType))
-//            {
-//                String id = messageData.getString("id");
-//                CategoryLogger.always().debug("Ots received COMMAND message for GTU " + id);
-//                String json = (String) payload[9];
-//                this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {id, json});
-//            }
+            else if ("MODE".equals(messageType))  // currently not used
+            {
+                String id = messageData.getString("id");
+                String mode = messageData.getString("mode");
+                CategoryLogger.always().debug("Ots received MODE message for GTU " + id);
+                this.simulator.scheduleEventNow(this, "scheduledChangeControlMode", new Object[] {id, mode});
+            }
+            else if ("COMMAND".equals(messageType))  // currently not used
+            {
+                String id = messageData.getString("id");
+                JSONObject commandData = messageData.getJSONObject("command");
+                CategoryLogger.always().debug("Ots received COMMAND message for GTU " + id);
+                this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {id, commandData});
+            }
             else if ("DELETE".equals(messageType))
             {
                 String id = messageData.getString("id");
@@ -445,7 +454,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             OtsGeometryException, NetworkException, RemoteException, IllegalAccessException, InvocationTargetException
     {
         JSONObject jsonParameters0 = new JSONObject();
-        jsonParameters0.put("t0", new Duration(1, DurationUnit.SECOND));
+        jsonParameters0.put("t0", new Duration(43, DurationUnit.SECOND));
         messageData.put("parameters", jsonParameters0);
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
         String id = messageData.getString("id");

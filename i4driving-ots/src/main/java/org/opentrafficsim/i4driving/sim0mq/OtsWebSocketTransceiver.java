@@ -82,8 +82,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private int port;
 
     /** Show GUI. */
-    @Option(names = "--no-gui", description = "Whether to show GUI", defaultValue = "false", negatable = true) // false=default
-    private boolean showGui = true;
+    @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")
+    private boolean showGui = true; // Defaults to showing GUI. Add --hide-gui to hide the GUI.
+
+    @Option(names = "--write-logs", description = "Log external data to file", defaultValue = "false")
+    private boolean writeLogs = false; // Defaults to false. Add --write-logs to log the data into a log file.
 
     /** Mixed in model arguments. */
     @Mixin
@@ -118,14 +121,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private WebSocketClient webSocketClient;
     private MessageWriter messageWriter;
     private double sendMessageDelayMS = 10.0;
-    private Double last_avYaw = null;
-    private String laneChange;
     private String avId;
     private boolean firstNodePassed;
     private IndicatorPoint avIndicator = null;
 
     private int messageSendId=0;
-    private boolean writeLogs = true;
 
     /**
      * Constructor.
@@ -173,12 +173,13 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         try {
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
-            String formatted = now.format(formatter);
-            messageWriter = new MessageWriter("silab_msgs_" + formatted + ".log");
-            laneChange = "";
+            String formattedTime = now.format(formatter);
+            messageWriter = new MessageWriter("silab_msgs_" + formattedTime + ".log");
             avId = "AV";
             firstNodePassed = false;
             stopSimulation();
+            CategoryLogger.always().info("showGui: " + showGui);
+            CategoryLogger.always().info("writeLogs: " + writeLogs);
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
             this.simulator = new OtsAnimator("Test animator");
@@ -812,7 +813,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         dataJson.put("acceleration", acceleration);
         dataJson.put("isBrakingLightsOn", isBrakingLightsOn);
         dataJson.put("turnIndicatorStatus", turnIndicatorStatus);
-        dataJson.put("laneChangeDirection", this.laneChange);
         try {
             dataJson.put("laneId", gtuAV.getReferencePosition().lane().getId());
         } catch (GtuException e) {
@@ -826,15 +826,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         JSONObject rotationJson = new JSONObject();
         double current_avYaw = position.getDirZ();
         rotationJson.put("z", current_avYaw);
-        if (last_avYaw == null) {
-            rotationJson.put("v_z", 0);  // Turning velocity for z axis
-        } else {
-            double angularDistance = Utils.angleDistance(current_avYaw, last_avYaw);
-            angularDistance = Utils.round(angularDistance, 6);
-            double vYaw = angularDistance / (sendMessageDelayMS / 1000);
-            rotationJson.put("v_z", vYaw);  // Turning velocity for z axis
-        }
-        last_avYaw = current_avYaw;
         dataJson.put("rotation", rotationJson);
 
         JSONObject jsonObject = new JSONObject();

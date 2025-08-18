@@ -501,12 +501,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Route route;
         if (id.equals("AV")) {
             Node nodeA = this.network.getNode("l188-0");
-            Node nodeB = this.network.getNode("cp2-lane1-1");
+            Node nodeB = this.network.getNode("cp3-1");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         } else {
             Node nodeA = this.network.getNode("01_l233-0");
-            Node nodeB = this.network.getNode("cp3-lane0-1");
+            Node nodeB = this.network.getNode("05_l148-0");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         }

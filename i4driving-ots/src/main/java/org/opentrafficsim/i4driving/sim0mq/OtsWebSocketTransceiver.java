@@ -219,14 +219,16 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avData.put("rotation", avRotation);
             avData.put("v", 0);
 //            avData.put("speedLimit", 0);
-            generateVehicle(avData);
+//            generateVehicle(avData);
             CategoryLogger.always().debug("Generate GTU AV");
 
             createIndicatorPoint();  // shows where AV is in SILAB
         }
-        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
-               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
-        {
+//        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
+//               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
+//        {
+        catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
+            {
 
         }
     }
@@ -303,7 +305,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                         } else if (this.network != null) {
                             Gtu gtu = this.network.getGTU(id);
                             if (gtu == null) {
-                                generateVehicle(odbObject);
+                                if (name.contains("User")) {
+                                    generateVehicle(odbObject);
+                                }
                                 CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
                             } else {
                                 updateVehicle(odbObject);
@@ -501,8 +505,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         } else {
-            Node nodeA = this.network.getNode("cp1-lane1-0");
-            Node nodeB = this.network.getNode("cp2-lane1-1");
+            Node nodeA = this.network.getNode("01_l233-0");
+            Node nodeB = this.network.getNode("cp3-lane0-1");
             RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
             route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
         }
@@ -898,7 +902,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         {
             try
             {
-                this.simulation = new SilabSimulation(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
+//                this.simulation = new SilabSimulation(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
+                this.simulation = new SilabSimScenario01(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
             }
             catch (GtuException | OtsGeometryException | NetworkException ex)
             {

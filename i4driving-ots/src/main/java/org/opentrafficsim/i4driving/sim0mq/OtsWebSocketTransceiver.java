@@ -121,9 +121,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private WebSocketClient webSocketClient;
     private MessageWriter messageWriter;
     private double sendMessageDelayMS = 10.0;
-    private String avId;
     private boolean firstNodePassed;
-    private IndicatorPoint avIndicator = null;
+    private Set<String> avIds;
+    private ArrayList<IndicatorPoint> avIndicators;
 
     private int messageSendId=0;
 
@@ -161,8 +161,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         setupSimulation();
     }
 
-
-
     /**
      * Setup simulation.
      * @throws InvocationTargetException if a parameter cannot be set
@@ -171,11 +169,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private void setupSimulation()
     {
         try {
+            avIds = new HashSet<>();
+            avIndicators = new ArrayList<>();
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
             String formattedTime = now.format(formatter);
             messageWriter = new MessageWriter("silab_msgs_" + formattedTime + ".log");
-            avId = "AV";
             firstNodePassed = false;
             stopSimulation();
 
@@ -200,29 +199,29 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
             if (showGui)
             {
-                GtuColorer colorer = new SilabColorer(avId, "USER");
+                GtuColorer colorer = new SilabColorer("AV", "USER");
                 OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),
                         this.simulator, model, colorer, this.network);
                 animationPanel.enableSimulationControlButtons();
                 this.app = new OtsSimulationApplication<AbstractOtsModel>(model, animationPanel);
             }
-            JSONObject avData = new JSONObject();
-            avData.put("id", avId);
-            avData.put("mode", "ots");
-            JSONObject avPosition = new JSONObject();
-            avPosition.put("x", 507.099200);
-            avPosition.put("y", -188.139600);
-
-            avData.put("position", avPosition);
-            JSONObject avRotation = new JSONObject();
-            avRotation.put("z", 0.857657);
-            avData.put("rotation", avRotation);
-            avData.put("v", 0);
+//            JSONObject avData = new JSONObject();
+//            avData.put("id", avId);
+//            avData.put("mode", "ots");
+//            JSONObject avPosition = new JSONObject();
+//            avPosition.put("x", 507.099200);
+//            avPosition.put("y", -188.139600);
+//
+//            avData.put("position", avPosition);
+//            JSONObject avRotation = new JSONObject();
+//            avRotation.put("z", 0.857657);
+//            avData.put("rotation", avRotation);
+//            avData.put("v", 0);
 //            avData.put("speedLimit", 0);
 //            generateVehicle(avData);
-            CategoryLogger.always().debug("Generate GTU AV");
+//            CategoryLogger.always().debug("Generate GTU AV");
 
-            createIndicatorPoint();  // shows where AV is in SILAB
+//            createIndicatorPoint();
         }
 //        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
 //               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
@@ -233,33 +232,36 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         }
     }
 
-    private void createIndicatorPoint() {
+    private void createIndicatorPoint(String id, OrientedPoint2d position) {
         Point2d[] point2ds = new Point2d[]{
-                new Point2d(-10, -10),
-                new Point2d(10, -10),
-                new Point2d(10, 10),
-                new Point2d(-10, 10),
+                new Point2d(position.x-10, position.y-10),
+                new Point2d(position.x+10, position.y-10),
+                new Point2d(position.x+10, position.y+10),
+                new Point2d(position.x-10, position.y+10),
         };  // actally the geometry does not matter (at least idk for what (maybe for
             // collisions, which is not relevant here anyway)
         PolyLine2d polyLine2d = new PolyLine2d(point2ds);
         try {
-            avIndicator = new IndicatorPoint("AV_PositionIndicator", polyLine2d);
-            network.addObject(avIndicator);
+            IndicatorPoint avIndicator = new IndicatorPoint(id, polyLine2d, position);
+            if (!this.network.containsObject(avIndicator)) {
+                this.network.addObject(avIndicator);
+                this.avIndicators.add(avIndicator);
+            }
         } catch (NetworkException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void moveIndicatorPoint(OrientedPoint2d newLocation) {
+    private void moveIndicatorPoint(IndicatorPoint avIndicator, OrientedPoint2d newLocation) {
         avIndicator.setLocation(newLocation);
     }
 
-    private void changeSpeedLimitAV(Speed temporarySpeedLimit) {
-        LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-        if (avGtu != null) {
-            avGtu.setTemporarySpeedLimit(temporarySpeedLimit);
-        }
-    }
+//    private void changeSpeedLimitAV(Speed temporarySpeedLimit) {
+//        LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+//        if (avGtu != null) {
+//            avGtu.setTemporarySpeedLimit(temporarySpeedLimit);
+//        }
+//    }
 
     /** {@inheritDoc} */
     @Override
@@ -288,40 +290,56 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                     JSONObject odbObject = objects.getJSONObject(i);
                     String id = odbObject.getString("id");
                     String name = odbObject.getString("name");
+                    String mode = odbObject.getString("mode");
 
                     if (name.startsWith("sign.")) {
 
                     } else if (name.startsWith("scnx.road.superstructures.objects.post")) {
 
                     }
-//                    else if (name.contains("User")) {
+//                    else if (id.equals("USER")) {
 //                        continue;
 //                    }
                     else if (name.startsWith("Vehicles.")) {
-                        if (name.equals("Vehicles.V600.Fiat500.main")) {
-                            double x = odbObject.getJSONObject("position").getDouble("x");
-                            double y = odbObject.getJSONObject("position").getDouble("y");
-                            this.simulator.scheduleEventNow(this, "moveIndicatorPoint", new Object[] {new OrientedPoint2d(x, y)});
-                        } else if (this.network != null) {
-                            Gtu gtu = this.network.getGTU(id);
-                            if (gtu == null) {
-                                if (name.contains("User")) {
+                        if (this.network != null) {
+                            if (mode.equals("ots")) {      // AVs are controlled by OTS
+                                Gtu gtu = this.network.getGTU(id);
+                                if (gtu == null) {  // Create
+                                    avIds.add(id);
                                     generateVehicle(odbObject);
+                                    double x = odbObject.getJSONObject("position").getDouble("x");
+                                    double y = odbObject.getJSONObject("position").getDouble("y");
+                                    createIndicatorPoint(id, new OrientedPoint2d(x, y));
+                                } else {            // Update (update indicator point only, OTS should update vehicle)
+                                    double x = odbObject.getJSONObject("position").getDouble("x");
+                                    double y = odbObject.getJSONObject("position").getDouble("y");
+                                    IndicatorPoint indicator = avIndicators.stream().filter(p -> p.getAvId().equals(id)).toList().get(0);
+                                    if (avIds.contains(id) && indicator != null) {
+                                        this.simulator.scheduleEventNow(this, "moveIndicatorPoint", new Object[] {indicator, new OrientedPoint2d(x, y)});
+                                    }
                                 }
-                                CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
-                            } else {
-                                updateVehicle(odbObject);
+                            }
+                            if (mode.equals("external")) { // ego and fellow vehicles are controlled by SILAB
+                                Gtu gtu = this.network.getGTU(id);
+                                if (gtu == null) {  // Create
+                                    generateVehicle(odbObject);
+                                    CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
+                                } else {            // Update
+                                    updateVehicle(odbObject);
+                                }
                             }
                         }
 
-                        if (name.contains("User")) { // start stopped AV when close enough
+                        // Calculate AV speed for synchronization
+                        if (id.equals("USER")) { // start stopped AV when close enough
                             double x = odbObject.getJSONObject("position").getDouble("x");
                             double y = odbObject.getJSONObject("position").getDouble("y");
                             double a = odbObject.getDouble("a");
                             double v = odbObject.getDouble("v");
                             OrientedPoint2d userPosition = new OrientedPoint2d(x, y);
-                            String node_id = "l136-0";
+                            String node_id = "02_l137-0";
                             if (this.network != null) {
+                                String avId = avIds.stream().toList().get(0);
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                                 if (avGtu != null && userGtu != null) {
@@ -329,7 +347,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         JSONObject jsonCommand = new JSONObject();
                                         jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
                                         jsonCommand.put("type", "resetAcceleration");
-                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {"AV", jsonCommand.toString()});
+                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {avId, jsonCommand.toString()});
                                         firstNodePassed = true;
                                     }
                                     if (!firstNodePassed) {
@@ -351,7 +369,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         JSONObject commandData = new JSONObject();
                                         commandData.put("acceleration", acc.toString());
                                         jsonCommand.put("data", commandData);
-                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {"AV", jsonCommand.toString()});
+                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {avId, jsonCommand.toString()});
                                     }
                                 }
                             }
@@ -362,7 +380,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
                 Set<String> gtuIdsToRemove = new LinkedHashSet<>();
                 for (String id : externalGtuIds) {  // remove GTUs that are not in view anymore
-                    if (!updatedGtuIds.contains(id) && !id.equals(avId)) {
+                    if (!updatedGtuIds.contains(id) && !id.startsWith("AV")) {
                         this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {id});
                         gtuIdsToRemove.add(id);
                     }
@@ -498,18 +516,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             }
         }
 
-        Route route;
-        if (id.equals("AV")) {
-            Node nodeA = this.network.getNode("l188-0");
-            Node nodeB = this.network.getNode("cp3-1");
-            RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
-            route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
-        } else {
-            Node nodeA = this.network.getNode("01_l233-0");
-            Node nodeB = this.network.getNode("05_l148-0");
-            RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
-            route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
-        }
+        String startNodeId = messageData.getJSONObject("route").getString("nodeStart");
+        String endNodeId = messageData.getJSONObject("route").getString("nodeEnd");
+        Node nodeA = this.network.getNode(startNodeId);
+        Node nodeB = this.network.getNode(endNodeId);
+        RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
+        Route route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
 
         if (running)
         {
@@ -794,41 +806,41 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         if (!this.simulator.isStartingOrRunning()) {
             return;
         }
-        LaneBasedGtu gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avId);
-        if (gtuAV == null || gtuAV.isDestroyed()) {
-            return;
-        }
+
+        JSONArray jsonArray = new JSONArray();
+        for (String avId : avIds) {
+            LaneBasedGtu gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avId);
+            if (gtuAV == null || gtuAV.isDestroyed()) {
+                continue;
+            }
 //        if (gtuAV != null) {
 //            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
 //            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANE_ENTER_EVENT);
 //            gtuAV.addListener(OtsWebSocketTransceiver.this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
 //        }
 
-        OrientedPoint2d position = gtuAV.getLocation();
-        double acceleration = gtuAV.getAcceleration().getSI();
-        double speed = gtuAV.getSpeed().getSI();
-        boolean isBrakingLightsOn = false;
-        isBrakingLightsOn = gtuAV.isBrakingLightsOn();
-        String turnIndicatorStatus = gtuAV.getTurnIndicatorStatus().name();
-        JSONObject dataJson = new JSONObject();
-        dataJson.put("speed", speed);
-        dataJson.put("acceleration", acceleration);
-        dataJson.put("isBrakingLightsOn", isBrakingLightsOn);
-        dataJson.put("turnIndicatorStatus", turnIndicatorStatus);
-        try {
-            dataJson.put("laneId", gtuAV.getReferencePosition().lane().getId());
-        } catch (GtuException e) {
-            dataJson.put("laneId", -1);
-        }
-        JSONObject positionJson = new JSONObject();
-        positionJson.put("x", position.getX());
-        positionJson.put("y", position.getY());
-        dataJson.put("position", positionJson);
+            OrientedPoint2d position = gtuAV.getLocation();
+            double acceleration = gtuAV.getAcceleration().getSI();
+            double speed = gtuAV.getSpeed().getSI();
+            boolean isBrakingLightsOn = gtuAV.isBrakingLightsOn();
+            String turnIndicatorStatus = gtuAV.getTurnIndicatorStatus().name();
+            JSONObject dataJson = new JSONObject();
+            dataJson.put("speed", speed);
+            dataJson.put("acceleration", acceleration);
+            dataJson.put("isBrakingLightsOn", isBrakingLightsOn);
+            dataJson.put("turnIndicatorStatus", turnIndicatorStatus);
+            // dataJson.put("laneId", gtuAV.getReferencePosition().lane().getId());
+            JSONObject positionJson = new JSONObject();
+            positionJson.put("x", position.getX());
+            positionJson.put("y", position.getY());
+            dataJson.put("position", positionJson);
 
-        JSONObject rotationJson = new JSONObject();
-        double current_avYaw = position.getDirZ();
-        rotationJson.put("z", current_avYaw);
-        dataJson.put("rotation", rotationJson);
+            JSONObject rotationJson = new JSONObject();
+            double current_avYaw = position.getDirZ();
+            rotationJson.put("z", current_avYaw);
+            dataJson.put("rotation", rotationJson);
+            jsonArray.put(dataJson);
+        }
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("type", "PLAN");
@@ -836,7 +848,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         long unixMillis = Instant.now().toEpochMilli();
         jsonObject.put("send_time", unixMillis);
         jsonObject.put("send_id", messageSendId++);
-        jsonObject.put("data", dataJson);
+        jsonObject.put("data", jsonArray);
         webSocketClient.sendMessage(jsonObject.toString());
 
         this.simulator.scheduleEventRel(new Duration(sendMessageDelayMS, DurationUnit.MILLISECOND), () -> scheduledSendMessage());

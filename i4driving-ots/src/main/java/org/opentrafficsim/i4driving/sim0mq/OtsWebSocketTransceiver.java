@@ -1,7 +1,6 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
@@ -59,6 +58,7 @@ import javax.naming.NamingException;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.rmi.RemoteException;
@@ -75,7 +75,7 @@ import java.util.function.Function;
  */
 @Command(description = "OTS Transceiver for co-simulation", name = "OTS", mixinStandardHelpOptions = true,
         showDefaultValues = true, version = "20250619")
-public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
+public class OtsWebSocketTransceiver implements EventListener, WebSocketServerListener
 {
     /** Port number. */
     @Option(names = "--port", description = "Port number", defaultValue = "8099")
@@ -91,7 +91,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     /** Mixed in model arguments. */
     @Mixin
     private ScenarioTacticalPlannerFactory tacticalFactory = new ScenarioTacticalPlannerFactory();
-
 
     /** */
     private static final long serialVersionUID = 20241210L;
@@ -118,7 +117,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     /** GSON builder to parser JSON strings. */
     private Gson gson = DefaultGson.GSON;
 
-    private WebSocketClient webSocketClient;
+    private WebSocketServer webSocketServer;
     private MessageWriter messageWriter;
     private double sendMessageDelayMS = 10.0;
     private boolean firstNodePassed;
@@ -151,13 +150,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
     private void start()
     {
-        try {
-            URI uri = new URI("ws://localhost:" + port);
-            webSocketClient = new WebSocketClient(uri);
-            webSocketClient.setListener(this);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+//            URI uri = new URI("ws://localhost:" + port);
+        webSocketServer = new WebSocketServer(new InetSocketAddress(8099));
+        webSocketServer.setListener(this);
+        webSocketServer.start();
         setupSimulation();
     }
 
@@ -849,7 +845,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         jsonObject.put("send_time", unixMillis);
         jsonObject.put("send_id", messageSendId++);
         jsonObject.put("data", jsonArray);
-        webSocketClient.sendMessage(jsonObject.toString());
+        webSocketServer.broadcast(jsonObject.toString());
 
         this.simulator.scheduleEventRel(new Duration(sendMessageDelayMS, DurationUnit.MILLISECOND), () -> scheduledSendMessage());
     }
@@ -868,7 +864,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         jsonObject.put("type", "DELETE");
         jsonObject.put("data", vehicleData);
         String msg = jsonObject.toString();
-        webSocketClient.sendMessage(msg);
+        webSocketServer.broadcast(msg);
 
         String log = String.format("[%.3fs] Ots sent DELETE message for GTU %s", this.simulator.getSimulatorTime().si, gtuId);
         System.out.println(log);

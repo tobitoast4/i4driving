@@ -10,7 +10,7 @@ import java.net.URI;
 @ClientEndpoint
 public class WebSocketClient {
     private Session userSession;
-    private WebSocketListener listener;
+    private WebSocketClientListener listener;
 
     public WebSocketClient(URI endpointURI) {
         try {
@@ -22,7 +22,7 @@ public class WebSocketClient {
         }
     }
 
-    public void setListener(WebSocketListener listener) {
+    public void setListener(WebSocketClientListener listener) {
         this.listener = listener;
     }
 
@@ -58,6 +58,6 @@ public class WebSocketClient {
     }
 }
 
-interface WebSocketListener {
+interface WebSocketClientListener {
     void onEvent(JSONObject object);
 }

@@ -59,13 +59,12 @@ import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
@@ -106,7 +105,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
     private OtsSimulationApplication<AbstractOtsModel> app;
 
     /** Ids of GTUs that are externally controlled. */
-    private Set<String> externalGtuIds = new LinkedHashSet<>();
+    private Set<GtuData> externalGtus = new LinkedHashSet<>();
+    private Set<GtuDataAV> avGtus = new LinkedHashSet<>();
 
     /** Ids of active mode objects, and to which crossing they pertain. */
     private Map<String, ActiveModeCrossing> activeIds = new LinkedHashMap<>();
@@ -120,8 +120,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
     private WebSocketServer webSocketServer;
     private MessageWriter messageWriter;
     private double sendMessageDelayMS = 10.0;
-    private boolean firstNodePassed;
-    private Set<String> avIds;
     private ArrayList<IndicatorPoint> avIndicators;
 
     private int messageSendId=0;
@@ -165,13 +163,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
     private void setupSimulation()
     {
         try {
-            avIds = new HashSet<>();
             avIndicators = new ArrayList<>();
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
             String formattedTime = now.format(formatter);
             messageWriter = new MessageWriter("silab_msgs_" + formattedTime + ".log");
-            firstNodePassed = false;
             stopSimulation();
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
@@ -299,9 +295,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                     else if (name.startsWith("Vehicles.")) {
                         if (this.network != null) {
                             if (mode.equals("ots")) {      // AVs are controlled by OTS
+                                String mergingNode = odbObject.getJSONObject("route").getString("mergingNode");
                                 Gtu gtu = this.network.getGTU(id);
                                 if (gtu == null) {  // Create
-                                    avIds.add(id);
+                                    avGtus.add(new GtuDataAV(id, mergingNode));
                                     generateVehicle(odbObject);
                                     double x = odbObject.getJSONObject("position").getDouble("x");
                                     double y = odbObject.getJSONObject("position").getDouble("y");
@@ -309,8 +306,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                                 } else {            // Update (update indicator point only, OTS should update vehicle)
                                     double x = odbObject.getJSONObject("position").getDouble("x");
                                     double y = odbObject.getJSONObject("position").getDouble("y");
-                                    IndicatorPoint indicator = avIndicators.stream().filter(p -> p.getAvId().equals(id)).toList().get(0);
-                                    if (avIds.contains(id) && indicator != null) {
+                                    List<IndicatorPoint> indicators = avIndicators.stream().filter(p -> p.getAvId().equals(id)).toList();
+                                    if (indicators.size() >= 0 && avGtus.stream().filter(p -> p.getGtuId().equals(id)).toList().size() >= 1) {
+                                        IndicatorPoint indicator = indicators.get(0);
                                         this.simulator.scheduleEventNow(this, "moveIndicatorPoint", new Object[] {indicator, new OrientedPoint2d(x, y)});
                                     }
                                 }
@@ -328,14 +326,14 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
 
                         // Calculate AV speed for synchronization
                         if (id.equals("USER")) { // start stopped AV when close enough
-                            double x = odbObject.getJSONObject("position").getDouble("x");
-                            double y = odbObject.getJSONObject("position").getDouble("y");
                             double a = odbObject.getDouble("a");
                             double v = odbObject.getDouble("v");
-                            OrientedPoint2d userPosition = new OrientedPoint2d(x, y);
-                            String node_id = "02_l137-0";
-                            if (this.network != null) {
-                                String avId = avIds.stream().toList().get(0);
+                            for (GtuDataAV gtuData : this.avGtus) {
+                                if (this.network == null) {
+                                    continue;
+                                }
+                                String node_id = gtuData.getMergingNode();
+                                String avId = gtuData.getGtuId();
                                 LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                                 LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                                 if (avGtu != null && userGtu != null) {
@@ -344,9 +342,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                                         jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
                                         jsonCommand.put("type", "resetAcceleration");
                                         this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {avId, jsonCommand.toString()});
-                                        firstNodePassed = true;
+                                        gtuData.setMergingNodePassed(true);
                                     }
-                                    if (!firstNodePassed) {
+                                    if (!gtuData.isMergingNodePassed()) {
                                         ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
                                                 new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
@@ -369,20 +367,25 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                                     }
                                 }
                             }
+
                         }
-                        updatedGtuIds.add(id);
+
+                        List<GtuData> gtuDatas = externalGtus.stream().filter(gd -> gd.getGtuId().equals(id)).toList();
+                        if (gtuDatas.size() == 1) {
+                            gtuDatas.get(0).updateLastSeen();
+                        }
                     }
                 }
 
-                Set<String> gtuIdsToRemove = new LinkedHashSet<>();
-                for (String id : externalGtuIds) {  // remove GTUs that are not in view anymore
-                    if (!updatedGtuIds.contains(id) && !id.startsWith("AV")) {
-                        this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {id});
-                        gtuIdsToRemove.add(id);
+                Set<GtuData> gtuDataToRemove = new LinkedHashSet<>();
+                for (GtuData gtuData : this.externalGtus) {  // remove GTUs that are not in view anymore
+                    if (gtuData.wasLongTimeNotSeen()) {
+                        this.simulator.scheduleEventNow(this, "scheduledDelete", new Object[] {gtuData.getGtuId()});
+                        gtuDataToRemove.add(gtuData);
                     }
                 }
-                for (String id : gtuIdsToRemove) {
-                    this.externalGtuIds.remove(id);
+                for (GtuData gtuData : gtuDataToRemove) {
+                    this.externalGtus.remove(gtuData);
                 }
             }
             else if ("MODE".equals(messageType))  // currently not used
@@ -724,7 +727,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
         {
             case "ots":
             {
-                if (this.externalGtuIds.remove(id))
+                if (this.externalGtus.remove(new GtuData(id)))
                 {
                     getTacticalPlanner(id).stopDeadReckoning();
                 }
@@ -732,7 +735,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
             }
             case "hybrid":
             {
-                if (this.externalGtuIds.add(id))
+                if (this.externalGtus.add(new GtuData(id)))
                 {
                     if (getTacticalPlanner(id) != null) {
                         getTacticalPlanner(id).startDeadReckoning();
@@ -742,7 +745,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
             }
             case "external":
             {
-                if (this.externalGtuIds.add(id))
+                if (this.externalGtus.add(new GtuData(id)))
                 {
                     if (getTacticalPlanner(id) != null) {
                         getTacticalPlanner(id).startDeadReckoning();
@@ -782,7 +785,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
             this.simulator = null;
             this.network = null;
         }
-        this.externalGtuIds.clear();
+        this.externalGtus.clear();
         this.commandHandlers.clear();
         if (this.app != null)
         {
@@ -804,8 +807,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
         }
 
         JSONArray jsonArray = new JSONArray();
-        for (String avId : avIds) {
-            LaneBasedGtu gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avId);
+        for (GtuDataAV avData : this.avGtus) {
+            LaneBasedGtu gtuAV = (LaneBasedGtu) OtsWebSocketTransceiver.this.network.getGTU(avData.getGtuId());
             if (gtuAV == null || gtuAV.isDestroyed()) {
                 continue;
             }
@@ -821,6 +824,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
             boolean isBrakingLightsOn = gtuAV.isBrakingLightsOn();
             String turnIndicatorStatus = gtuAV.getTurnIndicatorStatus().name();
             JSONObject dataJson = new JSONObject();
+            dataJson.put("id", avData.getGtuId());
             dataJson.put("speed", speed);
             dataJson.put("acceleration", acceleration);
             dataJson.put("isBrakingLightsOn", isBrakingLightsOn);
@@ -836,16 +840,17 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
             rotationJson.put("z", current_avYaw);
             dataJson.put("rotation", rotationJson);
             jsonArray.put(dataJson);
+
+
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("type", "PLAN");
+
+            long unixMillis = Instant.now().toEpochMilli();
+            jsonObject.put("send_time", unixMillis);
+            jsonObject.put("send_id", messageSendId++);
+            jsonObject.put("data", jsonArray);
+            webSocketServer.sendToClient(avData.getGtuId(), jsonObject.toString());
         }
-
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("type", "PLAN");
-
-        long unixMillis = Instant.now().toEpochMilli();
-        jsonObject.put("send_time", unixMillis);
-        jsonObject.put("send_id", messageSendId++);
-        jsonObject.put("data", jsonArray);
-        webSocketServer.broadcast(jsonObject.toString());
 
         this.simulator.scheduleEventRel(new Duration(sendMessageDelayMS, DurationUnit.MILLISECOND), () -> scheduledSendMessage());
     }

@@ -54,6 +54,7 @@ public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
         } catch (JSONException e) {
             // message is not a JSON
 //            CategoryLogger.always().error(e);
+            CategoryLogger.always().error(message);
             e.printStackTrace();
         }
     }
@@ -65,7 +66,7 @@ public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
 
     @Override
     public void onStart() {
-        CategoryLogger.always().info("WebSocket server started on port: " + getPort());
+        CategoryLogger.always().info("WebSocket server started on: " + getAddress());
     }
 
     public boolean sendToClient(String clientId, String message) {

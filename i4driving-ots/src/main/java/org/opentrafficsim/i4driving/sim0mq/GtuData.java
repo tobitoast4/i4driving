@@ -31,7 +31,7 @@ public class GtuData {
     public boolean wasLongTimeNotSeen() {
         // Returns true, if not seen for mor than 500 ms
         long currentMillis = Instant.now().toEpochMilli();
-        if (currentMillis > this.lastSeen + 500) {
+        if (currentMillis > this.lastSeen + 1000) {
             return true;
         }
         return false;

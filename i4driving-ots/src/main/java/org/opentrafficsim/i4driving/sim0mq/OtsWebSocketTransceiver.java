@@ -248,6 +248,18 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
         avIndicator.setLocation(newLocation);
     }
 
+    private void addToAvGtus(GtuDataAV gtuData) {
+        avGtus.add(gtuData);
+    }
+
+    private void updateGtuSeen(GtuData gtuData) {
+        gtuData.updateLastSeen();
+    }
+
+    private void removeFromExternalGtus(GtuData gtuData) {
+        this.externalGtus.remove(gtuData);
+    }
+
 //    private void changeSpeedLimitAV(Speed temporarySpeedLimit) {
 //        LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
 //        if (avGtu != null) {
@@ -298,7 +310,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                                 String mergingNode = odbObject.getJSONObject("route").getString("mergingNode");
                                 Gtu gtu = this.network.getGTU(id);
                                 if (gtu == null) {  // Create
-                                    avGtus.add(new GtuDataAV(id, mergingNode));
+                                    this.simulator.scheduleEventNow(this, "addToAvGtus", new Object[] {new GtuDataAV(id, mergingNode)});
                                     generateVehicle(odbObject);
                                     double x = odbObject.getJSONObject("position").getDouble("x");
                                     double y = odbObject.getJSONObject("position").getDouble("y");
@@ -317,7 +329,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                                 Gtu gtu = this.network.getGTU(id);
                                 if (gtu == null) {  // Create
                                     generateVehicle(odbObject);
-                                    CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
                                 } else {            // Update
                                     updateVehicle(odbObject);
                                 }
@@ -371,8 +382,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                         }
 
                         List<GtuData> gtuDatas = externalGtus.stream().filter(gd -> gd.getGtuId().equals(id)).toList();
-                        if (gtuDatas.size() == 1) {
-                            gtuDatas.get(0).updateLastSeen();
+                        if (!gtuDatas.isEmpty()) {
+                            this.simulator.scheduleEventNow(this, "updateGtuSeen", new Object[] {gtuDatas.get(0)});
                         }
                     }
                 }
@@ -385,7 +396,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
                     }
                 }
                 for (GtuData gtuData : gtuDataToRemove) {
-                    this.externalGtus.remove(gtuData);
+                    // Let this be executed from simulator to prevent java.util.ConcurrentModificationException
+                    this.simulator.scheduleEventNow(this, "removeFromExternalGtus", new Object[] {gtuData});
                 }
             }
             else if ("MODE".equals(messageType))  // currently not used
@@ -522,7 +534,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
         RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
         Route route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
 
-        if (running)
+        if (running && this.network.getGTU(id) == null)
         {
             this.simulator.scheduleEventNow(this, "spawnGtu", new Object[] {id, gtuType, vehicleLength, vehicleWidth,
                     refToNose, route, initSpeed, temporarySpeedLimit, position, mode, parameterMap});
@@ -618,6 +630,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketServerLi
         Gtu gtu = this.network.getGTU(id);
         if (gtu == null) {  // somehow this is not guaranteed to this point, so we check again
             this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, temporarySpeedLimit, position);
+            CategoryLogger.always().debug("Generate GTU " + id);
         }
         OtsWebSocketTransceiver.this.tacticalFactory.resetMode();
         setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));

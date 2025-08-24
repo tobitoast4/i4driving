@@ -335,7 +335,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                         updatedGtuIds.add(id);
 
                         // Calculate AV speed for synchronization
-                        if (id.equals("USER")) {
+                        if (!id.equals("USER")) {
                             continue;
                         }
                         double x = odbObject.getJSONObject("position").getDouble("x");

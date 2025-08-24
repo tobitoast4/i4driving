@@ -152,7 +152,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private void start()
     {
         try {
-            URI uri = new URI("ws://localhost:" + port);
+            URI uri = new URI("ws://10.152.238.2:" + port);
             webSocketClient = new WebSocketClient(uri);
             webSocketClient.setListener(this);
         } catch (URISyntaxException e) {

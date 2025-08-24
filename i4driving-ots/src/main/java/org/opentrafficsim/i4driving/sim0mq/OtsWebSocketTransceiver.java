@@ -108,6 +108,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
     /** Ids of GTUs that are externally controlled. */
     private Set<String> externalGtuIds = new LinkedHashSet<>();
+    /** Key: GTU ID of AV; Value: Node ID where AV should merge */
+    private Map<String, String> mergingNodes = new LinkedHashMap<>();
 
     /** Ids of active mode objects, and to which crossing they pertain. */
     private Map<String, ActiveModeCrossing> activeIds = new LinkedHashMap<>();
@@ -287,6 +289,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 Set<String> updatedGtuIds = new LinkedHashSet<>();
                 JSONArray objects = messageData.getJSONArray("objects");
                 for (int i = 0; i < objects.length(); i++) {
+                    if (this.network == null) {
+                        continue;
+                    }
                     JSONObject odbObject = objects.getJSONObject(i);
                     String id = odbObject.getString("id");
                     String name = odbObject.getString("name");
@@ -301,80 +306,79 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //                        continue;
 //                    }
                     else if (name.startsWith("Vehicles.")) {
-                        if (this.network != null) {
-                            if (mode.equals("ots")) {      // AVs are controlled by OTS
-                                Gtu gtu = this.network.getGTU(id);
-                                if (gtu == null) {  // Create
-                                    avIds.add(id);
-                                    generateVehicle(odbObject);
-                                    double x = odbObject.getJSONObject("position").getDouble("x");
-                                    double y = odbObject.getJSONObject("position").getDouble("y");
-                                    createIndicatorPoint(id, new OrientedPoint2d(x, y));
-                                } else {            // Update (update indicator point only, OTS should update vehicle)
-                                    double x = odbObject.getJSONObject("position").getDouble("x");
-                                    double y = odbObject.getJSONObject("position").getDouble("y");
-                                    IndicatorPoint indicator = avIndicators.stream().filter(p -> p.getAvId().equals(id)).toList().get(0);
-                                    if (avIds.contains(id) && indicator != null) {
-                                        this.simulator.scheduleEventNow(this, "moveIndicatorPoint", new Object[] {indicator, new OrientedPoint2d(x, y)});
-                                    }
-                                }
-                            }
-                            if (mode.equals("external")) { // ego and fellow vehicles are controlled by SILAB
-                                Gtu gtu = this.network.getGTU(id);
-                                if (gtu == null) {  // Create
-                                    generateVehicle(odbObject);
-                                    CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
-                                } else {            // Update
-                                    updateVehicle(odbObject);
+                        if (mode.equals("ots")) {      // AVs are controlled by OTS
+                            Gtu gtu = this.network.getGTU(id);
+                            double x = odbObject.getJSONObject("position").getDouble("x");
+                            double y = odbObject.getJSONObject("position").getDouble("y");
+                            if (gtu == null) {  // Create
+                                avIds.add(id);
+                                generateVehicle(odbObject);
+                                createIndicatorPoint(id, new OrientedPoint2d(x, y));
+                                String mergingNodeId = Utils.tryGetString(odbObject.getJSONObject("route"), "mergingNode", null);
+                                this.mergingNodes.put(id, mergingNodeId);
+                            } else {            // Update (update indicator point only, OTS should update vehicle)
+                                IndicatorPoint indicator = avIndicators.stream().filter(p -> p.getAvId().equals(id)).toList().get(0);
+                                if (avIds.contains(id) && indicator != null) {
+                                    this.simulator.scheduleEventNow(this, "moveIndicatorPoint", new Object[]{indicator, new OrientedPoint2d(x, y)});
                                 }
                             }
                         }
-
-                        // Calculate AV speed for synchronization
-                        if (id.equals("USER")) { // start stopped AV when close enough
-                            double x = odbObject.getJSONObject("position").getDouble("x");
-                            double y = odbObject.getJSONObject("position").getDouble("y");
-                            double a = odbObject.getDouble("a");
-                            double v = odbObject.getDouble("v");
-                            OrientedPoint2d userPosition = new OrientedPoint2d(x, y);
-                            String node_id = "02_l137-0";
-                            if (this.network != null) {
-                                String avId = avIds.stream().toList().get(0);
-                                LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
-                                LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
-                                if (avGtu != null && userGtu != null) {
-                                    if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10) {
-                                        JSONObject jsonCommand = new JSONObject();
-                                        jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
-                                        jsonCommand.put("type", "resetAcceleration");
-                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {avId, jsonCommand.toString()});
-                                        firstNodePassed = true;
-                                    }
-                                    if (!firstNodePassed) {
-                                        ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
-                                        Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
-                                                new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
-                                                new Time(-2, TimeUnit.BASE_SECOND));
-                                        // Building JSONObject that looks like
-                                        // {
-                                        //      "time": "0.0 s",
-                                        //      "type": "setAcceleration",
-                                        //      "data": {
-                                        //          "acceleration": "2 m/s2"
-                                        //      }
-                                        // }
-                                        JSONObject jsonCommand = new JSONObject();
-                                        jsonCommand.put("time", "0.0 s");
-                                        jsonCommand.put("type", "setAcceleration");
-                                        JSONObject commandData = new JSONObject();
-                                        commandData.put("acceleration", acc.toString());
-                                        jsonCommand.put("data", commandData);
-                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[] {avId, jsonCommand.toString()});
-                                    }
-                                }
+                        if (mode.equals("external")) { // ego and fellow vehicles are controlled by SILAB
+                            Gtu gtu = this.network.getGTU(id);
+                            if (gtu == null) {  // Create
+                                generateVehicle(odbObject);
+                                CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
+                            } else {            // Update
+                                updateVehicle(odbObject);
                             }
                         }
                         updatedGtuIds.add(id);
+
+                        // Calculate AV speed for synchronization
+                        if (id.equals("USER")) {
+                            continue;
+                        }
+                        double x = odbObject.getJSONObject("position").getDouble("x");
+                        double y = odbObject.getJSONObject("position").getDouble("y");
+                        double a = odbObject.getDouble("a");
+                        double v = odbObject.getDouble("v");
+
+                        for (Map.Entry<String, String> entry : mergingNodes.entrySet()) {
+                            String avId = entry.getKey();
+                            String node_id = entry.getValue();
+                            LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
+                            LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
+                            if (avGtu != null && userGtu != null) {
+                                if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10) {
+                                    JSONObject jsonCommand = new JSONObject();
+                                    jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
+                                    jsonCommand.put("type", "resetAcceleration");
+                                    this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
+                                    firstNodePassed = true;
+                                }
+                                if (!firstNodePassed) {
+                                    ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
+                                    Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
+                                            new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
+                                            new Time(-2, TimeUnit.BASE_SECOND));
+                                    // Building JSONObject that looks like
+                                    // {
+                                    //      "time": "0.0 s",
+                                    //      "type": "setAcceleration",
+                                    //      "data": {
+                                    //          "acceleration": "2 m/s2"
+                                    //      }
+                                    // }
+                                    JSONObject jsonCommand = new JSONObject();
+                                    jsonCommand.put("time", "0.0 s");
+                                    jsonCommand.put("type", "setAcceleration");
+                                    JSONObject commandData = new JSONObject();
+                                    commandData.put("acceleration", acc.toString());
+                                    jsonCommand.put("data", commandData);
+                                    this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
+                                }
+                            }
+                        }
                     }
                 }
 

@@ -41,7 +41,7 @@ import java.net.URL;
  * @author wjschakel
  * @author Bramin Ramachandra Ravi Kiran
  */
-public final class SilabSimScenario01 implements Sim0mqSimulation
+public final class Scenario01 implements Sim0mqSimulation
 {
 
     /** Network. */
@@ -61,7 +61,7 @@ public final class SilabSimScenario01 implements Sim0mqSimulation
      * @throws OtsGeometryException
      * @throws GtuException
      */
-    public SilabSimScenario01(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
+    public Scenario01(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
             throws GtuException, OtsGeometryException, NetworkException
     {
         URL xmlURL = URLResource.getResource("/Scenario01.xml");

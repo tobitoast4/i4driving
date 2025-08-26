@@ -1,7 +1,6 @@
 package org.opentrafficsim.i4driving.sim0mq;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
@@ -77,11 +76,16 @@ import java.util.function.Function;
         showDefaultValues = true, version = "20250619")
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
-    /** Port number. */
+//    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
+    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
+    private String address;
+
     @Option(names = "--port", description = "Port number", defaultValue = "8099")
     private int port;
 
-    /** Show GUI. */
+    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "ScenarioSimpleExit")
+    private String scenario;
+
     @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")
     private boolean showGui = true; // Defaults to showing GUI. Add --hide-gui to hide the GUI.
 
@@ -154,7 +158,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private void start()
     {
         try {
-            URI uri = new URI("ws://localhost:" + port);
+            URI uri = new URI("ws://" + address + ":" + port);
             webSocketClient = new WebSocketClient(uri);
             webSocketClient.setListener(this);
         } catch (URISyntaxException e) {
@@ -920,8 +924,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         {
             try
             {
-//                this.simulation = new SilabSimulation(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
-                this.simulation = new SilabSimScenario01(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
+                if (scenario.equals("ScenarioSimpleExit")) {
+                    this.simulation = new ScenarioSimpleExit(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
+                }
+                if (scenario.equals("Scenario01")) {
+                    this.simulation = new Scenario01(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
+                }
             }
             catch (GtuException | OtsGeometryException | NetworkException ex)
             {

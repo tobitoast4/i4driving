@@ -154,7 +154,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private void start()
     {
         try {
-            URI uri = new URI("ws://10.152.238.2:" + port);
+            URI uri = new URI("ws://localhost:" + port);
             webSocketClient = new WebSocketClient(uri);
             webSocketClient.setListener(this);
         } catch (URISyntaxException e) {
@@ -349,7 +349,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                             LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                             if (avGtu != null && userGtu != null) {
-                                if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10) {
+                                if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10 && !firstNodePassed) {
                                     JSONObject jsonCommand = new JSONObject();
                                     jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
                                     jsonCommand.put("type", "resetAcceleration");
@@ -453,7 +453,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Length x = new Length(messageData.getJSONObject("position").getDouble("x"), LengthUnit.METER);
         Length y = new Length(messageData.getJSONObject("position").getDouble("y"), LengthUnit.METER);
         Direction direction = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
-        Speed speed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
+        Speed speed = new Speed(messageData.getDouble("v"), SpeedUnit.METER_PER_SECOND);
 
         // we have no acceleration given in the SILAB ODBQuery so set this to 0
         Acceleration acceleration = new Acceleration(0, AccelerationUnit.METER_PER_SECOND_2);
@@ -478,7 +478,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             OtsGeometryException, NetworkException, RemoteException, IllegalAccessException, InvocationTargetException
     {
         JSONObject jsonParameters0 = new JSONObject();
-        jsonParameters0.put("t0", new Duration(43, DurationUnit.SECOND));
+        jsonParameters0.put("t0", Duration.instantiateSI(43));
+//        jsonParameters0.put("--fullerImplementation", "NONE");
+        jsonParameters0.put("--nLeaders", 1);
         messageData.put("parameters", jsonParameters0);
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
         String id = messageData.getString("id");
@@ -489,7 +491,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Direction initDirection = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
         OrientedPoint2d position = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
 
-        Speed initSpeed = new Speed(messageData.getDouble("v"), SpeedUnit.KM_PER_HOUR);
+        Speed initSpeed = new Speed(messageData.getDouble("v"), SpeedUnit.METER_PER_SECOND);
         double temporaryLimit = Utils.tryGetDouble(messageData, "speedLimit", -1);
         Speed temporarySpeedLimit = new Speed(temporaryLimit, SpeedUnit.KM_PER_HOUR);
 

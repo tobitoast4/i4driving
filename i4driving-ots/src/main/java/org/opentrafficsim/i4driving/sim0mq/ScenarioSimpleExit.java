@@ -62,7 +62,7 @@ public final class ScenarioSimpleExit implements Sim0mqSimulation
     public ScenarioSimpleExit(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
             throws GtuException, OtsGeometryException, NetworkException
     {
-        URL xmlURL = URLResource.getResource("/MotorwayExit.xml");
+        URL xmlURL = URLResource.getResource("/ScenarioSimpleExit.xml");
         this.network = new RoadNetwork("SilabMap", simulator);
         try {
             new XmlParser(this.network).setUrl(xmlURL).build();

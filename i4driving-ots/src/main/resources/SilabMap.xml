@@ -38,7 +38,7 @@
     <ots:RoadLayouts>
       <ots:RoadLayout Id="2LaneHighway" LinkType="HIGHWAY">
 
-        <ots:Shoulder Id="LeftShoulder" LaneType="">
+        <ots:Shoulder Id="LeftShoulder" LaneType="HIGHWAY">
           <ots:CenterOffset>6.75m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>
@@ -63,7 +63,7 @@
           <ots:CenterOffset>-1.75m</ots:CenterOffset>
           <ots:DrawingWidth>20cm</ots:DrawingWidth>
         </ots:Stripe>
-        <ots:Shoulder Id="RightShoulder" LaneType="">
+        <ots:Shoulder Id="RightShoulder" LaneType="HIGHWAY">
           <ots:CenterOffset>-3.25m</ots:CenterOffset>
           <ots:Width>3m</ots:Width>
         </ots:Shoulder>

@@ -241,7 +241,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             // collisions, which is not relevant here anyway)
         PolyLine2d polyLine2d = new PolyLine2d(point2ds);
         try {
-            avIndicator = new IndicatorPoint("AV_PositionIndicator", polyLine2d);
+            avIndicator = new IndicatorPoint("AV_PositionIndicator", polyLine2d, new OrientedPoint2d(0,0));
             network.addObject(avIndicator);
         } catch (NetworkException e) {
             throw new RuntimeException(e);

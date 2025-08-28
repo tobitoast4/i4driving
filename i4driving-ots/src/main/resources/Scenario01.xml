@@ -103,10 +103,14 @@
                     <ots:CenterOffset>-5.625m</ots:CenterOffset>
                     <ots:DrawingWidth>20cm</ots:DrawingWidth>
                 </ots:Stripe>
-                <!--        <ots:Stripe Type="SOLID">-->
-                <!--          <ots:CenterOffset>-1.875m</ots:CenterOffset>-->
-                <!--          <ots:DrawingWidth>20cm</ots:DrawingWidth>-->
-                <!--        </ots:Stripe>-->
+<!--                <ots:Stripe Type="SOLID">-->
+<!--                  <ots:CenterOffset>-1.875m</ots:CenterOffset>-->
+<!--                  <ots:DrawingWidth>20cm</ots:DrawingWidth>-->
+<!--                </ots:Stripe>-->
+                <ots:Shoulder LaneType="NL.HIGHWAY">
+                    <ots:CenterOffset>-7.125m</ots:CenterOffset>
+                    <ots:Width>3m</ots:Width>
+                </ots:Shoulder>
             </ots:RoadLayout>
 
 

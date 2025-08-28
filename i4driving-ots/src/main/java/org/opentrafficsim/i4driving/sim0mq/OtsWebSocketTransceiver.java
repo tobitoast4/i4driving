@@ -80,7 +80,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
     private String address;
 
-    @Option(names = "--port", description = "Port number", defaultValue = "8099")
     @Option(names = "--port", description = "Port number", defaultValue = "8199")
     private int port;
 
@@ -459,7 +458,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Length y = new Length(messageData.getJSONObject("position").getDouble("y"), LengthUnit.METER);
         Direction direction = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
         Speed speed = new Speed(messageData.getDouble("v"), SpeedUnit.METER_PER_SECOND);
-
+//        CategoryLogger.always().info("GTU " + id + " Speed: " + speed.getSI());
         // we have no acceleration given in the SILAB ODBQuery so set this to 0
         Acceleration acceleration = new Acceleration(0, AccelerationUnit.METER_PER_SECOND_2);
         OrientedPoint2d loc = new OrientedPoint2d(x.si, y.si, direction.si);

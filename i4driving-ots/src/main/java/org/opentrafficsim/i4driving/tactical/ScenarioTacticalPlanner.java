@@ -255,13 +255,13 @@ public class ScenarioTacticalPlanner extends AbstractIncentivesTacticalPlanner i
             // set turn indicator
             simplePlan.setTurnIndicator(getGtu());
 
-            // create plan
-            OperationalPlan operationalPlan =
-                    LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
-            this.lastIntendedPlan = operationalPlan;
-            this.syncState = this.lmrsData.getSynchronizationState();
             if (!this.deadReckoning)
             {
+                // create plan
+                OperationalPlan operationalPlan =
+                        LaneOperationalPlanBuilder.buildPlanFromSimplePlan(getGtu(), startTime, simplePlan, this.laneChange);
+                this.lastIntendedPlan = operationalPlan;
+                this.syncState = this.lmrsData.getSynchronizationState();
                 return operationalPlan;
             }
         }

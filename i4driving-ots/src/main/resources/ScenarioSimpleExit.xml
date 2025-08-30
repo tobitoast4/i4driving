@@ -127,15 +127,11 @@
 
 
 
-
-
-
-
   <ots:Network>
     <ots:Node Id="cp1-lane1-0" Coordinate="(-5.0000, -7.1250)" Direction="0.0 deg(E)" />
     <ots:Node Id="cp1-lane1-1" Coordinate="(300.0000, -7.1250)" Direction="0.0 deg(E)" />
     <ots:Node Id="cp2-lane1-0" Coordinate="(810.3785, -7.1262)" Direction="0.0006 deg(E)" />
-    <ots:Node Id="cp2-lane1-1" Coordinate="(1160.3785, -7.1231)" Direction="0.0006 deg(E)" />
+    <ots:Node Id="cp2-lane1-1" Coordinate="(1170.3785, -7.1231)" Direction="0.0006 deg(E)" />
     <ots:Node Id="l66-0" Coordinate="(779.6044, -7.1266)" Direction="0.0006 deg(E)" />
     <ots:Node Id="l69-0" Coordinate="(810.3784, 3.3738)" Direction="180.0006 deg(E)" />
     <ots:Node Id="l69-1" Coordinate="(779.6043, 3.3734)" Direction="180.0006 deg(E)" />
@@ -476,8 +472,8 @@
 
 
     <ots:Demand>
-      <ots:Sink Lane="4" Link="cp2-lane1" Position="END-30m" Type="NL.ROAD_USERS" />
-      <ots:Sink Lane="5" Link="cp2-lane1" Position="END-30m" Type="NL.ROAD_USERS" />
+      <ots:Sink Lane="4" Link="cp2-lane1" Position="END-50m" Type="NL.ROAD_USERS" />
+      <ots:Sink Lane="5" Link="cp2-lane1" Position="END-50m" Type="NL.ROAD_USERS" />
     </ots:Demand>
   <ots:Run>
     <ots:RunLength>1h</ots:RunLength>

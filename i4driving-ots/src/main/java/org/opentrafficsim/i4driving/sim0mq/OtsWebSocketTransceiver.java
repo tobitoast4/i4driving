@@ -930,6 +930,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 if (scenario.equals("Scenario01")) {
                     this.simulation = new Scenario01(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
                 }
+                if (scenario.equals("Scenario02")) {
+                    this.simulation = new Scenario02(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
+                }
             }
             catch (GtuException | OtsGeometryException | NetworkException ex)
             {

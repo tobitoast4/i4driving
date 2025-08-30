@@ -41,7 +41,7 @@ import java.net.URL;
  * @author wjschakel
  * @author Bramin Ramachandra Ravi Kiran
  */
-public final class Scenario01 implements Sim0mqSimulation
+public final class Scenario02 implements Sim0mqSimulation
 {
 
     /** Network. */
@@ -61,10 +61,10 @@ public final class Scenario01 implements Sim0mqSimulation
      * @throws OtsGeometryException
      * @throws GtuException
      */
-    public Scenario01(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
+    public Scenario02(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
             throws GtuException, OtsGeometryException, NetworkException
     {
-        URL xmlURL = URLResource.getResource("/Scenario01.xml");
+        URL xmlURL = URLResource.getResource("/Scenario02.xml");
         this.network = new RoadNetwork("SilabMap", simulator);
         try {
             new XmlParser(this.network).setUrl(xmlURL).build();
@@ -97,8 +97,7 @@ public final class Scenario01 implements Sim0mqSimulation
             public LaneBasedGtuCharacteristics draw(final Node origin, final Node destination, final Category category,
                     final StreamInterface randomStream) throws GtuException
             {
-                return new LaneBasedGtuCharacteristics(gtucharacteristics, stratFactory, route, nodeA, nodeB,
-                        VehicleModel.MINMAX);
+                return new LaneBasedGtuCharacteristics(gtucharacteristics, stratFactory, route, nodeA, nodeB, VehicleModel.MINMAX);
             }
         };
 

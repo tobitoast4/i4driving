@@ -924,9 +924,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         {
             try
             {
-                if (scenario.equals("ScenarioSimpleExit")) {
-                    this.simulation = new ScenarioSimpleExit(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
-                }
                 if (scenario.equals("Scenario01")) {
                     this.simulation = new Scenario01(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
                 }

@@ -115,6 +115,90 @@
                 </ots:Shoulder>
             </ots:RoadLayout>
 
+            <ots:RoadLayout Id="2LaneHighwaySplit" LinkType="HIGHWAY">
+                <ots:Shoulder LaneType="NL.HIGHWAY">
+                    <ots:CenterOffset>3.375m</ots:CenterOffset>
+                    <ots:Width>3m</ots:Width>
+                </ots:Shoulder>
+                <ots:Stripe Type="SOLID">
+                    <ots:CenterOffset>1.875m</ots:CenterOffset>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Lane Id="5" LaneType="NL.HIGHWAY">
+                    <ots:CenterOffset>0m</ots:CenterOffset>
+                    <ots:Width>3.75m</ots:Width>
+                </ots:Lane>
+                <ots:Stripe Type="DASHED">
+                    <ots:CenterOffset>-1.875m</ots:CenterOffset>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Lane Id="6" LaneType="NL.HIGHWAY">
+                    <ots:CenterOffset>-3.75m</ots:CenterOffset>
+                    <ots:Width>3.75m</ots:Width>
+                </ots:Lane>
+                <ots:Stripe Type="DASHED">
+                    <ots:CenterOffset>-5.625m</ots:CenterOffset>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Lane Id="TURNLANE" LaneType="NL.HIGHWAY">
+                    <ots:CenterOffsetStart>-3.75m</ots:CenterOffsetStart>
+                    <ots:CenterOffsetEnd>-7.5m</ots:CenterOffsetEnd>
+                    <ots:Width>3.75m</ots:Width>
+                </ots:Lane>
+                <ots:Stripe Type="SOLID">
+                    <ots:CenterOffsetStart>-5.625m</ots:CenterOffsetStart>
+                    <ots:CenterOffsetEnd>-9.375m</ots:CenterOffsetEnd>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Shoulder LaneType="NL.HIGHWAY">
+                    <ots:CenterOffsetStart>-7.125m</ots:CenterOffsetStart>
+                    <ots:CenterOffsetEnd>-10.875m</ots:CenterOffsetEnd>
+                    <ots:Width>3m</ots:Width>
+                </ots:Shoulder>
+            </ots:RoadLayout>
+
+            <ots:RoadLayout Id="2LaneHighwayMerge" LinkType="HIGHWAY">
+                <ots:Shoulder LaneType="NL.HIGHWAY">
+                    <ots:CenterOffset>3.375m</ots:CenterOffset>
+                    <ots:Width>3m</ots:Width>
+                </ots:Shoulder>
+                <ots:Stripe Type="SOLID">
+                    <ots:CenterOffset>1.875m</ots:CenterOffset>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Lane Id="5" LaneType="NL.HIGHWAY">
+                    <ots:CenterOffset>0m</ots:CenterOffset>
+                    <ots:Width>3.75m</ots:Width>
+                </ots:Lane>
+                <ots:Stripe Type="DASHED">
+                    <ots:CenterOffset>-1.875m</ots:CenterOffset>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Lane Id="6" LaneType="NL.HIGHWAY">
+                    <ots:CenterOffset>-3.75m</ots:CenterOffset>
+                    <ots:Width>3.75m</ots:Width>
+                </ots:Lane>
+                <ots:Stripe Type="DASHED">
+                    <ots:CenterOffset>-5.625m</ots:CenterOffset>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Lane Id="TURNLANE" LaneType="NL.HIGHWAY">
+                    <ots:CenterOffsetStart>-7.5m</ots:CenterOffsetStart>
+                    <ots:CenterOffsetEnd>-3.75m</ots:CenterOffsetEnd>
+                    <ots:Width>3.75m</ots:Width>
+                </ots:Lane>
+                <ots:Stripe Type="SOLID">
+                    <ots:CenterOffsetStart>-9.375m</ots:CenterOffsetStart>
+                    <ots:CenterOffsetEnd>-5.625m</ots:CenterOffsetEnd>
+                    <ots:DrawingWidth>20cm</ots:DrawingWidth>
+                </ots:Stripe>
+                <ots:Shoulder LaneType="NL.HIGHWAY">
+                    <ots:CenterOffsetStart>-10.875m</ots:CenterOffsetStart>
+                    <ots:CenterOffsetEnd>-7.125m</ots:CenterOffsetEnd>
+                    <ots:Width>3m</ots:Width>
+                </ots:Shoulder>
+            </ots:RoadLayout>
+
             <ots:RoadLayout Id="2LaneHighwayCourse" LinkType="HIGHWAY">
                 <ots:Shoulder LaneType="NL.HIGHWAY">
                     <ots:CenterOffset>0m</ots:CenterOffset>
@@ -302,7 +386,7 @@
         </ots:Link>
         <ots:Link Id="P0_l138" NodeStart="P0_l137-1" NodeEnd="P0_l67-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P0_l148" NodeStart="P0_l148-0" NodeEnd="P0_l137-0" Type="HIGHWAY">
             <ots:Straight />
@@ -318,7 +402,7 @@
         </ots:Link>
         <ots:Link Id="P0_l154" NodeStart="P0_l154-0" NodeEnd="P0_l153-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P0_l159" NodeStart="P0_l159-0" NodeEnd="P0_l154-0" Type="HIGHWAY">
             <ots:Straight />
@@ -374,7 +458,7 @@
         </ots:Link>
         <ots:Link Id="101_l160" NodeStart="101_l148-1" NodeEnd="101_l160-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="101_l174" NodeStart="101_l174-0" NodeEnd="101_l174-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -426,7 +510,7 @@
         </ots:Link>
         <ots:Link Id="102_l33" NodeStart="102_l15-1" NodeEnd="102_l33-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="102_l63" NodeStart="102_l33-1" NodeEnd="102_l63-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -466,7 +550,7 @@
         </ots:Link>
         <ots:Link Id="201_l160" NodeStart="201_l148-1" NodeEnd="201_l160-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="201_l174" NodeStart="201_l174-0" NodeEnd="201_l174-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -518,7 +602,7 @@
         </ots:Link>
         <ots:Link Id="202_l33" NodeStart="202_l15-1" NodeEnd="202_l33-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="202_l63" NodeStart="202_l33-1" NodeEnd="202_l63-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -558,7 +642,7 @@
         </ots:Link>
         <ots:Link Id="301_l160" NodeStart="301_l148-1" NodeEnd="301_l160-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="301_l174" NodeStart="301_l174-0" NodeEnd="301_l174-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -610,7 +694,7 @@
         </ots:Link>
         <ots:Link Id="302_l33" NodeStart="302_l15-1" NodeEnd="302_l33-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="302_l63" NodeStart="302_l33-1" NodeEnd="302_l63-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -650,7 +734,7 @@
         </ots:Link>
         <ots:Link Id="P1_l138" NodeStart="P1_l137-1" NodeEnd="P1_l67-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P1_l148" NodeStart="P1_l148-0" NodeEnd="P1_l137-0" Type="HIGHWAY">
             <ots:Straight />
@@ -666,7 +750,7 @@
         </ots:Link>
         <ots:Link Id="P1_l154" NodeStart="P1_l154-0" NodeEnd="P1_l153-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P1_l159" NodeStart="P1_l159-0" NodeEnd="P1_l154-0" Type="HIGHWAY">
             <ots:Straight />

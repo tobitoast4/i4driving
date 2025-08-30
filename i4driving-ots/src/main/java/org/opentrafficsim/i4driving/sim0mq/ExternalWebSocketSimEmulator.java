@@ -52,8 +52,10 @@ public class ExternalWebSocketSimEmulator {
             while (server.getConnections().isEmpty()) {
                 // Lets wait until a client connects to the server, before sending data
             }
-
+            CategoryLogger.always().debug("Client connected");
             Thread.sleep(3000);  // Wait some time until client is loaded
+            CategoryLogger.always().debug("Start sending messages");
+
             String line;
             while ((line = reader.readLine()) != null) {
                 int position = line.indexOf(":");  // gets the first occurance of a ':'
@@ -69,15 +71,25 @@ public class ExternalWebSocketSimEmulator {
                 if (timeToSleep > 2000) {
                     timeToSleep = 2000;  // sometimes there is too much waiting time in the records
                 }
-                Thread.sleep(timeToSleep);
+                preciseSleep(timeToSleep);
                 server.broadcast(message);
-                CategoryLogger.always().debug("ExternalWebSocketServer sent message");
+                CategoryLogger.always().debug("SENT: " + message);
                 lastMsgUnixMillis = time;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    // Thread.sleep() is not precise, this function is more accurate
+    public void preciseSleep(long millis) {
+        long currentMillisTime = System.currentTimeMillis();
+        long end = currentMillisTime + millis;
+
+        while (currentMillisTime < end) {
+            currentMillisTime = System.currentTimeMillis();
         }
     }
 
@@ -99,8 +111,7 @@ public class ExternalWebSocketSimEmulator {
 
         @Override
         public void onMessage(WebSocket conn, String message) {
-            JSONObject jsonObject = new JSONObject(message);
-
+            CategoryLogger.always().debug("RECEIVED: " + message);
         }
 
         @Override

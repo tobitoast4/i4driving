@@ -775,7 +775,9 @@
 
 
     <ots:Demand>
-      <ots:Sink Lane="LANE" Link="102_l168" Position="END-50m" Type="NL.ROAD_USERS" />
+      <ots:Sink Lane="LANE" Link="102_l168" Position="END-40m" Type="NL.ROAD_USERS" />
+      <ots:Sink Lane="LANE" Link="202_l168" Position="END-40m" Type="NL.ROAD_USERS" />
+      <ots:Sink Lane="LANE" Link="302_l168" Position="END-40m" Type="NL.ROAD_USERS" />
     </ots:Demand>
     <ots:Run>
         <ots:RunLength>1h</ots:RunLength>

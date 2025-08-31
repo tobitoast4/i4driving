@@ -76,14 +76,14 @@ import java.util.function.Function;
         showDefaultValues = true, version = "20250619")
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
-//    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
-    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
+    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
+//    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
     private String address;
 
     @Option(names = "--port", description = "Port number", defaultValue = "8199")
     private int port;
 
-    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario02")
+    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario01")
     private String scenario;
 
     @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")
@@ -114,7 +114,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     /** Ids of GTUs that are externally controlled. */
     private Set<String> externalGtuIds = new LinkedHashSet<>();
     /** Key: GTU ID of AV; Value: Node ID where AV should merge */
-    private Map<String, String> mergingNodes = new LinkedHashMap<>();
+    private Map<String, String> mergingNodes;
+    private Map<String, Boolean> mergingNodesPassed;
 
     /** Ids of active mode objects, and to which crossing they pertain. */
     private Map<String, ActiveModeCrossing> activeIds = new LinkedHashMap<>();
@@ -128,7 +129,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private WebSocketClient webSocketClient;
     private MessageWriter messageWriter;
     private double sendMessageDelayMS = 10.0;
-    private boolean firstNodePassed;
     private Set<String> avIds;
     private ArrayList<IndicatorPoint> avIndicators;
 
@@ -178,11 +178,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         try {
             avIds = new HashSet<>();
             avIndicators = new ArrayList<>();
+            mergingNodes = new LinkedHashMap<>();
+            mergingNodesPassed = new LinkedHashMap<>();
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
             String formattedTime = now.format(formatter);
             messageWriter = new MessageWriter("silab_msgs_" + formattedTime + ".log");
-            firstNodePassed = false;
             stopSimulation();
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
@@ -321,6 +322,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                 createIndicatorPoint(id, new OrientedPoint2d(x, y));
                                 String mergingNodeId = Utils.tryGetString(odbObject.getJSONObject("route"), "mergingNode", null);
                                 this.mergingNodes.put(id, mergingNodeId);
+                                this.mergingNodesPassed.put(id, false);
                             } else {            // Update (update indicator point only, OTS should update vehicle)
                                 IndicatorPoint indicator = avIndicators.stream().filter(p -> p.getAvId().equals(id)).toList().get(0);
                                 if (avIds.contains(id) && indicator != null) {
@@ -354,14 +356,14 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                             LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                             if (avGtu != null && userGtu != null) {
-                                if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10 && !firstNodePassed) {
+                                if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10 && !mergingNodesPassed.get(avId)) {
                                     JSONObject jsonCommand = new JSONObject();
                                     jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
                                     jsonCommand.put("type", "resetAcceleration");
                                     this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
-                                    firstNodePassed = true;
+                                    mergingNodesPassed.put(avId, true);
                                 }
-                                if (!firstNodePassed) {
+                                if (!mergingNodesPassed.get(avId)) {
                                     if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 500) {
                                         ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
@@ -501,8 +503,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         String id = messageData.getString("id");
 
         String mode = Utils.tryGetString(messageData, "mode", "external");
-        Length initX = new Length(messageData.getJSONObject("position").getDouble("x"), LengthUnit.METER);
-        Length initY = new Length(messageData.getJSONObject("position").getDouble("y"), LengthUnit.METER);
+        double x = messageData.getJSONObject("position").getDouble("x");
+        Length initX = new Length(x, LengthUnit.METER);
+        double y = messageData.getJSONObject("position").getDouble("y");
+        Length initY = new Length(y, LengthUnit.METER);
         Direction initDirection = new Direction(messageData.getJSONObject("rotation").getDouble("z"), DirectionUnit.EAST_RADIAN);
         OrientedPoint2d position = new OrientedPoint2d(initX.si, initY.si, initDirection.si);
 
@@ -541,6 +545,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         String endNodeId = messageData.getJSONObject("route").getString("nodeEnd");
         Node nodeA = this.network.getNode(startNodeId);
         Node nodeB = this.network.getNode(endNodeId);
+        OrientedPoint2d spawnPosition = new OrientedPoint2d(x, y);
+        if (spawnPosition.distance(nodeB.getPoint()) <= 50) {
+            return;  // do not spawn a vehicle if it is 50 meters away from its destination (prevents respawning after deletion through sinks)
+        }
+
         RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
         Route route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
 
@@ -846,6 +855,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             boolean isBrakingLightsOn = gtuAV.isBrakingLightsOn();
             String turnIndicatorStatus = gtuAV.getTurnIndicatorStatus().name();
             JSONObject dataJson = new JSONObject();
+            dataJson.put("id", avId);
             dataJson.put("speed", speed);
             dataJson.put("acceleration", acceleration);
             dataJson.put("isBrakingLightsOn", isBrakingLightsOn);

@@ -731,7 +731,7 @@
         </ots:Link>
         <ots:Link Id="P1_l154" NodeStart="P1_l154-0" NodeEnd="P1_l153-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
+            <ots:DefinedLayout>3LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P1_l159" NodeStart="P1_l159-0" NodeEnd="P1_l154-0" Type="HIGHWAY">
             <ots:Straight />

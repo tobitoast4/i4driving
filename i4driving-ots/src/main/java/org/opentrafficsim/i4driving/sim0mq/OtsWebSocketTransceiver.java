@@ -116,6 +116,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     /** Key: GTU ID of AV; Value: Node ID where AV should merge */
     private Map<String, String> mergingNodes;
     private Map<String, Boolean> mergingNodesPassed;
+    private Map<String, Boolean> endOfRouteReached;
 
     /** Ids of active mode objects, and to which crossing they pertain. */
     private Map<String, ActiveModeCrossing> activeIds = new LinkedHashMap<>();
@@ -180,6 +181,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             avIndicators = new ArrayList<>();
             mergingNodes = new LinkedHashMap<>();
             mergingNodesPassed = new LinkedHashMap<>();
+            endOfRouteReached = new LinkedHashMap<>();
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
             String formattedTime = now.format(formatter);
@@ -356,15 +358,17 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                             LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                             if (avGtu != null && userGtu != null) {
+                                CategoryLogger.always().info(mergingNodesPassed.toString());
                                 if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10 && !mergingNodesPassed.get(avId)) {
                                     JSONObject jsonCommand = new JSONObject();
                                     jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
                                     jsonCommand.put("type", "resetAcceleration");
                                     this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
                                     mergingNodesPassed.put(avId, true);
+                                    CategoryLogger.always().info("GTU " + avId + " passed mergingNode");
                                 }
                                 if (!mergingNodesPassed.get(avId)) {
-                                    if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 500) {
+                                    if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 1000) {
                                         ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
                                                 new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
@@ -384,6 +388,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         commandData.put("acceleration", acc.toString());
                                         jsonCommand.put("data", commandData);
                                         this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
+                                        CategoryLogger.always().info("GTU " + avId + " Acc: " + acc.toString());
                                     } else {
                                         JSONObject jsonCommand = new JSONObject();
                                         jsonCommand.put("time", "0.0 s");
@@ -392,6 +397,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         commandData.put("acceleration", "0 m/s2");
                                         jsonCommand.put("data", commandData);
                                         this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
+                                        CategoryLogger.always().info("GTU " + avId + " Acc: 0.0 m/s2");
                                     }
                                 }
                             }
@@ -528,8 +534,21 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Length vehicleLength = new Length(Utils.tryGetDouble(messageData, "length", 4.0), LengthUnit.METER);
         Length vehicleWidth = new Length(Utils.tryGetDouble(messageData, "width", 1.8), LengthUnit.METER);
         Length refToNose = new Length(Utils.tryGetDouble(messageData, "refToNose", 2), LengthUnit.METER);
-        JSONObject jsonParameters = Utils.tryGetJSONObject(messageData, "parameters");
 
+        String startNodeId = messageData.getJSONObject("route").getString("nodeStart");
+        String endNodeId = messageData.getJSONObject("route").getString("nodeEnd");
+        Node nodeA = this.network.getNode(startNodeId);
+        Node nodeB = this.network.getNode(endNodeId);
+        OrientedPoint2d spawnPosition = new OrientedPoint2d(x, y);
+        if (spawnPosition.distance(nodeB.getPoint()) <= 50 || (endOfRouteReached.get(id) != null && endOfRouteReached.get(id))) {
+            // do not spawn a vehicle if it was already deleted
+            return;
+        }
+
+        RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
+        Route route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
+
+        JSONObject jsonParameters = Utils.tryGetJSONObject(messageData, "parameters");
         Map<String, Object> parameterMap = new LinkedHashMap<>();
         if (jsonParameters != null) {   // apply the parameters
             Iterator<String> keys = jsonParameters.keys();
@@ -540,18 +559,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 parameterMap.put(key, value);
             }
         }
-
-        String startNodeId = messageData.getJSONObject("route").getString("nodeStart");
-        String endNodeId = messageData.getJSONObject("route").getString("nodeEnd");
-        Node nodeA = this.network.getNode(startNodeId);
-        Node nodeB = this.network.getNode(endNodeId);
-        OrientedPoint2d spawnPosition = new OrientedPoint2d(x, y);
-        if (spawnPosition.distance(nodeB.getPoint()) <= 50) {
-            return;  // do not spawn a vehicle if it is 50 meters away from its destination (prevents respawning after deletion through sinks)
-        }
-
-        RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
-        Route route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
 
         if (running)
         {
@@ -741,10 +748,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @SuppressWarnings("unused") // scheduled
     private void scheduledPerformCommand(final String id, final String json)
     {
-        Commands.Command command = this.gson.fromJson(json, Commands.Command.class);
-        Function<String, CommandsHandler> function =
-                (gtuId) -> new CommandsHandler(this.network, new Commands(gtuId, null), null);
-        this.commandHandlers.computeIfAbsent(id, function).executeCommand(command);
+        if (this.network.getGTU(id) != null) {
+            Commands.Command command = this.gson.fromJson(json, Commands.Command.class);
+            Function<String, CommandsHandler> function =
+                    (gtuId) -> new CommandsHandler(this.network, new Commands(gtuId, null), null);
+            this.commandHandlers.computeIfAbsent(id, function).executeCommand(command);
+        }
     }
 
     /**
@@ -827,8 +836,32 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
     public void notify(final org.djutils.event.Event event) throws RemoteException
     {
+        if (event.getType().equals(Network.GTU_ADD_EVENT)) {
+            String gtuId = (String) event.getContent();
+            Gtu gtu = this.network.getGTU(gtuId);
+            gtu.addListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+        }
+        if (event.getType().equals(Network.GTU_REMOVE_EVENT))
+        {
+            String gtuId = (String) event.getContent();
+            endOfRouteReached.put(gtuId, true);
+            CategoryLogger.always().info("Removed GTU " + gtuId);
+        }
 //        if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))
 //        {
+//            Object[] payload = (Object[]) event.getContent();
+//            String gtuId = (String) payload[0];
+//            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(gtuId);
+//            Route gtuRoute = this.network.getGTU(gtuId).getStrategicalPlanner().getRoute();
+//            try {
+//                Node destinationNode = gtuRoute.getNode(gtuRoute.size()-1);
+//                if (gtu.getLocation().distance(destinationNode.getPoint()) <= 50) {
+//                    endOfRouteReached.put(gtuId, true);
+//                    CategoryLogger.always().info("GTU " + gtuId + " has reached the end of its route");
+//                }
+//            } catch (NetworkException e) {
+//                throw new RuntimeException(e);
+//            }
 //        }
     }
 

@@ -105,7 +105,7 @@ public final class Scenario02 implements Sim0mqSimulation
     }
 
     public Time getMergeDelay() {
-        return new Time(-4, TimeUnit.BASE_SECOND);
+        return new Time(-7, TimeUnit.BASE_SECOND);
     }
 
     @Override

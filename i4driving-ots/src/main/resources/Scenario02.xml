@@ -249,7 +249,6 @@
 
     <ots:Network>
         <ots:Node Id="cp0-lane0-0" Coordinate="(-299.015, 33.7)" Direction="0.4234 deg(E)" />
-        <ots:Node Id="cp0-lane0-1" Coordinate="(-289.0153, 33.7739)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l67-0" Coordinate="(256.4828, 34.4296)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l67-1" Coordinate="(291.4838, 34.6883)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l137-0" Coordinate="(96.3621, 33.2465)" Direction="0.4234 deg(E)" />
@@ -354,7 +353,7 @@
         <ots:Node Id="P1_l228-1" Coordinate="(-2703.5595, -143.3652)" Direction="-249.5645 deg(E)" />
         <ots:Node Id="cp9-lane0-1" Coordinate="(-2735.5571, 602.7226)" Direction="-269.29 deg(E)" />
 
-        <ots:Link Id="cp0-lane0" NodeStart="cp0-lane0-0" NodeEnd="cp0-lane0-1" Type="HIGHWAY">
+        <ots:Link Id="cp0-lane0" NodeStart="cp0-lane0-0" NodeEnd="P0_l159-0" Type="HIGHWAY" OffsetEnd="3.375m">
             <ots:Straight />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>

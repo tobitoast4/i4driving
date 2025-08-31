@@ -363,7 +363,7 @@
         </ots:Link>
         <ots:Link Id="P0_l138" NodeStart="P0_l137-1" NodeEnd="P0_l67-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P0_l148" NodeStart="P0_l148-0" NodeEnd="P0_l137-0" Type="HIGHWAY">
             <ots:Straight />
@@ -379,7 +379,7 @@
         </ots:Link>
         <ots:Link Id="P0_l154" NodeStart="P0_l154-0" NodeEnd="P0_l153-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P0_l159" NodeStart="P0_l159-0" NodeEnd="P0_l154-0" Type="HIGHWAY">
             <ots:Straight />
@@ -435,7 +435,7 @@
         </ots:Link>
         <ots:Link Id="101_l160" NodeStart="101_l148-1" NodeEnd="101_l160-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="101_l174" NodeStart="101_l174-0" NodeEnd="101_l174-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -487,7 +487,7 @@
         </ots:Link>
         <ots:Link Id="102_l33" NodeStart="102_l15-1" NodeEnd="102_l33-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="102_l63" NodeStart="102_l33-1" NodeEnd="102_l63-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -527,7 +527,7 @@
         </ots:Link>
         <ots:Link Id="201_l160" NodeStart="201_l148-1" NodeEnd="201_l160-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="201_l174" NodeStart="201_l174-0" NodeEnd="201_l174-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -579,7 +579,7 @@
         </ots:Link>
         <ots:Link Id="202_l33" NodeStart="202_l15-1" NodeEnd="202_l33-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="202_l63" NodeStart="202_l33-1" NodeEnd="202_l63-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -619,7 +619,7 @@
         </ots:Link>
         <ots:Link Id="301_l160" NodeStart="301_l148-1" NodeEnd="301_l160-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="301_l174" NodeStart="301_l174-0" NodeEnd="301_l174-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -671,7 +671,7 @@
         </ots:Link>
         <ots:Link Id="302_l33" NodeStart="302_l15-1" NodeEnd="302_l33-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
-            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="302_l63" NodeStart="302_l33-1" NodeEnd="302_l63-1" Type="HIGHWAY">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
@@ -711,7 +711,7 @@
         </ots:Link>
         <ots:Link Id="P1_l138" NodeStart="P1_l137-1" NodeEnd="P1_l67-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighwayMerge</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P1_l148" NodeStart="P1_l148-0" NodeEnd="P1_l137-0" Type="HIGHWAY">
             <ots:Straight />
@@ -727,7 +727,7 @@
         </ots:Link>
         <ots:Link Id="P1_l154" NodeStart="P1_l154-0" NodeEnd="P1_l153-0" Type="HIGHWAY">
             <ots:Straight />
-            <ots:DefinedLayout>2LaneHighwaySplit</ots:DefinedLayout>
+            <ots:DefinedLayout>2LaneHighway</ots:DefinedLayout>
         </ots:Link>
         <ots:Link Id="P1_l159" NodeStart="P1_l159-0" NodeEnd="P1_l154-0" Type="HIGHWAY">
             <ots:Straight />

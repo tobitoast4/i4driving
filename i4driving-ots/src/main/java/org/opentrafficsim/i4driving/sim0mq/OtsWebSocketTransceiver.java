@@ -106,6 +106,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     private GtuSpawnerOd gtuSpawner;
     private OtsAnimator simulator;
     private RoadNetwork network;
+    private CoSimModel model;
 
     /** Application. */
     private OtsSimulationApplication<AbstractOtsModel> app;
@@ -188,7 +189,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             this.simulator = new OtsAnimator("Test animator");
             this.simulator.addListener(this, SimulatorInterface.STOP_EVENT);
 
-            CoSimModel model = new CoSimModel(this.simulator);
+            model = new CoSimModel(this.simulator);
             Duration runtime = Duration.instantiateSI(36000.0);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, runtime, model);
             this.simulator.getReplication().setHistoryManager(
@@ -361,25 +362,35 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                     firstNodePassed = true;
                                 }
                                 if (!firstNodePassed) {
-                                    ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
-                                    Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
-                                            new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
-                                            new Time(-2, TimeUnit.BASE_SECOND));
-                                    // Building JSONObject that looks like
-                                    // {
-                                    //      "time": "0.0 s",
-                                    //      "type": "setAcceleration",
-                                    //      "data": {
-                                    //          "acceleration": "2 m/s2"
-                                    //      }
-                                    // }
-                                    JSONObject jsonCommand = new JSONObject();
-                                    jsonCommand.put("time", "0.0 s");
-                                    jsonCommand.put("type", "setAcceleration");
-                                    JSONObject commandData = new JSONObject();
-                                    commandData.put("acceleration", acc.toString());
-                                    jsonCommand.put("data", commandData);
-                                    this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
+                                    if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 500) {
+                                        ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
+                                        Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
+                                                new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
+                                                this.model.getSimulation().getMergeDelay());
+                                        // Building JSONObject that looks like
+                                        // {
+                                        //      "time": "0.0 s",
+                                        //      "type": "setAcceleration",
+                                        //      "data": {
+                                        //          "acceleration": "2 m/s2"
+                                        //      }
+                                        // }
+                                        JSONObject jsonCommand = new JSONObject();
+                                        jsonCommand.put("time", "0.0 s");
+                                        jsonCommand.put("type", "setAcceleration");
+                                        JSONObject commandData = new JSONObject();
+                                        commandData.put("acceleration", acc.toString());
+                                        jsonCommand.put("data", commandData);
+                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
+                                    } else {
+                                        JSONObject jsonCommand = new JSONObject();
+                                        jsonCommand.put("time", "0.0 s");
+                                        jsonCommand.put("type", "setAcceleration");
+                                        JSONObject commandData = new JSONObject();
+                                        commandData.put("acceleration", "0 m/s2");
+                                        jsonCommand.put("data", commandData);
+                                        this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
+                                    }
                                 }
                             }
                         }

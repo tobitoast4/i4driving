@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
+import org.djunits.value.vdouble.scalar.Time;
 import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
@@ -16,6 +17,7 @@ import org.opentrafficsim.road.network.RoadNetwork;
 public interface Sim0mqSimulation
 {
 
+    Time getMergeDelay();
     /**
      * Returns the network.
      * @return network

@@ -3,7 +3,9 @@ package org.opentrafficsim.i4driving.sim0mq;
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import org.djunits.unit.SpeedUnit;
+import org.djunits.unit.TimeUnit;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.io.URLResource;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
@@ -43,7 +45,6 @@ import java.net.URL;
  */
 public final class Scenario02 implements Sim0mqSimulation
 {
-
     /** Network. */
     private final RoadNetwork network;
 
@@ -101,6 +102,10 @@ public final class Scenario02 implements Sim0mqSimulation
             }
         };
 
+    }
+
+    public Time getMergeDelay() {
+        return new Time(-4, TimeUnit.BASE_SECOND);
     }
 
     @Override

@@ -6,6 +6,7 @@ import java.util.List;
 import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.draw.point.Point2d;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
@@ -126,6 +127,10 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
                     LateralDirectionality.RIGHT);
         }
 
+    }
+
+    public Time getMergeDelay() {
+        return null;
     }
 
     @Override

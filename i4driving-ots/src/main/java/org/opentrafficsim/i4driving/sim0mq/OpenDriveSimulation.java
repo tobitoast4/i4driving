@@ -8,6 +8,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.scalar.Time;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
@@ -144,6 +145,10 @@ public class OpenDriveSimulation implements Sim0mqSimulation
     public RouteObjectType getRouteObjectType()
     {
         return RouteObjectType.ROAD;
+    }
+
+    public Time getMergeDelay() {
+        return null;
     }
 
 }

@@ -245,7 +245,6 @@
 
     <ots:Network>
         <ots:Node Id="cp0-lane0-0" Coordinate="(-299.015, 33.7)" Direction="0.4234 deg(E)" />
-        <ots:Node Id="cp0-lane0-1" Coordinate="(-289.0153, 33.7739)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l67-0" Coordinate="(256.4828, 34.4296)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l67-1" Coordinate="(291.4838, 34.6883)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l137-0" Coordinate="(96.3621, 33.2465)" Direction="0.4234 deg(E)" />
@@ -261,9 +260,7 @@
         <ots:Node Id="P0_l233-0" Coordinate="(-0.0, 0.0)" Direction="-0.0 deg(E)" />
         <ots:Node Id="P0_l231-1" Coordinate="(34.9201, 5.7233)" Direction="20.1486 deg(E)" />
         <ots:Node Id="P0_l228-1" Coordinate="(45.2068, 13.4921)" Direction="20.149 deg(E)" />
-        <ots:Node Id="cp1-0" Coordinate="(291.4589, 38.0632)" Direction="0.4234 deg(E)" />
         <ots:Node Id="cp1-1" Coordinate="(792.9233, -158.2362)" Direction="-34.5766 deg(E)" />
-        <ots:Node Id="cp2-1" Coordinate="(1400.4458, -334.0667)" Direction="0.0 deg(E)" />
         <ots:Node Id="101_l129-0" Coordinate="(1672.0607, -337.8823)" Direction="-0.134 deg(E)" />
         <ots:Node Id="101_l129-1" Coordinate="(1704.9321, -338.1652)" Direction="-0.134 deg(E)" />
         <ots:Node Id="101_l148-1" Coordinate="(1840.0434, -338.9086)" Direction="-0.134 deg(E)" />
@@ -278,8 +275,6 @@
         <ots:Node Id="101_l211-1" Coordinate="(1552.654, -367.3149)" Direction="16.3144 deg(E)" />
         <ots:Node Id="101_l214-0" Coordinate="(1402.9091, -389.4269)" Direction="0.2378 deg(E)" />
         <ots:Node Id="101_l215-0" Coordinate="(1402.9911, -409.1767)" Direction="0.2378 deg(E)" />
-        <ots:Node Id="cp3-lane0-0" Coordinate="(1907.6508, -335.703)" Direction="-0.134 deg(E)" />
-        <ots:Node Id="cp3-lane0-1" Coordinate="(2107.6503, -336.1709)" Direction="-0.134 deg(E)" />
         <ots:Node Id="102_l15-0" Coordinate="(2107.6425, -339.5459)" Direction="-0.134 deg(E)" />
         <ots:Node Id="102_l15-1" Coordinate="(2153.535, -339.3018)" Direction="-0.134 deg(E)" />
         <ots:Node Id="102_l33-1" Coordinate="(2185.7978, -339.5628)" Direction="-0.134 deg(E)" />
@@ -289,8 +284,6 @@
         <ots:Node Id="102_l164-1" Coordinate="(2486.5707, -338.7269)" Direction="0.2367 deg(E)" />
         <ots:Node Id="102_l167-1" Coordinate="(2500.2131, -387.128)" Direction="-37.9928 deg(E)" />
         <ots:Node Id="102_l168-1" Coordinate="(2571.3966, -409.9336)" Direction="-0.491 deg(E)" />
-        <ots:Node Id="cp4-0" Coordinate="(2486.5567, -335.3519)" Direction="0.2367 deg(E)" />
-        <ots:Node Id="cp4-1" Coordinate="(3482.4177, 668.7701)" Direction="90.2367 deg(E)" />
         <ots:Node Id="201_l129-0" Coordinate="(3485.1114, 940.3985)" Direction="90.1026 deg(E)" />
         <ots:Node Id="201_l129-1" Coordinate="(3485.2586, 973.2708)" Direction="90.1026 deg(E)" />
         <ots:Node Id="201_l148-1" Coordinate="(3485.4439, 1108.384)" Direction="90.1026 deg(E)" />
@@ -305,8 +298,6 @@
         <ots:Node Id="201_l211-1" Coordinate="(3515.0369, 821.1143)" Direction="106.5511 deg(E)" />
         <ots:Node Id="201_l214-0" Coordinate="(3537.7672, 671.462)" Direction="90.4744 deg(E)" />
         <ots:Node Id="201_l215-0" Coordinate="(3557.5165, 671.6257)" Direction="90.4744 deg(E)" />
-        <ots:Node Id="cp5-lane0-0" Coordinate="(3481.9591, 1175.9776)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="cp5-lane0-1" Coordinate="(3481.601, 1375.9773)" Direction="90.1026 deg(E)" />
         <ots:Node Id="202_l15-0" Coordinate="(3484.976, 1375.9834)" Direction="90.1026 deg(E)" />
         <ots:Node Id="202_l15-1" Coordinate="(3484.5424, 1421.8745)" Direction="90.1026 deg(E)" />
         <ots:Node Id="202_l33-1" Coordinate="(3484.6702, 1454.1382)" Direction="90.1026 deg(E)" />
@@ -316,8 +307,6 @@
         <ots:Node Id="202_l164-1" Coordinate="(3482.592, 1754.905)" Direction="90.4733 deg(E)" />
         <ots:Node Id="202_l167-1" Coordinate="(3530.9364, 1768.7472)" Direction="52.2438 deg(E)" />
         <ots:Node Id="202_l168-1" Coordinate="(3553.4478, 1840.0242)" Direction="89.7456 deg(E)" />
-        <ots:Node Id="cp6-0" Coordinate="(3479.2172, 1754.8771)" Direction="90.4733 deg(E)" />
-        <ots:Node Id="cp6-1" Coordinate="(2470.9908, 2746.5825)" Direction="180.4733 deg(E)" />
         <ots:Node Id="301_l129-0" Coordinate="(2199.3537, 2748.1544)" Direction="180.3392 deg(E)" />
         <ots:Node Id="301_l129-1" Coordinate="(2166.4811, 2748.1659)" Direction="180.3392 deg(E)" />
         <ots:Node Id="301_l148-1" Coordinate="(2031.3682, 2747.7931)" Direction="180.3392 deg(E)" />
@@ -332,8 +321,6 @@
         <ots:Node Id="301_l211-1" Coordinate="(2318.5132, 2778.5723)" Direction="196.7877 deg(E)" />
         <ots:Node Id="301_l214-0" Coordinate="(2468.0704, 2801.9205)" Direction="180.7111 deg(E)" />
         <ots:Node Id="301_l215-0" Coordinate="(2467.8252, 2821.6689)" Direction="180.7111 deg(E)" />
-        <ots:Node Id="cp7-lane0-0" Coordinate="(1963.7896, 2744.0292)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="cp7-lane0-1" Coordinate="(1763.7931, 2742.8451)" Direction="180.3392 deg(E)" />
         <ots:Node Id="302_l15-0" Coordinate="(1763.773, 2746.2201)" Direction="180.3392 deg(E)" />
         <ots:Node Id="302_l15-1" Coordinate="(1717.8841, 2745.5969)" Direction="180.3392 deg(E)" />
         <ots:Node Id="302_l33-1" Coordinate="(1685.6202, 2745.5915)" Direction="180.3392 deg(E)" />
@@ -343,7 +330,6 @@
         <ots:Node Id="302_l164-1" Coordinate="(1384.8645, 2742.2712)" Direction="180.7099 deg(E)" />
         <ots:Node Id="302_l167-1" Coordinate="(1370.8227, 2790.558)" Direction="142.4805 deg(E)" />
         <ots:Node Id="302_l168-1" Coordinate="(1299.4534, 2812.7748)" Direction="179.9823 deg(E)" />
-        <ots:Node Id="cp8-lane0-0" Coordinate="(1384.9063, 2738.8964)" Direction="180.7099 deg(E)" />
         <ots:Node Id="cp8-lane0-1" Coordinate="(884.9447, 2732.7013)" Direction="180.7099 deg(E)" />
         <ots:Node Id="P1_l67-0" Coordinate="(339.4567, 2729.3177)" Direction="180.71 deg(E)" />
         <ots:Node Id="P1_l67-1" Coordinate="(304.4574, 2728.8839)" Direction="180.71 deg(E)" />
@@ -363,7 +349,7 @@
         <ots:Node Id="cp9-lane0-0" Coordinate="(304.4992, 2725.5092)" Direction="180.71 deg(E)" />
         <ots:Node Id="cp9-lane0-1" Coordinate="(-195.4624, 2719.3138)" Direction="180.71 deg(E)" />
 
-        <ots:Link Id="cp0-lane0" NodeStart="cp0-lane0-0" NodeEnd="cp0-lane0-1" Type="HIGHWAY">
+        <ots:Link Id="cp0-lane0" NodeStart="cp0-lane0-0" NodeEnd="P0_l159-0" Type="HIGHWAY" OffsetEnd="3.375m">
             <ots:Straight />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -431,11 +417,11 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp1" NodeStart="cp1-0" NodeEnd="cp1-1" Type="HIGHWAY">
+        <ots:Link Id="cp1" NodeStart="P0_l67-1" NodeEnd="cp1-1" Type="HIGHWAY" OffsetStart="3.375m">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp2" NodeStart="cp1-1" NodeEnd="cp2-1" Type="HIGHWAY">
+        <ots:Link Id="cp2" NodeStart="cp1-1" NodeEnd="101_l206-0" Type="HIGHWAY" OffsetEnd="3.375m">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -491,7 +477,7 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp3-lane0" NodeStart="cp3-lane0-0" NodeEnd="cp3-lane0-1" Type="HIGHWAY">
+        <ots:Link Id="cp3-lane0" NodeStart="101_l160-1" NodeEnd="102_l15-0" Type="HIGHWAY" OffsetStart="3.375m" OffsetEnd="3.375m">
             <ots:Straight />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -527,7 +513,7 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp4" NodeStart="cp4-0" NodeEnd="cp4-1" Type="HIGHWAY">
+        <ots:Link Id="cp4" NodeStart="102_l164-1" NodeEnd="201_l206-0" Type="HIGHWAY" OffsetStart="3.375m" OffsetEnd="3.375m">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -583,7 +569,7 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp5-lane0" NodeStart="cp5-lane0-0" NodeEnd="cp5-lane0-1" Type="HIGHWAY">
+        <ots:Link Id="cp5-lane0" NodeStart="201_l160-1" NodeEnd="202_l15-0" Type="HIGHWAY" OffsetStart="3.375m" OffsetEnd="3.375m">
             <ots:Straight />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -619,7 +605,7 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp6" NodeStart="cp6-0" NodeEnd="cp6-1" Type="HIGHWAY">
+        <ots:Link Id="cp6" NodeStart="202_l164-1" NodeEnd="301_l206-0" Type="HIGHWAY" OffsetStart="3.375m" OffsetEnd="3.375m">
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -675,7 +661,7 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp7-lane0" NodeStart="cp7-lane0-0" NodeEnd="cp7-lane0-1" Type="HIGHWAY">
+        <ots:Link Id="cp7-lane0" NodeStart="301_l160-1" NodeEnd="302_l15-0" Type="HIGHWAY" OffsetStart="3.375m" OffsetEnd="3.375m">
             <ots:Straight />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -711,7 +697,7 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp8-lane0" NodeStart="cp8-lane0-0" NodeEnd="cp8-lane0-1" Type="HIGHWAY">
+        <ots:Link Id="cp8-lane0" NodeStart="302_l164-1" NodeEnd="P1_l159-0" Type="HIGHWAY" OffsetStart="3.375m" OffsetEnd="3.375m">
             <ots:Straight />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -779,7 +765,7 @@
             <ots:Bezier Shape="0.666666666666666666" Weighted="false" />
             <ots:DefinedLayout>RIGHT</ots:DefinedLayout>
         </ots:Link>
-        <ots:Link Id="cp9-lane0" NodeStart="cp9-lane0-0" NodeEnd="cp9-lane0-1" Type="HIGHWAY">
+        <ots:Link Id="cp9-lane0" NodeStart="P1_l67-1" NodeEnd="cp9-lane0-1" Type="HIGHWAY" OffsetStart="3.375m">
             <ots:Straight />
             <ots:DefinedLayout>2LaneHighwayCourse</ots:DefinedLayout>
         </ots:Link>
@@ -788,12 +774,9 @@
 
 
 
-
-
-    <!--    <ots:Demand>-->
-    <!--      <ots:Sink Lane="4" Link="cp2-lane1" Position="END-30m" Type="NL.ROAD_USERS" />-->
-    <!--      <ots:Sink Lane="5" Link="cp2-lane1" Position="END-30m" Type="NL.ROAD_USERS" />-->
-    <!--    </ots:Demand>-->
+    <ots:Demand>
+      <ots:Sink Lane="LANE" Link="102_l168" Position="END-50m" Type="NL.ROAD_USERS" />
+    </ots:Demand>
     <ots:Run>
         <ots:RunLength>1h</ots:RunLength>
     </ots:Run>

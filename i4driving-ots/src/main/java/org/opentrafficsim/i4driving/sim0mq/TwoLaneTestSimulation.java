@@ -133,6 +133,10 @@ public final class TwoLaneTestSimulation implements Sim0mqSimulation
         return null;
     }
 
+    public double getThresholdDistance() {
+        return -1;
+    }
+
     @Override
     public RoadNetwork getNetwork()
     {

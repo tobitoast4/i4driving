@@ -151,4 +151,7 @@ public class OpenDriveSimulation implements Sim0mqSimulation
         return null;
     }
 
+    public double getThresholdDistance() {
+        return -1;
+    }
 }

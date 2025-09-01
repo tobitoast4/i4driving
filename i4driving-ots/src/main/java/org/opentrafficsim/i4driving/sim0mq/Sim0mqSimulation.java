@@ -18,6 +18,8 @@ public interface Sim0mqSimulation
 {
 
     Time getMergeDelay();
+
+    double getThresholdDistance();
     /**
      * Returns the network.
      * @return network

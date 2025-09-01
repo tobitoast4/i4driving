@@ -105,8 +105,13 @@ public final class Scenario03 implements Sim0mqSimulation
     }
 
     public Time getMergeDelay() {
-        return new Time(-7, TimeUnit.BASE_SECOND);
+        return new Time(0, TimeUnit.BASE_SECOND);
     }
+
+    public double getThresholdDistance() {
+        return 800;
+    }
+
 
     @Override
     public RoadNetwork getNetwork()

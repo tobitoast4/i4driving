@@ -76,14 +76,14 @@ import java.util.function.Function;
         showDefaultValues = true, version = "20250619")
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
-//    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
-    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
+    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
+//    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
     private String address;
 
     @Option(names = "--port", description = "Port number", defaultValue = "8199")
     private int port;
 
-    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario02")
+    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario03")
     private String scenario;
 
     @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")
@@ -367,7 +367,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                     CategoryLogger.always().info("GTU " + avId + " passed mergingNode");
                                 }
                                 if (!mergingNodesPassed.get(avId)) {
-                                    if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 1000) {
+                                    if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= this.model.getSimulation().getThresholdDistance()) {
                                         ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
                                                 new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),
@@ -387,7 +387,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         commandData.put("acceleration", acc.toString());
                                         jsonCommand.put("data", commandData);
                                         this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
-                                        CategoryLogger.always().info("GTU " + avId + " Acc: " + acc.toString());
                                     } else {
                                         JSONObject jsonCommand = new JSONObject();
                                         jsonCommand.put("time", "0.0 s");
@@ -396,7 +395,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         commandData.put("acceleration", "0 m/s2");
                                         jsonCommand.put("data", commandData);
                                         this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
-                                        CategoryLogger.always().info("GTU " + avId + " Acc: 0.0 m/s2");
                                     }
                                 }
                             }

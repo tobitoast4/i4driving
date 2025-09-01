@@ -245,11 +245,13 @@
 
     <ots:Network>
         <ots:Node Id="cp0-lane0-0" Coordinate="(-299.015, 33.7)" Direction="0.4234 deg(E)" />
+        <ots:Node Id="cp0-lane0-1" Coordinate="(-289.0153, 33.7739)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l67-0" Coordinate="(256.4828, 34.4296)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l67-1" Coordinate="(291.4838, 34.6883)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l137-0" Coordinate="(96.3621, 33.2465)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l137-1" Coordinate="(212.867, 34.1074)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l148-0" Coordinate="(-111.9222, 31.7074)" Direction="0.4234 deg(E)" />
+        <ots:Node Id="P0_l225-0" Coordinate="(-111.8673, 24.2076)" Direction="0.4234 deg(E)" />
         <ots:Node Id="P0_l225-1" Coordinate="(-48.5891, 11.4857)" Direction="-13.1569 deg(E)" />
         <ots:Node Id="P0_l153-0" Coordinate="(-205.3716, 31.0169)" Direction="0.4233 deg(E)" />
         <ots:Node Id="P0_l154-0" Coordinate="(-258.1072, 30.6272)" Direction="0.4234 deg(E)" />
@@ -260,7 +262,9 @@
         <ots:Node Id="P0_l233-0" Coordinate="(-0.0, 0.0)" Direction="-0.0 deg(E)" />
         <ots:Node Id="P0_l231-1" Coordinate="(34.9201, 5.7233)" Direction="20.1486 deg(E)" />
         <ots:Node Id="P0_l228-1" Coordinate="(45.2068, 13.4921)" Direction="20.149 deg(E)" />
+        <ots:Node Id="P0_l229-1" Coordinate="(96.4175, 25.7467)" Direction="0.4234 deg(E)" />
         <ots:Node Id="cp1-1" Coordinate="(792.9233, -158.2362)" Direction="-34.5766 deg(E)" />
+        <ots:Node Id="cp2-1" Coordinate="(1400.4458, -334.0667)" Direction="0.0 deg(E)" />
         <ots:Node Id="101_l129-0" Coordinate="(1672.0607, -337.8823)" Direction="-0.134 deg(E)" />
         <ots:Node Id="101_l129-1" Coordinate="(1704.9321, -338.1652)" Direction="-0.134 deg(E)" />
         <ots:Node Id="101_l148-1" Coordinate="(1840.0434, -338.9086)" Direction="-0.134 deg(E)" />
@@ -269,85 +273,104 @@
         <ots:Node Id="101_l174-1" Coordinate="(1628.9053, -337.9508)" Direction="0.0 deg(E)" />
         <ots:Node Id="101_l195-0" Coordinate="(1586.5711, -357.2413)" Direction="13.4812 deg(E)" />
         <ots:Node Id="101_l195-1" Coordinate="(1629.0438, -349.7455)" Direction="7.7842 deg(E)" />
+        <ots:Node Id="101_l196-1" Coordinate="(1672.0431, -345.3823)" Direction="-0.134 deg(E)" />
         <ots:Node Id="101_l206-0" Coordinate="(1400.4458, -337.4417)" Direction="0.0 deg(E)" />
         <ots:Node Id="101_l210-0" Coordinate="(1459.5291, -393.5129)" Direction="15.4785 deg(E)" />
         <ots:Node Id="101_l210-1" Coordinate="(1509.326, -379.6416)" Direction="15.6933 deg(E)" />
         <ots:Node Id="101_l211-1" Coordinate="(1552.654, -367.3149)" Direction="16.3144 deg(E)" />
         <ots:Node Id="101_l214-0" Coordinate="(1402.9091, -389.4269)" Direction="0.2378 deg(E)" />
         <ots:Node Id="101_l215-0" Coordinate="(1402.9911, -409.1767)" Direction="0.2378 deg(E)" />
+        <ots:Node Id="cp3-lane0-0" Coordinate="(1907.6508, -335.703)" Direction="-0.134 deg(E)" />
+        <ots:Node Id="cp3-lane0-1" Coordinate="(2107.6503, -336.1709)" Direction="-0.134 deg(E)" />
         <ots:Node Id="102_l15-0" Coordinate="(2107.6425, -339.5459)" Direction="-0.134 deg(E)" />
         <ots:Node Id="102_l15-1" Coordinate="(2153.535, -339.3018)" Direction="-0.134 deg(E)" />
         <ots:Node Id="102_l33-1" Coordinate="(2185.7978, -339.5628)" Direction="-0.134 deg(E)" />
         <ots:Node Id="102_l63-1" Coordinate="(2417.2697, -339.0994)" Direction="0.3833 deg(E)" />
         <ots:Node Id="102_l87-1" Coordinate="(2445.5596, -338.9639)" Direction="0.2367 deg(E)" />
+        <ots:Node Id="102_l154-0" Coordinate="(2417.3199, -346.5993)" Direction="0.3833 deg(E)" />
         <ots:Node Id="102_l154-1" Coordinate="(2444.7404, -353.522)" Direction="-23.8883 deg(E)" />
         <ots:Node Id="102_l164-1" Coordinate="(2486.5707, -338.7269)" Direction="0.2367 deg(E)" />
         <ots:Node Id="102_l167-1" Coordinate="(2500.2131, -387.128)" Direction="-37.9928 deg(E)" />
         <ots:Node Id="102_l168-1" Coordinate="(2571.3966, -409.9336)" Direction="-0.491 deg(E)" />
-        <ots:Node Id="201_l129-0" Coordinate="(3485.1114, 940.3985)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="201_l129-1" Coordinate="(3485.2586, 973.2708)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="201_l148-1" Coordinate="(3485.4439, 1108.384)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="201_l160-1" Coordinate="(3485.3341, 1175.9835)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="201_l174-0" Coordinate="(3485.2948, 853.66)" Direction="90.2367 deg(E)" />
-        <ots:Node Id="201_l174-1" Coordinate="(3485.3581, 897.2437)" Direction="90.2367 deg(E)" />
-        <ots:Node Id="201_l195-0" Coordinate="(3504.8234, 854.9896)" Direction="103.7178 deg(E)" />
-        <ots:Node Id="201_l195-1" Coordinate="(3497.1521, 897.4309)" Direction="98.0209 deg(E)" />
-        <ots:Node Id="201_l206-0" Coordinate="(3485.7926, 668.7841)" Direction="90.2367 deg(E)" />
-        <ots:Node Id="201_l210-0" Coordinate="(3541.6193, 728.0984)" Direction="105.7151 deg(E)" />
-        <ots:Node Id="201_l210-1" Coordinate="(3527.5424, 777.8376)" Direction="105.93 deg(E)" />
-        <ots:Node Id="201_l211-1" Coordinate="(3515.0369, 821.1143)" Direction="106.5511 deg(E)" />
-        <ots:Node Id="201_l214-0" Coordinate="(3537.7672, 671.462)" Direction="90.4744 deg(E)" />
-        <ots:Node Id="201_l215-0" Coordinate="(3557.5165, 671.6257)" Direction="90.4744 deg(E)" />
-        <ots:Node Id="202_l15-0" Coordinate="(3484.976, 1375.9834)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="202_l15-1" Coordinate="(3484.5424, 1421.8745)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="202_l33-1" Coordinate="(3484.6702, 1454.1382)" Direction="90.1026 deg(E)" />
-        <ots:Node Id="202_l63-1" Coordinate="(3483.2509, 1685.6061)" Direction="90.62 deg(E)" />
-        <ots:Node Id="202_l87-1" Coordinate="(3482.9985, 1713.8952)" Direction="90.4733 deg(E)" />
-        <ots:Node Id="202_l154-1" Coordinate="(3497.5599, 1713.1362)" Direction="66.3483 deg(E)" />
-        <ots:Node Id="202_l164-1" Coordinate="(3482.592, 1754.905)" Direction="90.4733 deg(E)" />
-        <ots:Node Id="202_l167-1" Coordinate="(3530.9364, 1768.7472)" Direction="52.2438 deg(E)" />
-        <ots:Node Id="202_l168-1" Coordinate="(3553.4478, 1840.0242)" Direction="89.7456 deg(E)" />
-        <ots:Node Id="301_l129-0" Coordinate="(2199.3537, 2748.1544)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="301_l129-1" Coordinate="(2166.4811, 2748.1659)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="301_l148-1" Coordinate="(2031.3682, 2747.7931)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="301_l160-1" Coordinate="(1963.7697, 2747.4042)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="301_l174-0" Coordinate="(2286.0906, 2748.696)" Direction="180.4733 deg(E)" />
-        <ots:Node Id="301_l174-1" Coordinate="(2242.507, 2748.5794)" Direction="180.4733 deg(E)" />
-        <ots:Node Id="301_l195-0" Coordinate="(2284.6804, 2768.219)" Direction="193.9544 deg(E)" />
-        <ots:Node Id="301_l195-1" Coordinate="(2242.2711, 2760.3725)" Direction="188.2575 deg(E)" />
-        <ots:Node Id="301_l206-0" Coordinate="(2470.9629, 2749.9574)" Direction="180.4733 deg(E)" />
-        <ots:Node Id="301_l210-0" Coordinate="(2411.4185, 2805.5386)" Direction="195.9518 deg(E)" />
-        <ots:Node Id="301_l210-1" Coordinate="(2361.7379, 2791.2565)" Direction="196.1666 deg(E)" />
-        <ots:Node Id="301_l211-1" Coordinate="(2318.5132, 2778.5723)" Direction="196.7877 deg(E)" />
-        <ots:Node Id="301_l214-0" Coordinate="(2468.0704, 2801.9205)" Direction="180.7111 deg(E)" />
-        <ots:Node Id="301_l215-0" Coordinate="(2467.8252, 2821.6689)" Direction="180.7111 deg(E)" />
-        <ots:Node Id="302_l15-0" Coordinate="(1763.773, 2746.2201)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="302_l15-1" Coordinate="(1717.8841, 2745.5969)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="302_l33-1" Coordinate="(1685.6202, 2745.5915)" Direction="180.3392 deg(E)" />
-        <ots:Node Id="302_l63-1" Coordinate="(1454.1601, 2743.2162)" Direction="180.8566 deg(E)" />
-        <ots:Node Id="302_l87-1" Coordinate="(1425.8722, 2742.847)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="302_l154-1" Coordinate="(1426.5712, 2757.4114)" Direction="156.585 deg(E)" />
-        <ots:Node Id="302_l164-1" Coordinate="(1384.8645, 2742.2712)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="302_l167-1" Coordinate="(1370.8227, 2790.558)" Direction="142.4805 deg(E)" />
-        <ots:Node Id="302_l168-1" Coordinate="(1299.4534, 2812.7748)" Direction="179.9823 deg(E)" />
-        <ots:Node Id="cp8-lane0-1" Coordinate="(884.9447, 2732.7013)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="P1_l67-0" Coordinate="(339.4567, 2729.3177)" Direction="180.71 deg(E)" />
-        <ots:Node Id="P1_l67-1" Coordinate="(304.4574, 2728.8839)" Direction="180.71 deg(E)" />
-        <ots:Node Id="P1_l137-0" Coordinate="(499.5696, 2731.3015)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="P1_l137-1" Coordinate="(383.0704, 2729.858)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="P1_l148-0" Coordinate="(707.8435, 2733.8822)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="P1_l225-1" Coordinate="(644.4101, 2753.7869)" Direction="167.1297 deg(E)" />
-        <ots:Node Id="P1_l153-0" Coordinate="(801.2883, 2735.04)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="P1_l154-0" Coordinate="(854.0213, 2735.6934)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="P1_l159-0" Coordinate="(884.9029, 2736.0761)" Direction="180.7099 deg(E)" />
-        <ots:Node Id="P1_l226-1" Coordinate="(628.9874, 2757.3107)" Direction="167.1297 deg(E)" />
-        <ots:Node Id="P1_l230-1" Coordinate="(629.8227, 2760.9664)" Direction="167.1297 deg(E)" />
-        <ots:Node Id="P1_l227-1" Coordinate="(562.1824, 2755.6176)" Direction="200.4351 deg(E)" />
-        <ots:Node Id="P1_l233-0" Coordinate="(595.7642, 2765.0295)" Direction="180.2865 deg(E)" />
-        <ots:Node Id="P1_l231-1" Coordinate="(560.8731, 2759.1316)" Direction="200.4351 deg(E)" />
-        <ots:Node Id="P1_l228-1" Coordinate="(550.6254, 2751.3114)" Direction="200.4355 deg(E)" />
-        <ots:Node Id="cp9-lane0-0" Coordinate="(304.4992, 2725.5092)" Direction="180.71 deg(E)" />
-        <ots:Node Id="cp9-lane0-1" Coordinate="(-195.4624, 2719.3138)" Direction="180.71 deg(E)" />
+        <ots:Node Id="cp4-0" Coordinate="(2486.5567, -335.3519)" Direction="0.2367 deg(E)" />
+        <ots:Node Id="cp4-1" Coordinate="(3192.3405, -39.4341)" Direction="45.2367 deg(E)" />
+        <ots:Node Id="201_l129-0" Coordinate="(3386.3154, 150.7314)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="201_l129-1" Coordinate="(3409.6638, 173.8715)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="201_l148-1" Coordinate="(3505.3343, 269.28)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="201_l160-1" Coordinate="(3553.0568, 317.1577)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="201_l174-0" Coordinate="(3325.1118, 89.2684)" Direction="45.2367 deg(E)" />
+        <ots:Node Id="201_l174-1" Coordinate="(3355.9749, 120.0419)" Direction="45.2367 deg(E)" />
+        <ots:Node Id="201_l195-0" Coordinate="(3339.8607, 76.3997)" Direction="58.7178 deg(E)" />
+        <ots:Node Id="201_l195-1" Coordinate="(3364.4469, 111.8347)" Direction="53.0209 deg(E)" />
+        <ots:Node Id="201_l196-1" Coordinate="(3391.6282, 145.4375)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="201_l206-0" Coordinate="(3194.7368, -41.8107)" Direction="45.2367 deg(E)" />
+        <ots:Node Id="201_l210-0" Coordinate="(3276.1538, -39.3445)" Direction="60.7151 deg(E)" />
+        <ots:Node Id="201_l210-1" Coordinate="(3301.3709, 5.7803)" Direction="60.93 deg(E)" />
+        <ots:Node Id="201_l211-1" Coordinate="(3323.1293, 45.2242)" Direction="61.5511 deg(E)" />
+        <ots:Node Id="201_l214-0" Coordinate="(3233.3819, -76.6687)" Direction="45.4744 deg(E)" />
+        <ots:Node Id="201_l215-0" Coordinate="(3247.4625, -90.5178)" Direction="45.4744 deg(E)" />
+        <ots:Node Id="cp5-lane0-0" Coordinate="(3550.6661, 319.54)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="cp5-lane0-1" Coordinate="(3691.834, 461.2143)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="202_l15-0" Coordinate="(3694.2248, 458.8322)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="202_l15-1" Coordinate="(3726.3681, 491.5887)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="202_l33-1" Coordinate="(3749.2723, 514.3122)" Direction="45.1026 deg(E)" />
+        <ots:Node Id="202_l63-1" Coordinate="(3911.9412, 678.9884)" Direction="45.62 deg(E)" />
+        <ots:Node Id="202_l87-1" Coordinate="(3931.7662, 699.1703)" Direction="45.4733 deg(E)" />
+        <ots:Node Id="202_l154-0" Coordinate="(3917.3016, 673.7428)" Direction="45.62 deg(E)" />
+        <ots:Node Id="202_l154-1" Coordinate="(3941.5259, 688.3371)" Direction="21.3483 deg(E)" />
+        <ots:Node Id="202_l164-1" Coordinate="(3960.4771, 728.4559)" Direction="45.4733 deg(E)" />
+        <ots:Node Id="202_l167-1" Coordinate="(4004.4496, 704.0592)" Direction="7.2438 deg(E)" />
+        <ots:Node Id="202_l168-1" Coordinate="(4070.7681, 738.5417)" Direction="44.7456 deg(E)" />
+        <ots:Node Id="cp6-0" Coordinate="(3958.071, 730.8226)" Direction="45.4733 deg(E)" />
+        <ots:Node Id="cp6-1" Coordinate="(4244.9622, 1440.3235)" Direction="90.4733 deg(E)" />
+        <ots:Node Id="301_l129-0" Coordinate="(4246.534, 1711.9606)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="301_l129-1" Coordinate="(4246.5455, 1744.8332)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="301_l148-1" Coordinate="(4246.1728, 1879.946)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="301_l160-1" Coordinate="(4245.7838, 1947.5446)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="301_l174-0" Coordinate="(4247.0757, 1625.2236)" Direction="90.4733 deg(E)" />
+        <ots:Node Id="301_l174-1" Coordinate="(4246.959, 1668.8073)" Direction="90.4733 deg(E)" />
+        <ots:Node Id="301_l195-0" Coordinate="(4266.5986, 1626.6338)" Direction="103.9544 deg(E)" />
+        <ots:Node Id="301_l195-1" Coordinate="(4258.7521, 1669.0431)" Direction="98.2575 deg(E)" />
+        <ots:Node Id="301_l196-1" Coordinate="(4254.0339, 1712.0049)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="301_l206-0" Coordinate="(4248.337, 1440.3513)" Direction="90.4733 deg(E)" />
+        <ots:Node Id="301_l210-0" Coordinate="(4303.9182, 1499.8957)" Direction="105.9518 deg(E)" />
+        <ots:Node Id="301_l210-1" Coordinate="(4289.6361, 1549.5764)" Direction="106.1666 deg(E)" />
+        <ots:Node Id="301_l211-1" Coordinate="(4276.9519, 1592.801)" Direction="106.7877 deg(E)" />
+        <ots:Node Id="301_l214-0" Coordinate="(4300.3001, 1443.2439)" Direction="90.7111 deg(E)" />
+        <ots:Node Id="301_l215-0" Coordinate="(4320.0486, 1443.4891)" Direction="90.7111 deg(E)" />
+        <ots:Node Id="cp7-lane0-0" Coordinate="(4242.4089, 1947.5247)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="cp7-lane0-1" Coordinate="(4241.2248, 2147.5212)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="302_l15-0" Coordinate="(4244.5997, 2147.5413)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="302_l15-1" Coordinate="(4243.9765, 2193.4302)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="302_l33-1" Coordinate="(4243.9711, 2225.6941)" Direction="90.3392 deg(E)" />
+        <ots:Node Id="302_l63-1" Coordinate="(4241.5958, 2457.1542)" Direction="90.8566 deg(E)" />
+        <ots:Node Id="302_l87-1" Coordinate="(4241.2266, 2485.442)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="302_l154-0" Coordinate="(4249.095, 2457.2663)" Direction="90.8566 deg(E)" />
+        <ots:Node Id="302_l154-1" Coordinate="(4255.791, 2484.7431)" Direction="66.585 deg(E)" />
+        <ots:Node Id="302_l164-1" Coordinate="(4240.6508, 2526.4498)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="302_l167-1" Coordinate="(4288.9376, 2540.4915)" Direction="52.4805 deg(E)" />
+        <ots:Node Id="302_l168-1" Coordinate="(4311.1544, 2611.8609)" Direction="89.9823 deg(E)" />
+        <ots:Node Id="cp8-lane0-0" Coordinate="(4237.2761, 2526.4079)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="cp8-lane0-1" Coordinate="(4231.081, 3026.3696)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l67-0" Coordinate="(4227.6973, 3571.8575)" Direction="90.71 deg(E)" />
+        <ots:Node Id="P1_l67-1" Coordinate="(4227.2636, 3606.8568)" Direction="90.71 deg(E)" />
+        <ots:Node Id="P1_l137-0" Coordinate="(4229.6811, 3411.7447)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l137-1" Coordinate="(4228.2377, 3528.2439)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l148-0" Coordinate="(4232.2619, 3203.4708)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l225-0" Coordinate="(4239.7613, 3203.5632)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l225-1" Coordinate="(4252.1665, 3266.9042)" Direction="77.1297 deg(E)" />
+        <ots:Node Id="P1_l153-0" Coordinate="(4233.4196, 3110.026)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l154-0" Coordinate="(4234.073, 3057.293)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l159-0" Coordinate="(4234.4557, 3026.4114)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="P1_l226-1" Coordinate="(4255.6904, 3282.3268)" Direction="77.1297 deg(E)" />
+        <ots:Node Id="P1_l230-1" Coordinate="(4259.3461, 3281.4916)" Direction="77.1297 deg(E)" />
+        <ots:Node Id="P1_l227-1" Coordinate="(4253.9972, 3349.1319)" Direction="110.4351 deg(E)" />
+        <ots:Node Id="P1_l233-0" Coordinate="(4263.4091, 3315.5501)" Direction="90.2865 deg(E)" />
+        <ots:Node Id="P1_l231-1" Coordinate="(4257.5112, 3350.4412)" Direction="110.4351 deg(E)" />
+        <ots:Node Id="P1_l228-1" Coordinate="(4249.6911, 3360.6889)" Direction="110.4355 deg(E)" />
+        <ots:Node Id="P1_l229-1" Coordinate="(4237.1806, 3411.8377)" Direction="90.7099 deg(E)" />
+        <ots:Node Id="cp9-lane0-0" Coordinate="(4223.8888, 3606.815)" Direction="90.71 deg(E)" />
+        <ots:Node Id="cp9-lane0-1" Coordinate="(4217.6934, 4106.7766)" Direction="90.71 deg(E)" />
 
         <ots:Link Id="cp0-lane0" NodeStart="cp0-lane0-0" NodeEnd="P0_l159-0" Type="HIGHWAY" OffsetEnd="3.375m">
             <ots:Straight />

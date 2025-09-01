@@ -83,7 +83,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @Option(names = "--port", description = "Port number", defaultValue = "8199")
     private int port;
 
-    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario03")
+    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario01")
     private String scenario;
 
     @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")

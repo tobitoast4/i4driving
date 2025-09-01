@@ -76,14 +76,14 @@ import java.util.function.Function;
         showDefaultValues = true, version = "20250619")
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
-    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
-//    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
+//    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
+    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
     private String address;
 
     @Option(names = "--port", description = "Port number", defaultValue = "8199")
     private int port;
 
-    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario01")
+    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario03")
     private String scenario;
 
     @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")
@@ -358,7 +358,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                             LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                             if (avGtu != null && userGtu != null) {
-                                CategoryLogger.always().info(mergingNodesPassed.toString());
                                 if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10 && !mergingNodesPassed.get(avId)) {
                                     JSONObject jsonCommand = new JSONObject();
                                     jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
@@ -983,6 +982,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 }
                 if (scenario.equals("Scenario02")) {
                     this.simulation = new Scenario02(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
+                }
+                if (scenario.equals("Scenario03")) {
+                    this.simulation = new Scenario03(getSimulator(), OtsWebSocketTransceiver.this.tacticalFactory);
                 }
             }
             catch (GtuException | OtsGeometryException | NetworkException ex)

@@ -358,7 +358,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             LaneBasedGtu avGtu = (LaneBasedGtu) this.network.getGTU(avId);
                             LaneBasedGtu userGtu = (LaneBasedGtu) this.network.getGTU("USER");
                             if (avGtu != null && userGtu != null) {
-                                if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= 10 && !mergingNodesPassed.get(avId)) {
+                                if (avGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <=
+                                        this.model.getSimulation().getControlLimitDistance() && !mergingNodesPassed.get(avId)) {
                                     JSONObject jsonCommand = new JSONObject();
                                     jsonCommand.put("time", "0.0 s");  // reset acceleration to let AV control by itself now
                                     jsonCommand.put("type", "resetAcceleration");
@@ -367,7 +368,8 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                     CategoryLogger.always().info("GTU " + avId + " passed mergingNode");
                                 }
                                 if (!mergingNodesPassed.get(avId)) {
-                                    if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <= this.model.getSimulation().getThresholdDistance()) {
+                                    if (userGtu.getLocation().distance(this.network.getNode(node_id).getPoint()) <=
+                                            this.model.getSimulation().getThresholdDistance()) {
                                         ArrivalSynchronizer accRecommender = new ArrivalSynchronizer(this.network, this.network.getNode(node_id));
                                         Acceleration acc = accRecommender.getRecommendedAVAcceleration(avGtu, userGtu,
                                                 new Acceleration(a, AccelerationUnit.METER_PER_SECOND_2), new Speed(v, SpeedUnit.METER_PER_SECOND),

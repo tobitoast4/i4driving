@@ -112,6 +112,10 @@ public final class Scenario02 implements Sim0mqSimulation
         return 800;
     }
 
+    public double getControlLimitDistance() {
+        return 10;
+    }
+
     @Override
     public RoadNetwork getNetwork()
     {

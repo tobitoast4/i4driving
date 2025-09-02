@@ -53,6 +53,8 @@
                 <ots:Lane Id="5" LaneType="NL.HIGHWAY">
                     <ots:CenterOffset>0m</ots:CenterOffset>
                     <ots:Width>3.75m</ots:Width>
+                    <ots:SpeedLimit GtuType="NL.CAR" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
+                    <ots:SpeedLimit GtuType="NL.TRUCK" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
                 </ots:Lane>
                 <ots:Stripe Type="DASHED">
                     <ots:CenterOffset>-1.875m</ots:CenterOffset>
@@ -61,6 +63,8 @@
                 <ots:Lane Id="6" LaneType="NL.HIGHWAY">
                     <ots:CenterOffset>-3.75m</ots:CenterOffset>
                     <ots:Width>3.75m</ots:Width>
+                    <ots:SpeedLimit GtuType="NL.CAR" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
+                    <ots:SpeedLimit GtuType="NL.TRUCK" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
                 </ots:Lane>
                 <ots:Stripe Type="BLOCK">
                     <ots:CenterOffset>-5.625m</ots:CenterOffset>
@@ -69,6 +73,8 @@
                 <ots:Lane Id="7" LaneType="NL.HIGHWAY">
                     <ots:CenterOffset>-7.5m</ots:CenterOffset>
                     <ots:Width>3.75m</ots:Width>
+                    <ots:SpeedLimit GtuType="NL.CAR" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
+                    <ots:SpeedLimit GtuType="NL.TRUCK" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
                 </ots:Lane>
                 <ots:Stripe Type="DASHED">
                     <ots:CenterOffset>-9.375m</ots:CenterOffset>
@@ -77,6 +83,8 @@
                 <ots:Lane Id="8" LaneType="NL.HIGHWAY">
                     <ots:CenterOffset>-11.25m</ots:CenterOffset>
                     <ots:Width>3.75m</ots:Width>
+                    <ots:SpeedLimit GtuType="NL.CAR" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
+                    <ots:SpeedLimit GtuType="NL.TRUCK" LegalSpeedLimit="80 km/h"></ots:SpeedLimit>
                 </ots:Lane>
                 <ots:Stripe Type="SOLID">
                     <ots:CenterOffset>-13.125m</ots:CenterOffset>

@@ -2,8 +2,11 @@ package org.opentrafficsim.i4driving.sim0mq;
 
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
+import org.djunits.unit.DurationUnit;
 import org.djunits.unit.SpeedUnit;
 import org.djunits.unit.TimeUnit;
+import org.djunits.value.vdouble.scalar.Duration;
+import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.io.URLResource;
@@ -14,6 +17,7 @@ import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.LinkWeight;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
@@ -28,6 +32,9 @@ import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.factory.xml.XmlParserException;
 import org.opentrafficsim.road.network.factory.xml.parser.XmlParser;
+import org.opentrafficsim.road.network.lane.CrossSectionLink;
+import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.object.SpeedSign;
 import org.opentrafficsim.road.od.Category;
 import org.opentrafficsim.trafficcontrol.TrafficControlException;
 import org.xml.sax.SAXException;
@@ -63,8 +70,7 @@ public final class Scenario03 implements Sim0mqSimulation
      * @throws GtuException
      */
     public Scenario03(final OtsSimulatorInterface simulator, final ScenarioTacticalPlannerFactory tacticalFactory)
-            throws GtuException, OtsGeometryException, NetworkException
-    {
+            throws GtuException, OtsGeometryException, NetworkException {
         URL xmlURL = URLResource.getResource("/Scenario03.xml");
         this.network = new RoadNetwork("SilabMap", simulator);
         try {
@@ -86,6 +92,21 @@ public final class Scenario03 implements Sim0mqSimulation
         Node nodeB = this.network.getNode("cp8-lane0-1");
         RouteGenerator routeGenerator = RouteGenerator.getDefaultRouteSupplier(new MersenneTwister(12345), LinkWeight.LENGTH_NO_CONNECTORS);
         Route route = routeGenerator.getRoute(nodeA, nodeB, DefaultsNl.CAR);
+
+
+        String[] cpIds = new String[]{"cp4", "cp5-lane0", "cp7-lane0"};
+        int index = 0;
+        for (String cpId : cpIds) {
+            index++;
+            CrossSectionLink link = ((CrossSectionLink) this.network.getLink("0" + index + "_l51"));
+            new SpeedSign("sign2_" + index, (Lane) link.getCrossSectionElement("6"), Length.instantiateSI(10), this.network.getSimulator(),
+                    new Speed(80.0, SpeedUnit.KM_PER_HOUR), DefaultsNl.VEHICLE, Duration.ZERO,
+                    new Duration(24, DurationUnit.HOUR));
+            link = ((CrossSectionLink) this.network.getLink(cpId));
+            new SpeedSign("sign1_" + index, (Lane) link.getCrossSectionElement("6"), Length.instantiateSI(10), this.network.getSimulator(),
+                    new Speed(130.0, SpeedUnit.KM_PER_HOUR), DefaultsNl.VEHICLE, Duration.ZERO,
+                    new Duration(24, DurationUnit.HOUR));
+        }
 
         // GTU characteristics generator
         GtuType.registerTemplateSupplier(DefaultsNl.CAR, Defaults.NL);

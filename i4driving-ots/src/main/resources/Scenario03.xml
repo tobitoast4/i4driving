@@ -889,14 +889,14 @@
 
 
 
-
-
-
-<!--    <ots:Demand>-->
-<!--        <ots:Sink Lane="LANE" Link="102_l168" Position="END-40m" Type="NL.ROAD_USERS" />-->
-<!--        <ots:Sink Lane="LANE" Link="202_l168" Position="END-40m" Type="NL.ROAD_USERS" />-->
-<!--        <ots:Sink Lane="LANE" Link="302_l168" Position="END-40m" Type="NL.ROAD_USERS" />-->
-<!--    </ots:Demand>-->
+    <ots:Demand>
+        <ots:Sink Lane="5" Link="01_l344" Position="END-40m" Type="NL.ROAD_USERS" />
+        <ots:Sink Lane="6" Link="01_l344" Position="END-40m" Type="NL.ROAD_USERS" />
+        <ots:Sink Lane="5" Link="02_l344" Position="END-40m" Type="NL.ROAD_USERS" />
+        <ots:Sink Lane="6" Link="02_l344" Position="END-40m" Type="NL.ROAD_USERS" />
+        <ots:Sink Lane="5" Link="03_l344" Position="END-40m" Type="NL.ROAD_USERS" />
+        <ots:Sink Lane="6" Link="03_l344" Position="END-40m" Type="NL.ROAD_USERS" />
+    </ots:Demand>
     <ots:Run>
         <ots:RunLength>1h</ots:RunLength>
     </ots:Run>

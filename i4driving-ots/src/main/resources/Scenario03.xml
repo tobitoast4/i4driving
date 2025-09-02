@@ -5,28 +5,32 @@
     <ots:Definitions>
         <xi:include href="./xsd/defaults/default_gtutypes.xml">s
             <xi:fallback>
-                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_gtutypes.xml" />
+                <!--                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_gtutypes.xml" />-->
+                <xi:include href="file:/C:\Users\tobi8\Documents\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_gtutypes.xml" />
             </xi:fallback>
         </xi:include>
         <xi:include href="./xsd/defaults/default_linktypes.xml">
             <xi:fallback>
-                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_linktypes.xml" />
+                <!--                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_linktypes.xml" />-->
+                <xi:include href="file:/C:\Users\tobi8\Documents\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_linktypes.xml" />
             </xi:fallback>
         </xi:include>
         <xi:include href="./xsd/defaults/default_lanetypes.xml">
             <xi:fallback>
-                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_lanetypes.xml" />
+                <!--                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_lanetypes.xml" />-->
+                <xi:include href="file:/C:\Users\tobi8\Documents\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_lanetypes.xml" />
             </xi:fallback>
         </xi:include>
         <xi:include href="./xsd/defaults/default_detectortypes.xml">
             <xi:fallback>
-                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_detectortypes.xml" />
+                <!--                <xi:include href="file:/C:\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_detectortypes.xml" />-->
+                <xi:include href="file:/C:\Users\tobi8\Documents\GitHub\i4driving\i4driving-ots\src\main\resources\xsd\defaults\default_detectortypes.xml" />
             </xi:fallback>
         </xi:include>
         <ots:LinkTypes>
             <ots:LinkType Id="HIGHWAY">
                 <ots:Compatibility GtuType="NL.VEHICLE" />
-                <ots:SpeedLimit GtuType="NL.CAR" LegalSpeedLimit="120km/h" />
+                <ots:SpeedLimit GtuType="NL.CAR" LegalSpeedLimit="130km/h" />
                 <ots:SpeedLimit GtuType="NL.TRUCK" LegalSpeedLimit="90km/h" />
             </ots:LinkType>
             <ots:LinkType Id="LOCAL">

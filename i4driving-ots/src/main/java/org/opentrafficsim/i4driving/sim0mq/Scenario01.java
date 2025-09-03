@@ -106,7 +106,7 @@ public final class Scenario01 implements Sim0mqSimulation
     }
 
     public Time getMergeDelay() {
-        return new Time(-2, TimeUnit.BASE_SECOND);
+        return new Time(-0.5, TimeUnit.BASE_SECOND);
     }
 
     public double getThresholdDistance() {
@@ -114,7 +114,7 @@ public final class Scenario01 implements Sim0mqSimulation
     }
 
     public double getControlLimitDistance() {
-        return 10;
+        return 50;
     }
 
     @Override

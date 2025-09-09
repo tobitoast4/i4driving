@@ -83,7 +83,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     @Option(names = "--port", description = "Port number", defaultValue = "8199")
     private int port;
 
-    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario03")
+    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario01")
     private String scenario;
 
     @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")
@@ -336,7 +336,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                             Gtu gtu = this.network.getGTU(id);
                             if (gtu == null) {  // Create
                                 generateVehicle(odbObject);
-                                CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
                             } else {            // Update
                                 updateVehicle(odbObject);
                             }
@@ -506,6 +505,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         messageData.put("parameters", jsonParameters0);
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
         String id = messageData.getString("id");
+        String name = messageData.getString("name");
 
         String mode = Utils.tryGetString(messageData, "mode", "external");
         double x = messageData.getJSONObject("position").getDouble("x");
@@ -561,12 +561,12 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
         if (running)
         {
-            this.simulator.scheduleEventNow(this, "spawnGtu", new Object[] {id, gtuType, vehicleLength, vehicleWidth,
+            this.simulator.scheduleEventNow(this, "spawnGtu", new Object[] {id, name, gtuType, vehicleLength, vehicleWidth,
                     refToNose, route, initSpeed, temporarySpeedLimit, position, mode, parameterMap});
         }
         else
         {
-            spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, temporarySpeedLimit, position, mode, parameterMap);
+            spawnGtu(id, name, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, temporarySpeedLimit, position, mode, parameterMap);
         }
     }
 
@@ -590,7 +590,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
      * @throws IllegalAccessException if a parameter cannot be set
      */
     @SuppressWarnings("checkstyle:parameternumber")
-    private <T extends Enum<T>> void spawnGtu(final String id, final GtuType gtuType, final Length vehicleLength,
+    private <T extends Enum<T>> void spawnGtu(final String id, String name, final GtuType gtuType, final Length vehicleLength,
             final Length vehicleWidth, final Length refToNose, final Route route, final Speed initSpeed,
             final Speed temporarySpeedLimit, final OrientedPoint2d position, final String mode,
             final Map<String, Object> parameterMap)
@@ -655,6 +655,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         Gtu gtu = this.network.getGTU(id);
         if (gtu == null) {  // somehow this is not guaranteed to this point, so we check again
             this.gtuSpawner.spawnGtu(id, gtuType, vehicleLength, vehicleWidth, refToNose, route, initSpeed, temporarySpeedLimit, position);
+            CategoryLogger.always().debug("Generate GTU " + id + " of " + name);
         }
         OtsWebSocketTransceiver.this.tacticalFactory.resetMode();
         setParameters.forEach((p) -> this.parameterFactory.clearParameterValue(p));
@@ -843,7 +844,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
         if (event.getType().equals(Network.GTU_REMOVE_EVENT))
         {
             String gtuId = (String) event.getContent();
-            endOfRouteReached.put(gtuId, true);
+            if (gtuId.startsWith("AV")) {
+                endOfRouteReached.put(gtuId, true);
+            }
             CategoryLogger.always().info("Removed GTU " + gtuId);
         }
 //        if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))

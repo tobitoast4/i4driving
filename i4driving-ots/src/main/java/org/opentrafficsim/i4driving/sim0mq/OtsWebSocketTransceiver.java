@@ -313,7 +313,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 //                    else if (id.equals("USER")) {
 //                        continue;
 //                    }
-                    else if (name.startsWith("Vehicles.")) {
+                    else if (name.startsWith("Vehicles.") || name.startsWith("cars.")) {
                         if (mode.equals("ots")) {      // AVs are controlled by OTS
                             Gtu gtu = this.network.getGTU(id);
                             double x = odbObject.getJSONObject("position").getDouble("x");

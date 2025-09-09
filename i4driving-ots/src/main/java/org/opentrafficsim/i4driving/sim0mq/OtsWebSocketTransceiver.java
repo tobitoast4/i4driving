@@ -394,7 +394,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                                         jsonCommand.put("time", "0.0 s");
                                         jsonCommand.put("type", "setAcceleration");
                                         JSONObject commandData = new JSONObject();
-                                        commandData.put("acceleration", "0 m/s2");
+                                        commandData.put("acceleration", "-1 m/s2");  // -1 to be sure to brake
                                         jsonCommand.put("data", commandData);
                                         this.simulator.scheduleEventNow(this, "scheduledPerformCommand", new Object[]{avId, jsonCommand.toString()});
                                     }

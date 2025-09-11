@@ -68,6 +68,8 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
+import static java.lang.System.exit;
+
 /**
  * OTS co-simulation server.
  * @author wjschakel

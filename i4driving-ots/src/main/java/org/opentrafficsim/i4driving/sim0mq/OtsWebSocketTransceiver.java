@@ -459,6 +459,10 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             {
                 stopSimulation();
             }
+            else if ("EXIT".equals(messageType))
+            {
+                exit(0);
+            }
             else
             {
                 System.err.println("Cannot process a " + messageType + " message.");

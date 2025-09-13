@@ -14,10 +14,10 @@ import java.time.Instant;
 public class ExternalWebSocketSimEmulator {
 
     private ExternalWebSocketServer server;
-    private String fileName = "101.log";
+    private String fileName = "silab_msgs_2025_09_13_19_11_48.log";
 
     private ExternalWebSocketSimEmulator() {
-        server = new ExternalWebSocketServer(new InetSocketAddress(8099));
+        server = new ExternalWebSocketServer(new InetSocketAddress(8199));
         server.start();
 
         CategoryLogger.setAllLogLevel(Level.DEBUG);

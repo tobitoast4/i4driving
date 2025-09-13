@@ -78,8 +78,8 @@ import static java.lang.System.exit;
         showDefaultValues = true, version = "20250619")
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
-//    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
-    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
+    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
+//    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
     private String address;
 
     @Option(names = "--port", description = "Port number", defaultValue = "8199")

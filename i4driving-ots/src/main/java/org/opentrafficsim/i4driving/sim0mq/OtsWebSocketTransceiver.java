@@ -78,14 +78,13 @@ import static java.lang.System.exit;
         showDefaultValues = true, version = "20250619")
 public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 {
-    @Option(names = "--address", description = "External sim address", defaultValue = "10.152.238.2")
-//    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
+    @Option(names = "--address", description = "External sim address", defaultValue = "localhost")
     private String address;
 
     @Option(names = "--port", description = "Port number", defaultValue = "8199")
     private int port;
 
-    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario01")
+    @Option(names = "--scenario", description = "The scenario name to be loaded", defaultValue = "Scenario03")
     private String scenario;
 
     @Option(names = "--hide-gui", description = "Show or hide the GUI", defaultValue = "true")
@@ -93,6 +92,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
 
     @Option(names = "--write-logs", description = "Log external data to file", defaultValue = "false")
     private boolean writeLogs = false; // Defaults to false. Add --write-logs to log the data into a log file.
+
+    @Option(names = "--log-file-path", description = "The absolute file path where where to save logs", defaultValue = "")
+    private String logFilePath;
 
     /** Mixed in model arguments. */
     @Mixin
@@ -187,7 +189,11 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
             String formattedTime = now.format(formatter);
-            messageWriter = new MessageWriter("D:\\SILAB\\DATA\\MA_Zillmann\\OTS\\silab_msgs_" + formattedTime + ".log");
+            if (logFilePath.equals("")) {
+                messageWriter = new MessageWriter("silab_msgs_" + formattedTime + ".log");
+            } else {
+                messageWriter = new MessageWriter(logFilePath);
+            }
             stopSimulation();
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
@@ -217,29 +223,9 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
                 animationPanel.enableSimulationControlButtons();
                 this.app = new OtsSimulationApplication<AbstractOtsModel>(model, animationPanel);
             }
-//            JSONObject avData = new JSONObject();
-//            avData.put("id", avId);
-//            avData.put("mode", "ots");
-//            JSONObject avPosition = new JSONObject();
-//            avPosition.put("x", 507.099200);
-//            avPosition.put("y", -188.139600);
-//
-//            avData.put("position", avPosition);
-//            JSONObject avRotation = new JSONObject();
-//            avRotation.put("z", 0.857657);
-//            avData.put("rotation", avRotation);
-//            avData.put("v", 0);
-//            avData.put("speedLimit", 0);
-//            generateVehicle(avData);
-//            CategoryLogger.always().debug("Generate GTU AV");
-
-//            createIndicatorPoint();
         }
-//        catch (NetworkException | RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException
-//               | OtsGeometryException | InvocationTargetException | GtuException | IllegalAccessException e)
-//        {
         catch (RemoteException | DsolException | OtsDrawingException | SimRuntimeException | NamingException e)
-            {
+        {
 
         }
     }
@@ -506,7 +492,6 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
     {
         JSONObject jsonParameters0 = new JSONObject();
         jsonParameters0.put("t0", Duration.instantiateSI(43));
-//        jsonParameters0.put("--fullerImplementation", "NONE");
         jsonParameters0.put("--nLeaders", 1);
         messageData.put("parameters", jsonParameters0);
         boolean running = this.simulator != null && this.simulator.getSimulatorTime().gt0();
@@ -534,16 +519,31 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             return;
         }
         String vehicleType = Utils.tryGetString(messageData, "vehicleType", "NL.CAR");
-        GtuType gtuType =
-                Defaults.getByName(GtuType.class, vehicleType.startsWith("NL.") ? vehicleType : "NL." + vehicleType);
+        GtuType gtuType = Defaults.getByName(GtuType.class, vehicleType.startsWith("NL.") ? vehicleType : "NL." + vehicleType);
         Length vehicleLength = new Length(Utils.tryGetDouble(messageData, "length", 4.0), LengthUnit.METER);
         Length vehicleWidth = new Length(Utils.tryGetDouble(messageData, "width", 1.8), LengthUnit.METER);
         Length refToNose = new Length(Utils.tryGetDouble(messageData, "refToNose", 2), LengthUnit.METER);
 
-        String startNodeId = messageData.getJSONObject("route").getString("nodeStart");
-        String endNodeId = messageData.getJSONObject("route").getString("nodeEnd");
-        Node nodeA = this.network.getNode(startNodeId);
-        Node nodeB = this.network.getNode(endNodeId);
+        Node nodeA;
+        Node nodeB;
+        if (scenario.equals("Scenario03") && !id.startsWith("AV") && !id.equals("USER")) {  // ugly that this is hard-coded, but well ...
+            nodeA = this.network.getNode("cp0-lane0-0");
+            if (x < 2000) {
+                nodeB = this.network.getNode("01_l344-1");
+            } else if (x > 4130) {
+                nodeB = this.network.getNode("03_l344-1");
+            } else {
+                nodeB = this.network.getNode("02_l344-1");
+            }
+            if ((x>1980 && x<2000) || (x>4035 && x<4130) || (x>5860 && x<5970)) {  // ugly that this is hard-coded, but well ...
+                return;  // do not recreate vehicle when close to nodeB
+            }
+        } else {
+            String startNodeId = messageData.getJSONObject("route").getString("nodeStart");
+            String endNodeId = messageData.getJSONObject("route").getString("nodeEnd");
+            nodeA = this.network.getNode(startNodeId);
+            nodeB = this.network.getNode(endNodeId);
+        }
         OrientedPoint2d spawnPosition = new OrientedPoint2d(x, y);
         if (spawnPosition.distance(nodeB.getPoint()) <= 50 || (endOfRouteReached.get(id) != null && endOfRouteReached.get(id))) {
             // do not spawn a vehicle if it was already deleted

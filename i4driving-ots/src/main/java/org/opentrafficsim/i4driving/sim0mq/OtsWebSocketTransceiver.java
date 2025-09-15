@@ -189,11 +189,7 @@ public class OtsWebSocketTransceiver implements EventListener, WebSocketListener
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd_HH_mm_ss");
             String formattedTime = now.format(formatter);
-            if (logFilePath.equals("")) {
-                messageWriter = new MessageWriter("silab_msgs_" + formattedTime + ".log");
-            } else {
-                messageWriter = new MessageWriter(logFilePath);
-            }
+            messageWriter = new MessageWriter(logFilePath +  scenario + formattedTime + ".log");
             stopSimulation();
 
             // An animator supports real-time running. No GUI will be shown if no animation panel is created.
